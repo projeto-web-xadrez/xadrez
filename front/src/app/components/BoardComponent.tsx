@@ -216,6 +216,7 @@ function Board() {
                     position: 'absolute'
                 }}
                 data-type='board'
+                draggable='false'
             />
             {lastMoves}
             {currentPieces}
