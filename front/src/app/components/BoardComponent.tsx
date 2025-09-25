@@ -90,6 +90,8 @@ function Board() {
         // TODO: remover console.log
         console.log('\n' + chessBoard.ascii())
         console.log(chessBoard.fen())
+
+        // aplica highlight na posicao anterior e na nova posição da peça movida pelo adversário
         setLastMoves(
             [SquareLastMoveComponent({
                 key: 0,

@@ -20,7 +20,7 @@ function SquareMoveHighlightComponent(props: PieceSettings) {
         height: props.height,
         zIndex: 3,
         position: 'absolute',
-        border: '1px solid ' + (props.isCapture ? 'red' : 'green')
+        background: props.isCapture  ? 'rgba(206, 19, 19, 0.4)' : 'rgba(0, 77, 128, 0.4)',
     }
 
     return (
