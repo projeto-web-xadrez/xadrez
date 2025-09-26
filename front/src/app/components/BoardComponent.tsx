@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Chess, Square } from 'chess.js'
+import React, { useEffect } from 'react';
+import { Chess, Color, Square } from 'chess.js'
 import PieceComponent from './PieceComponent';
 import SquareMoveHighlightComponent from './SquareMoveHighlightComponent';
 import SquareLastMoveComponent from './SquareLastMoveComponent';
@@ -60,7 +60,13 @@ const regeneratePieces = (chess: Chess, perspective: string) => {
     return pieces;
 }
 
-function Board() {
+interface props {
+    wsRef: React.RefObject<WebSocket>;
+    lastMessage: any
+}
+
+function Board({ wsRef, lastMessage }: props) {
+    const ws = wsRef.current
     const style: React.CSSProperties = {
         width: '400px',
         height: '400px'
@@ -72,21 +78,20 @@ function Board() {
     const [currentPieces, setCurrentPieces] = React.useState<Array<any>>(regeneratePieces(chessBoard, playerColor));
     const [lastMoves, setLastMoves] = React.useState<Array<any>>([]);
     const [checkedKing, setCheckedKing] = React.useState<any>(null);
+    const [pendingMove, setPendingMove] = React.useState<{ from: Square, to: Square, move: string; newPlayerColor: Color }>({
+        from: "a1",
+        to: "a1",
+        move: "",
+        newPlayerColor: 'b'
+    })
 
+    useEffect(() => {        
+        if (!lastMessage) return 
+        const json_obj = JSON.parse(lastMessage)
+        if(json_obj["type"] != "moveValidation") return;
 
-    const performMove = (squareFrom: Square, squareTo: Square, move: string) => {
-        // TODO: remover esta linha (apenas para fins de testes)
-        const newPlayerColor = playerColor === 'w' ? 'b' : 'w';
-        setPlayerColor(newPlayerColor);
-        setCurrentHighlights([]);
-
-        // Mover com o "move" pode ser ambíguo, melhor mover com squares (from e to)
-        //chessBoard.move(move);
-        chessBoard.move({
-            from: squareFrom,
-            to: squareTo
-        });
-
+        console.log("useEff: starting update move")
+        const { from, to, move, newPlayerColor } = pendingMove;
         // TODO: remover console.log
         console.log('\n' + chessBoard.ascii())
         console.log(chessBoard.fen())
@@ -98,14 +103,14 @@ function Board() {
                 color: 'rgba(155,199,0,.41)',
                 height: 50,
                 width: 50,
-                ...getRelativePositionBySquare(squareFrom, newPlayerColor)
+                ...getRelativePositionBySquare(from, newPlayerColor)
             }),
             SquareLastMoveComponent({
                 key: 1,
                 color: 'rgba(155,199,0,.41)',
                 height: 50,
                 width: 50,
-                ...getRelativePositionBySquare(squareTo, newPlayerColor)
+                ...getRelativePositionBySquare(to, newPlayerColor)
             })
             ]
         );
@@ -128,6 +133,24 @@ function Board() {
         setChessBoard(chessBoard);
         const newPieces = regeneratePieces(chessBoard, newPlayerColor);
         setCurrentPieces(newPieces);
+
+    }, [lastMessage]) // passa dependencia para useeffect só atualizar com base nas dependencias
+
+    const performMove = (squareFrom: Square, squareTo: Square, move: string) => {
+        // TODO: remover esta linha (apenas para fins de testes)
+        const newPlayerColor = playerColor === 'w' ? 'b' : 'w';
+        setPlayerColor(newPlayerColor);
+        setCurrentHighlights([]);
+
+        // Mover com o "move" pode ser ambíguo, melhor mover com squares (from e to)
+        //chessBoard.move(move);
+        setPendingMove({ "from": squareFrom, "to": squareTo, "move": move, "newPlayerColor": newPlayerColor })
+        chessBoard.move({
+            from: squareFrom,
+            to: squareTo
+        });
+
+        ws.send(JSON.stringify({ 'type': 'tryMove', 'data': { 'from': squareFrom, 'to': squareTo, 'fen': chessBoard.fen(), 'key': 4949 } }))
     }
 
     const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
