@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
+	grpc_server "xadrez-game-server/game_server_grpc"
 
 	"github.com/gorilla/websocket"
+	"google.golang.org/grpc"
 )
 
 var upgrader = websocket.Upgrader{
@@ -67,7 +71,32 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type GameServer struct {
+	grpc_server.UnimplementedGameServerServer
+	//RequestRoom(context.Context, *RequestRoomMessage) (*Room, error)
+	//mustEmbedUnimplementedGameServerServer()
+}
+
+func (s *GameServer) RequestRoom(ctx context.Context, req *grpc_server.RequestRoomMessage) (*grpc_server.Room, error) {
+	room := grpc_server.Room{
+		RoomId: req.ClientId_1 + "_" + req.ClientId_2 + "_room",
+	}
+
+	return &room, nil
+}
+
 func main() {
+	go func() {
+		grpc_listener, err := net.Listen("tcp", ":9191")
+		if err != nil {
+			panic("Couldn't start GRPC server")
+		}
+
+		server := grpc.NewServer()
+		grpc_server.RegisterGameServerServer(server, &GameServer{})
+		server.Serve(grpc_listener)
+	}()
+
 	http.HandleFunc("/ws", handleConnections)
 
 	fmt.Printf("Started listening at 8082")

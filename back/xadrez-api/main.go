@@ -1,12 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
+	grpc_server "xadrez-api/game_server_grpc"
 
 	"github.com/gorilla/websocket"
+	"google.golang.org/grpc"
 )
+
+var grpc_game_server_conn grpc_server.GameServerClient
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true }, // Allow all connections
@@ -62,18 +68,55 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			var client clientObj
 			// TODO: olhar como fazer isso aqui direito kkkk
 			client.id = obj.Data["id"].(string)
-
 			enqueue(client)
-			if len(queue) == 2 {
-				c1 := dequeue()
-				c2 := dequeue()
 
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+
+			room, err := grpc_game_server_conn.RequestRoom(ctx,
+				&grpc_server.RequestRoomMessage{
+					ClientId_1: dequeue().id,
+					ClientId_2: dequeue().id,
+				})
+
+			if err != nil {
+				panic("Error acquiring a room")
 			}
+
+			w.Write([]byte(room.RoomId))
 		}
 	}
 }
 
+func testing() {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	room, err := grpc_game_server_conn.RequestRoom(ctx,
+		&grpc_server.RequestRoomMessage{
+			ClientId_1: "CLIENT 1",
+			ClientId_2: "CLIENT 2",
+		})
+
+	if err != nil {
+		panic("Error acquiring a room")
+	}
+
+	println("Room: " + room.RoomId)
+}
+
 func main() {
+
+	conn, err := grpc.NewClient("localhost:9191", grpc.WithInsecure())
+	if err != nil {
+		panic("Couldn't stablish GRPC connection with game-server")
+	}
+
+	defer conn.Close()
+	grpc_game_server_conn = grpc_server.NewGameServerClient(conn)
+
+	testing()
+
 	var Wg sync.WaitGroup
 	Wg.Add(1)
 
@@ -87,7 +130,6 @@ func main() {
 		if err != nil {
 			fmt.Println("ListenAndServe:", err)
 		}
-
 	}()
 
 	// bloqueia o fim da thread principal até que os dois sejam terminados.
