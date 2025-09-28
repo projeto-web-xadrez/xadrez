@@ -62,10 +62,12 @@ const regeneratePieces = (chess: Chess, perspective: string) => {
 
 interface props {
     wsRef: React.RefObject<WebSocket>;
-    lastMessage: any
+    lastMessage: any;
+    perspectiveColor: Color;
+    isPlayerTurn: boolean;
 }
 
-function Board({ wsRef, lastMessage }: props) {
+function Board({ wsRef, lastMessage, perspectiveColor, isPlayerTurn }: props) {
     const ws = wsRef.current
     const style: React.CSSProperties = {
         width: '400px',
@@ -85,10 +87,10 @@ function Board({ wsRef, lastMessage }: props) {
         newPlayerColor: 'b'
     })
 
-    useEffect(() => {        
-        if (!lastMessage) return 
+    useEffect(() => {
+        if (!lastMessage) return
         const json_obj = JSON.parse(lastMessage)
-        if(json_obj["type"] != "moveValidation") return;
+        if (json_obj["type"] != "moveValidation") return;
 
         console.log("useEff: starting update move")
         const { from, to, move, newPlayerColor } = pendingMove;
@@ -138,8 +140,8 @@ function Board({ wsRef, lastMessage }: props) {
 
     const performMove = (squareFrom: Square, squareTo: Square, move: string) => {
         // TODO: remover esta linha (apenas para fins de testes)
-        const newPlayerColor = playerColor === 'w' ? 'b' : 'w';
-        setPlayerColor(newPlayerColor);
+        const newPlayerColor = playerColor === 'w' ? 'w' : 'b';
+        setPlayerColor(perspectiveColor);
         setCurrentHighlights([]);
 
         // Mover com o "move" pode ser ambíguo, melhor mover com squares (from e to)
@@ -187,12 +189,15 @@ function Board({ wsRef, lastMessage }: props) {
         }
 
         if (type === 'piece') {
-            if (element.dataset.color !== playerColor) {
+            console.log(`Element data set color: ${element.dataset.color} and playerColor ${playerColor}`)
+            if (element.dataset.color !== playerColor || !isPlayerTurn) {
+                console.log("Movement cancelled")
                 setCurrentHighlights([]);
                 return;
             }
 
             let id = 0;
+            console.log("Highlighting from ", square)
             const highlights = chessBoard.moves({ square }).map(
                 move => {
                     const isCheck = ['#', '+'].includes(move.slice(-1));
