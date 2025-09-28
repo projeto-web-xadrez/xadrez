@@ -1,0 +1,15 @@
+syntax = "proto3";
+option go_package = "grpc_server";
+
+message RequestRoomMessage {
+    string client_id_1 = 1;
+    string client_id_2 = 2;
+}
+
+message Room {
+    string room_id = 1;
+}
+
+service GameServer {
+    rpc RequestRoom(RequestRoomMessage) returns (Room) {}
+}
