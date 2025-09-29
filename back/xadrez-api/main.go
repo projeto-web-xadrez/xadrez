@@ -70,20 +70,23 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			client.id = obj.Data["id"].(string)
 			enqueue(client)
 
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
+			if len(queue) >= 2 {
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
 
-			room, err := grpc_game_server_conn.RequestRoom(ctx,
-				&grpc_server.RequestRoomMessage{
-					ClientId_1: dequeue().id,
-					ClientId_2: dequeue().id,
-				})
+				room, err := grpc_game_server_conn.RequestRoom(ctx,
+					&grpc_server.RequestRoomMessage{
+						ClientId_1: dequeue().id,
+						ClientId_2: dequeue().id,
+					})
 
-			if err != nil {
-				panic("Error acquiring a room")
+				if err != nil {
+					panic("Error acquiring a room")
+				}
+
+				w.Write([]byte(room.RoomId))
 			}
 
-			w.Write([]byte(room.RoomId))
 		}
 	}
 }
@@ -99,6 +102,7 @@ func testing() {
 		})
 
 	if err != nil {
+		fmt.Printf("%v", err)
 		panic("Error acquiring a room")
 	}
 

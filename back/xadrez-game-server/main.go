@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 	grpc_server "xadrez-game-server/game_server_grpc"
 
@@ -22,6 +23,39 @@ type clientObj struct {
 	Data map[string]interface{} `json:"data"`
 }
 
+type Message struct {
+	Type string                 `json:"type"`
+	Data map[string]interface{} `json:"data"`
+}
+
+// É um map de salas
+type Hub struct {
+	rooms map[string]*Room
+	mu    sync.RWMutex
+}
+
+// Contendo o que cada sala possui. Um id montado por client1_client2
+// Lista de clientes que estão ali
+type Room struct {
+	RoomId    string
+	clients   map[*Client]bool
+	broadcast chan Message
+	mu        sync.RWMutex
+}
+
+// O channel é utilizado para evitar problemas com concorrencia
+type Client struct {
+	conn *websocket.Conn
+	send chan Message
+	room *Room
+	id   string
+}
+
+// Matchmaker pra gerenciar as salas abertas
+var Matchmaker = &Hub{
+	rooms: make(map[string]*Room),
+}
+
 func handleConnections(w http.ResponseWriter, r *http.Request) {
 	// Upgrade initial GET request to a WebSocket
 	ws, err := upgrader.Upgrade(w, r, nil)
@@ -31,7 +65,22 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 	defer ws.Close()
 
-	//ws.WriteMessage(websocket.TextMessage, []byte("Olá mundo"))
+	// Fetch query do cliente
+	parameters := r.URL.Query()
+	clientId := parameters.Get("clientId")
+	roomId := parameters.Get("roomId")
+
+	// Cria o cliente
+
+	client := Client{
+		conn: ws,
+		send: make(chan Message),
+		room: Matchmaker.rooms[roomId],
+		id:   clientId,
+	}
+
+	// Adiciona o cliente na sala
+	Matchmaker.rooms[roomId].clients[&client] = true
 
 	for {
 		// Read message from browser
@@ -78,16 +127,29 @@ type GameServer struct {
 }
 
 func (s *GameServer) RequestRoom(ctx context.Context, req *grpc_server.RequestRoomMessage) (*grpc_server.Room, error) {
-	room := grpc_server.Room{
+	fmt.Printf("Room was requested for %s & %s", req.ClientId_1, req.ClientId_2)
+
+	room := Room{
+		req.ClientId_1 + "_" + req.ClientId_2 + "_room",
+		make(map[*Client]bool),
+		make(chan Message),
+		sync.RWMutex{},
+	}
+
+	// Adiciona a room no matchmaker
+	Matchmaker.rooms[req.ClientId_1+"_"+req.ClientId_2+"_room"] = &room
+
+	// Sala criada no grpc
+	room2 := grpc_server.Room{
 		RoomId: req.ClientId_1 + "_" + req.ClientId_2 + "_room",
 	}
 
-	return &room, nil
+	return &room2, nil
 }
 
 func main() {
 	go func() {
-		grpc_listener, err := net.Listen("tcp", ":9191")
+		grpc_listener, err := net.Listen("tcp", "localhost:9191")
 		if err != nil {
 			panic("Couldn't start GRPC server")
 		}
@@ -99,7 +161,8 @@ func main() {
 
 	http.HandleFunc("/ws", handleConnections)
 
-	fmt.Printf("Started listening at 8082")
+	// Esse websocket vai lidar com os moveValidations
+	fmt.Printf("Started listening at 8082\n")
 	err := http.ListenAndServe("localhost:8082", nil)
 	if err != nil {
 		fmt.Printf("Found an error %v", err)
