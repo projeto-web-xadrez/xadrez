@@ -79,8 +79,39 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		id:   clientId,
 	}
 
+	current_room := Matchmaker.rooms[roomId]
 	// Adiciona o cliente na sala
-	Matchmaker.rooms[roomId].clients[&client] = true
+
+	// Verifica a existência da Room
+	if current_room == nil {
+		return
+	}
+
+	current_room.clients[&client] = true
+
+	// TODO: analisar se o cara foi desconectado e dar um tempo pra ele voltar
+	// por enquanto podemos cancelar a partida
+
+	if len(current_room.clients) == 2 {
+		// Podemos iniciar a partida
+		generic_message := Message{
+			Type: "startGame",
+			Data: make(map[string]interface{}),
+		}
+
+		sent_first := false
+
+		for key, _ := range current_room.clients {
+			if !sent_first {
+				generic_message.Data["cor"] = "b"
+				key.send <- generic_message
+				sent_first = true
+			} else {
+				generic_message.Data["cor"] = "w"
+				key.send <- generic_message
+			}
+		}
+	}
 
 	for {
 		// Read message from browser
