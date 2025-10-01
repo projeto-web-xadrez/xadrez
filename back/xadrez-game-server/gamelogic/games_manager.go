@@ -68,8 +68,9 @@ func HandleNewClient(ws *websocket.Conn) {
 	player.Mutex.Lock()
 	if player.Connected {
 		// TODO: enviar mensagem "você se conectou por outra tab"
-		close(player.WSSend)
 		player.Connection.Close()
+		// Envia uma mensagem vazia para forçar um crash na goroutine do WS
+		player.WSSend <- Message{}
 	}
 
 	room := player.Room
@@ -96,8 +97,9 @@ func HandleNewClient(ws *websocket.Conn) {
 				}
 
 				player.Connected = false
-				close(player.WSSend)
 				ws.Close()
+				// Envia uma mensagem vazia para forçar um crash na goroutine do WS
+				player.WSSend <- Message{}
 				player.Connection = nil
 				return
 			}
@@ -109,8 +111,9 @@ func HandleNewClient(ws *websocket.Conn) {
 	defer func() {
 		player.Mutex.Lock()
 		player.Connected = false
-		close(player.WSSend)
 		ws.Close()
+		// Envia uma mensagem vazia para forçar um crash na goroutine do WS
+		player.WSSend <- Message{}
 		player.Connection = nil
 		player.Mutex.Unlock()
 	}()
