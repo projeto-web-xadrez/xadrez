@@ -10,17 +10,13 @@ import (
 	"time"
 	grpc_server "xadrez-game-server/game_server_grpc"
 
+	"github.com/corentings/chess/v2"
 	"github.com/gorilla/websocket"
 	"google.golang.org/grpc"
 )
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true }, // Allow all connections
-}
-
-type clientObj struct {
-	Type string                 `json:"type"`
-	Data map[string]interface{} `json:"data"`
 }
 
 type Message struct {
@@ -37,18 +33,19 @@ type Hub struct {
 // Contendo o que cada sala possui. Um id montado por client1_client2
 // Lista de clientes que estão ali
 type Room struct {
-	RoomId    string
-	clients   map[*Client]bool
-	broadcast chan Message
-	mu        sync.RWMutex
+	state   string
+	RoomId  string
+	clients map[string]*Client // clientid -> *Client
+	chess   *chess.Game
+	mu      sync.RWMutex
 }
 
 // O channel é utilizado para evitar problemas com concorrencia
 type Client struct {
-	conn *websocket.Conn
-	send chan Message
-	room *Room
-	id   string
+	connected bool
+	channel   chan Message
+	color     string
+	id        string
 }
 
 // Matchmaker pra gerenciar as salas abertas
@@ -65,6 +62,8 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 	defer ws.Close()
 
+	fmt.Printf("\nClient connected")
+
 	// Fetch query do cliente
 	parameters := r.URL.Query()
 	clientId := parameters.Get("clientId")
@@ -73,10 +72,10 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	// Cria o cliente
 
 	client := Client{
-		conn: ws,
-		send: make(chan Message),
-		room: Matchmaker.rooms[roomId],
-		id:   clientId,
+		connected: true,
+		channel:   make(chan Message),
+		color:     "b",
+		id:        clientId,
 	}
 
 	current_room := Matchmaker.rooms[roomId]
@@ -87,12 +86,12 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	current_room.clients[&client] = true
+	current_room.clients[client.id] = &client
 
 	// TODO: analisar se o cara foi desconectado e dar um tempo pra ele voltar
 	// por enquanto podemos cancelar a partida
 
-	if len(current_room.clients) == 2 {
+	/* if len(current_room.clients) == 2 {
 		// Podemos iniciar a partida
 		generic_message := Message{
 			Type: "startGame",
@@ -111,11 +110,11 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 				key.send <- generic_message
 			}
 		}
-	}
+	} */
 
 	for {
 		// Read message from browser
-		var obj clientObj
+		var obj Message
 		err := ws.ReadJSON(&obj)
 		if err != nil {
 			//log.fatal (esse lixo encerra o programa)
@@ -161,11 +160,14 @@ func (s *GameServer) RequestRoom(ctx context.Context, req *grpc_server.RequestRo
 	fmt.Printf("Room was requested for %s & %s", req.ClientId_1, req.ClientId_2)
 
 	room := Room{
+		"WaitingPlayers",
 		req.ClientId_1 + "_" + req.ClientId_2 + "_room",
-		make(map[*Client]bool),
-		make(chan Message),
+		make(map[string]*Client),
+		chess.NewGame(),
 		sync.RWMutex{},
 	}
+
+	fmt.Println(room.chess.Position().Board().Draw())
 
 	// Adiciona a room no matchmaker
 	Matchmaker.rooms[req.ClientId_1+"_"+req.ClientId_2+"_room"] = &room
