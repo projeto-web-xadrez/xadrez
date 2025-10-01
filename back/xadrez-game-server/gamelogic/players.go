@@ -14,7 +14,7 @@ type Player struct {
 	Connection     *websocket.Conn
 	LastConnection time.Time
 	Room           *Room
-	WSSend         chan Message
+	WSSend         *(chan Message)
 	Mutex          sync.RWMutex
 	Color          chess.Color
 }

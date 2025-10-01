@@ -13,11 +13,11 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var rooms map[string]*Room
-var roomsMutex sync.RWMutex
+var rooms map[string]*Room = make(map[string]*Room)
+var roomsMutex sync.RWMutex = sync.RWMutex{}
 
-var players map[string]*Player
-var playersMutex sync.RWMutex
+var players map[string]*Player = make(map[string]*Player)
+var playersMutex sync.RWMutex = sync.RWMutex{}
 
 func convertSquare(squareStr string) *chess.Square {
 	if len(squareStr) != 2 {
@@ -66,11 +66,10 @@ func HandleNewClient(ws *websocket.Conn) {
 	}
 
 	player.Mutex.Lock()
-	if player.Connected {
-		// TODO: enviar mensagem "você se conectou por outra tab"
-		player.Connection.Close()
-		// Envia uma mensagem vazia para forçar um crash na goroutine do WS
-		player.WSSend <- Message{}
+	// TODO: enviar mensagem "você se conectou por outra tab"
+	(*player.WSSend) <- Message{
+		Type: "quit",
+		Data: "",
 	}
 
 	room := player.Room
@@ -84,24 +83,29 @@ func HandleNewClient(ws *websocket.Conn) {
 	player.Connected = true
 	player.Connection = ws
 	player.LastConnection = time.Now()
-	player.WSSend = make(chan Message, 100)
 
+	WSSend := make(chan Message, 100)
+	player.WSSend = &WSSend
 	go func() {
 		for {
-			err := ws.WriteJSON(<-player.WSSend)
+			msg := <-WSSend
+
+			if msg.Type == "quit" {
+				ws.Close()
+				break
+			}
+
+			err := ws.WriteJSON(msg)
 			if err != nil {
 				player.Mutex.Lock()
 				defer player.Mutex.Unlock()
 				if ws != player.Connection {
-					return
+					break
 				}
 
 				player.Connected = false
 				ws.Close()
-				// Envia uma mensagem vazia para forçar um crash na goroutine do WS
-				player.WSSend <- Message{}
-				player.Connection = nil
-				return
+				break
 			}
 		}
 	}()
@@ -112,8 +116,10 @@ func HandleNewClient(ws *websocket.Conn) {
 		player.Mutex.Lock()
 		player.Connected = false
 		ws.Close()
-		// Envia uma mensagem vazia para forçar um crash na goroutine do WS
-		player.WSSend <- Message{}
+		WSSend <- Message{
+			Type: "quit",
+			Data: "",
+		}
 		player.Connection = nil
 		player.Mutex.Unlock()
 	}()
@@ -141,7 +147,7 @@ func HandleNewClient(ws *websocket.Conn) {
 	room.Mutex.Unlock()
 
 	jsonData, _ := json.Marshal(welcomeMessage)
-	player.WSSend <- Message{
+	WSSend <- Message{
 		Type: "welcome",
 		Data: string(jsonData),
 	}
@@ -160,12 +166,12 @@ func HandleNewClient(ws *websocket.Conn) {
 		if both_connected {
 			room.Status = GameStarted
 			if opponent.Connected {
-				opponent.WSSend <- Message{
+				WSSend <- Message{
 					Type: "game_started",
 					Data: "",
 				}
 			}
-			player.WSSend <- Message{
+			WSSend <- Message{
 				Type: "game_started",
 				Data: "",
 			}
@@ -198,15 +204,18 @@ func HandleNewClient(ws *websocket.Conn) {
 			Type: "game_ended",
 			Data: string(jsonData),
 		}
-
-		room.Players[0].WSSend <- msg
-		room.Players[1].WSSend <- msg
+		*opponent.WSSend <- msg
+		WSSend <- msg
 	}
 
 	for {
 		err = ws.ReadJSON(msg)
 		if err != nil {
-			opponentWin() // Invalid message, opponent must win
+			var jsonErr *json.SyntaxError
+			if errors.As(err, &jsonErr) {
+				opponentWin() // Invalid message, opponent must win
+			}
+			ws.Close()
 			return
 		}
 
@@ -271,9 +280,9 @@ func HandleNewClient(ws *websocket.Conn) {
 					Data: string(jsonData),
 				}
 
-				opponent.WSSend <- msg
-				opponent.WSSend <- winMsg
-				player.WSSend <- winMsg
+				*opponent.WSSend <- msg
+				*opponent.WSSend <- winMsg
+				WSSend <- winMsg
 				room.Status = GameEnded
 
 				room.Mutex.Unlock()
@@ -281,7 +290,7 @@ func HandleNewClient(ws *websocket.Conn) {
 			}
 
 			room.Mutex.Unlock()
-			opponent.WSSend <- msg
+			*opponent.WSSend <- msg
 		}
 	}
 }
@@ -305,6 +314,7 @@ func CreateNewRoom(playerID1 string, playerID2 string) (*Room, error) {
 		Status:  WaitingPlayers,
 		Game:    chess.NewGame(),
 	}
+	room.Mutex.Lock()
 
 	roomsMutex.Lock()
 	rooms[room.RoomID] = room
@@ -319,13 +329,14 @@ func CreateNewRoom(playerID1 string, playerID2 string) (*Room, error) {
 		p2Color = chess.White
 	}
 
+	trash_channel := make(chan Message, 100)
 	p1 = &Player{
 		ID:        playerID1,
 		Connected: false,
 		Room:      room,
 		Mutex:     sync.RWMutex{},
 		Color:     p1Color,
-		WSSend:    make(chan Message, 100),
+		WSSend:    &trash_channel,
 	}
 	p2 = &Player{
 		ID:        playerID2,
@@ -333,7 +344,7 @@ func CreateNewRoom(playerID1 string, playerID2 string) (*Room, error) {
 		Room:      room,
 		Mutex:     sync.RWMutex{},
 		Color:     p2Color,
-		WSSend:    make(chan Message, 100),
+		WSSend:    &trash_channel,
 	}
 
 	room.Players[0] = p1
