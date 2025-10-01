@@ -15,7 +15,9 @@ import (
 )
 
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true }, // Allow all connections
+	ReadBufferSize:  1024 * 8,
+	WriteBufferSize: 1024 * 8,
+	CheckOrigin:     func(r *http.Request) bool { return true }, // Allow all connections
 }
 
 type clientObj struct {
@@ -58,6 +60,7 @@ var Matchmaker = &Hub{
 
 func handleConnections(w http.ResponseWriter, r *http.Request) {
 	// Upgrade initial GET request to a WebSocket
+
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println(err)
