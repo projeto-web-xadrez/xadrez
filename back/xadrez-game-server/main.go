@@ -9,6 +9,7 @@ import (
 	"xadrez-game-server/gamelogic"
 	"xadrez-game-server/internalgrpc"
 
+	"github.com/corentings/chess/v2"
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
@@ -48,6 +49,7 @@ func handlePlayerConnection(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+
 	gamelogic.HandleNewClient(ws)
 }
 
@@ -69,6 +71,7 @@ func main() {
 	}
 	if WSPlayerPath == "" {
 		WSPlayerPath = DEFAULT_WS_PLAYER_PATH
+
 	}
 
 	go func() {
