@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Chess, Square } from 'chess.js'
+import { Chess, Move, Square } from 'chess.js'
 import PieceComponent from './PieceComponent';
 import SquareMoveHighlightComponent from './SquareMoveHighlightComponent';
 import SquareLastMoveComponent from './SquareLastMoveComponent';
@@ -62,7 +62,7 @@ const regeneratePieces = (chess: Chess, perspective: string) => {
 
 interface BoardProps {
     gameState: any;
-    sendMove: (s1: Square, s2: Square, move: string) => void;
+    sendMove: (move: Move) => void;
     chessBoard: React.RefObject<Chess>;
 }
 
@@ -119,10 +119,12 @@ function Board({ sendMove, gameState, chessBoard }: BoardProps) {
         const square: Square = element.dataset.square as Square;
 
         if (type === 'highlight') {
-            const squareFrom: Square = element.dataset.squareFrom as Square;
-            const move = element.dataset.move as string;
+            const move = chessBoard.current.moves({
+                verbose: true,
+                square: element.dataset['square-from'] as Square
+            }).find(m => m.san === element.dataset.move) as Move;
             setCurrentHighlights([]);
-            sendMove(squareFrom, square, move);
+            sendMove(move);
             return;
         }
 
@@ -141,10 +143,7 @@ function Board({ sendMove, gameState, chessBoard }: BoardProps) {
             const highlights = chessBoard.current.moves({ square, verbose: true }).map(
                 move => SquareMoveHighlightComponent({
                     key: id++,
-                    squareFrom: move.from,
-                    squareTo: move.to,
-                    move: move.san,
-                    isCapture: move.isCapture(),
+                    move,
                     ...getRelativePositionBySquare(move.to, gameState.color),
                     height: 50,
                     width: 50
