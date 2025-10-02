@@ -12,7 +12,7 @@ type InitMessage struct {
 
 type WelcomeContextMessage struct {
 	RoomID     string `json:"room_id"`
-	Color      uint8  `json:"color"`
+	Color      string `json:"color"`
 	OpponentID string `json:"opponent_id"`
 	GameFEN    string `json:"game_fen"`
 	LastMoveS1 string `json:"last_move_s1"`

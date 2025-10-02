@@ -92,7 +92,7 @@ func HandleNewClient(ws *websocket.Conn) {
 
 			if msg.Type == "quit" {
 				ws.Close()
-				break
+				return
 			}
 
 			err := ws.WriteJSON(msg)
@@ -100,31 +100,17 @@ func HandleNewClient(ws *websocket.Conn) {
 				player.Mutex.Lock()
 				defer player.Mutex.Unlock()
 				if ws != player.Connection {
-					break
+					return
 				}
 
 				player.Connected = false
 				ws.Close()
-				break
+				return
 			}
 		}
 	}()
 
 	player.Mutex.Unlock()
-
-	defer func() {
-		player.Mutex.Lock()
-		player.Connected = false
-		ws.Close()
-		WSSend <- Message{
-			Type: "quit",
-			Data: "",
-		}
-		player.Connection = nil
-		player.Mutex.Unlock()
-	}()
-
-	room.Mutex.Lock()
 
 	var opponent *Player
 	if room.Players[0].ID == player.ID {
@@ -133,9 +119,43 @@ func HandleNewClient(ws *websocket.Conn) {
 		opponent = room.Players[0]
 	}
 
+	defer func() {
+		player.Mutex.Lock()
+		player.Connected = false
+		WSSend <- Message{
+			Type: "quit",
+			Data: "",
+		}
+		player.Connection = nil
+		player.Mutex.Unlock()
+
+		room.Mutex.Lock()
+		if room.Status == GameEnded {
+			time.Sleep(2 * time.Second)
+			*opponent.WSSend <- Message{
+				Type: "quit",
+				Data: "",
+			}
+
+			time.Sleep(1 * time.Second)
+
+			playersMutex.Lock()
+			delete(players, player.ID)
+			delete(players, opponent.ID)
+			playersMutex.Unlock()
+
+			roomsMutex.Lock()
+			delete(rooms, room.RoomID)
+			roomsMutex.Unlock()
+		}
+		room.Mutex.Unlock()
+	}()
+
+	room.Mutex.Lock()
+
 	welcomeMessage := WelcomeContextMessage{
 		RoomID:     room.RoomID,
-		Color:      player.Color.String()[0],
+		Color:      player.Color.String(),
 		OpponentID: opponent.ID,
 		GameFEN:    room.Game.FEN(),
 		LastMoveS1: room.LastMoveS1.String(),
@@ -165,12 +185,11 @@ func HandleNewClient(ws *websocket.Conn) {
 
 		if both_connected {
 			room.Status = GameStarted
-			if opponent.Connected {
-				WSSend <- Message{
-					Type: "game_started",
-					Data: "",
-				}
+			*opponent.WSSend <- Message{
+				Type: "game_started",
+				Data: "",
 			}
+
 			WSSend <- Message{
 				Type: "game_started",
 				Data: "",
@@ -206,10 +225,13 @@ func HandleNewClient(ws *websocket.Conn) {
 		}
 		*opponent.WSSend <- msg
 		WSSend <- msg
+
+		// Wait 2 seconds so the message can reach the player
+		time.Sleep(2 * time.Second)
 	}
 
 	for {
-		err = ws.ReadJSON(msg)
+		err = ws.ReadJSON(&msg)
 		if err != nil {
 			var jsonErr *json.SyntaxError
 			if errors.As(err, &jsonErr) {
@@ -218,18 +240,20 @@ func HandleNewClient(ws *websocket.Conn) {
 			ws.Close()
 			return
 		}
-
 		switch msg.Type {
 		case "player_moved":
 			var moveMsg PlayerMovedMessage
 			err = json.Unmarshal([]byte(msg.Data), &moveMsg)
 			if err != nil || room.Status != GameStarted {
-				opponentWin() // Malformed message, opponent must win
+				if room.Status != GameEnded {
+					opponentWin() // Malformed message, opponent must win
+				}
 				return
 			}
 
 			if len(moveMsg.MoveS1) != 2 || len(moveMsg.MoveS2) != 2 {
 				opponentWin() // Malformed move, opponent must win
+				time.Sleep(2 * time.Second)
 				return
 			}
 
@@ -246,7 +270,7 @@ func HandleNewClient(ws *websocket.Conn) {
 				opponentWin() // Not his turn, opponent must win
 				return
 			}
-
+			room.Game.ValidMoves()
 			err = room.Game.PushNotationMove(moveMsg.MoveNotation, chess.AlgebraicNotation{}, nil)
 			if err != nil {
 				opponentWin() // Invalid move, opponent must win
@@ -286,6 +310,8 @@ func HandleNewClient(ws *websocket.Conn) {
 				room.Status = GameEnded
 
 				room.Mutex.Unlock()
+				// Wait 2 seconds so the message can reach the player
+				time.Sleep(2 * time.Second)
 				return
 			}
 

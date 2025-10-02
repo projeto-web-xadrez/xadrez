@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { Chess, Color, Square } from 'chess.js'
+import { useState } from 'react';
+import { Chess, Square } from 'chess.js'
 import PieceComponent from './PieceComponent';
 import SquareMoveHighlightComponent from './SquareMoveHighlightComponent';
 import SquareLastMoveComponent from './SquareLastMoveComponent';
@@ -60,100 +60,49 @@ const regeneratePieces = (chess: Chess, perspective: string) => {
     return pieces;
 }
 
-interface props {
-    wsRef: React.RefObject<WebSocket>;
-    lastMessage: any;
-    perspectiveColor: Color;
-    isPlayerTurn: boolean;
+interface BoardProps {
+    gameState: any;
+    sendMove: (s1: Square, s2: Square, move: string) => void;
+    chessBoard: React.RefObject<Chess>;
 }
 
-function Board({ wsRef, lastMessage, perspectiveColor, isPlayerTurn }: props) {
-    const ws = wsRef.current
+function Board({ sendMove, gameState, chessBoard }: BoardProps) {
     const style: React.CSSProperties = {
         width: '400px',
         height: '400px'
     };
 
-    const [chessBoard, setChessBoard] = React.useState<Chess>(new Chess('1nbqkb1r/1pp1pppp/r4n2/p2P4/8/PP1P4/2P2PPP/RNBQKBNR b KQk - 0 5'));
-    const [playerColor, setPlayerColor] = React.useState<string>('b');
-    const [currentHighlights, setCurrentHighlights] = React.useState<Array<any>>([]);
-    const [currentPieces, setCurrentPieces] = React.useState<Array<any>>(regeneratePieces(chessBoard, playerColor));
-    const [lastMoves, setLastMoves] = React.useState<Array<any>>([]);
-    const [checkedKing, setCheckedKing] = React.useState<any>(null);
-    const [pendingMove, setPendingMove] = React.useState<{ from: Square, to: Square, move: string; newPlayerColor: Color }>({
-        from: "a1",
-        to: "a1",
-        move: "",
-        newPlayerColor: 'b'
+    const [currentHighlights, setCurrentHighlights] = useState<Array<any>>([]);
+
+    const currentPieces = regeneratePieces(chessBoard.current, gameState.color);
+    const lastMoves = chessBoard.current.moveNumber() === 1 ? [] : [SquareLastMoveComponent({
+        key: 0,
+        color: 'rgba(155,199,0,.41)',
+        height: 50,
+        width: 50,
+        ...getRelativePositionBySquare(gameState.last_move_s1, gameState.color)
+    }),
+    SquareLastMoveComponent({
+        key: 1,
+        color: 'rgba(155,199,0,.41)',
+        height: 50,
+        width: 50,
+        ...getRelativePositionBySquare(gameState.last_move_s2, gameState.color)
     })
+    ]
 
-    useEffect(() => {
-        if (!lastMessage) return
-        const json_obj = JSON.parse(lastMessage)
-        if (json_obj["type"] != "moveValidation") return;
-
-        console.log("useEff: starting update move")
-        const { from, to, move, newPlayerColor } = pendingMove;
-        // TODO: remover console.log
-        console.log('\n' + chessBoard.ascii())
-        console.log(chessBoard.fen())
-
-        // aplica highlight na posicao anterior e na nova posição da peça movida pelo adversário
-        setLastMoves(
-            [SquareLastMoveComponent({
-                key: 0,
-                color: 'rgba(155,199,0,.41)',
-                height: 50,
-                width: 50,
-                ...getRelativePositionBySquare(from, newPlayerColor)
-            }),
-            SquareLastMoveComponent({
-                key: 1,
-                color: 'rgba(155,199,0,.41)',
-                height: 50,
-                width: 50,
-                ...getRelativePositionBySquare(to, newPlayerColor)
-            })
-            ]
-        );
-
-        if (move.endsWith('+') || move.endsWith('#')) {
-            const enemyKingSquare = chessBoard.findPiece({
-                color: newPlayerColor,
+    const checkedKing = chessBoard.current.isCheck() ?
+        SquareCheckedKingComponent({
+            key: 0,
+            color: 'rgba(199,0,0,.61)',
+            height: 50,
+            width: 50,
+            ...getRelativePositionBySquare(chessBoard.current.findPiece({
+                color: chessBoard.current.turn(),
                 type: 'k'
-            })[0];
-
-            setCheckedKing(SquareCheckedKingComponent({
-                key: 0,
-                color: 'rgba(199,0,0,.61)',
-                height: 50,
-                width: 50,
-                ...getRelativePositionBySquare(enemyKingSquare, newPlayerColor)
-            }));
-        } else setCheckedKing(null);
-
-        setChessBoard(chessBoard);
-        const newPieces = regeneratePieces(chessBoard, newPlayerColor);
-        setCurrentPieces(newPieces);
-
-    }, [lastMessage]) // passa dependencia para useeffect só atualizar com base nas dependencias
-
-    const performMove = (squareFrom: Square, squareTo: Square, move: string) => {
-        // TODO: remover esta linha (apenas para fins de testes)
-        const newPlayerColor = playerColor === 'w' ? 'w' : 'b';
-        setPlayerColor(perspectiveColor);
-        setCurrentHighlights([]);
-
-        // Mover com o "move" pode ser ambíguo, melhor mover com squares (from e to)
-        //chessBoard.move(move);
-        setPendingMove({ "from": squareFrom, "to": squareTo, "move": move, "newPlayerColor": newPlayerColor })
-        chessBoard.move({
-            from: squareFrom,
-            to: squareTo
-        });
-
-        ws.send(JSON.stringify({ 'type': 'tryMove', 'data': { 'from': squareFrom, 'to': squareTo, 'fen': chessBoard.fen(), 'key': 4949 } }))
-    }
+            })[0], gameState.color)
+        })
+        : null;
 
     const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!(e.target instanceof HTMLImageElement))
@@ -172,65 +121,36 @@ function Board({ wsRef, lastMessage, perspectiveColor, isPlayerTurn }: props) {
         if (type === 'highlight') {
             const squareFrom: Square = element.dataset.squareFrom as Square;
             const move = element.dataset.move as string;
-
-            /*
-            // Acredito que não seja mais necessário (agora que utilizamos squares para mover, nunca será ambíguo)
-            // Isto é para assegurar que o lance não é ambíguo válido
-            // Exemplo: nd7 neste FEN: "1nbqkb1r/1pp1pppp/r4n2/p2P4/8/PP1P4/2P2PPP/RNBQKBNR b KQk - 0 5"
-            // Não tenho certeza se quebra algum outro lance, acredito que não, mas deve ser testado
-            let newMove = move;
-            if(!newMove.startsWith('O-O')) // Caso não seja roque
-                newMove = 
-                    (move.startsWith(squareFrom) ? 'p' : move[0]) + squareFrom + (move.includes('x') ? 'x' : '') + square
-                    + (move.endsWith('+') || move.endsWith('#') ? move.slice(-1) : '');*/
-
-            performMove(squareFrom, square, move);
+            setCurrentHighlights([]);
+            sendMove(squareFrom, square, move);
             return;
         }
 
         if (type === 'piece') {
-            console.log(`Element data set color: ${element.dataset.color} and playerColor ${playerColor}`)
-            if (element.dataset.color !== playerColor || !isPlayerTurn) {
-                console.log("Movement cancelled")
+            if (element.dataset.color !== gameState.color || (gameState.color !== chessBoard.current.turn())) {
+                setCurrentHighlights([]);
+                return;
+            }
+
+            if(currentHighlights.length != 0 && currentHighlights[0].props['data-square-from'] === element.dataset.square) {
                 setCurrentHighlights([]);
                 return;
             }
 
             let id = 0;
-            console.log("Highlighting from ", square)
-            const highlights = chessBoard.moves({ square }).map(
-                move => {
-                    const isCheck = ['#', '+'].includes(move.slice(-1));
-
-                    let moveSquare: Square;
-                    if (['O-O', 'O-O-O', 'O-O+', 'O-O-O+'].includes(move)) {
-                        const column = move.startsWith('O-O-') ? 'c' : 'g';
-                        const row = playerColor === 'w' ? '1' : '8';
-                        moveSquare = (column + row) as Square;
-                    } else moveSquare =
-                        (isCheck ? move.slice(-3).slice(0, -1) // Lance com xeque (elimina último caractere)
-                            : move.slice(-2).toLowerCase()) as Square;
-
-                    const pieceAtMoveSquare = chessBoard.get(moveSquare);
-                    const isCapture =
-                        pieceAtMoveSquare !== undefined // Captura comum
-                        || (element.dataset.piece === 'p' && move.includes('x')); // En passant 
-
-                    return SquareMoveHighlightComponent({
-                        key: id++,
-                        square: moveSquare,
-                        squareFrom: square,
-                        move,
-                        isCapture,
-                        ...getRelativePositionBySquare(moveSquare, playerColor),
-                        height: 50,
-                        width: 50
-                    })
-
-                }
+            const highlights = chessBoard.current.moves({ square, verbose: true }).map(
+                move => SquareMoveHighlightComponent({
+                    key: id++,
+                    squareFrom: move.from,
+                    squareTo: move.to,
+                    move: move.san,
+                    isCapture: move.isCapture(),
+                    ...getRelativePositionBySquare(move.to, gameState.color),
+                    height: 50,
+                    width: 50
+                })
             );
             setCurrentHighlights(highlights);
-
             return;
         }
     };

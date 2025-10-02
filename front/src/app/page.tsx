@@ -1,87 +1,103 @@
 'use client';
 
-import { useEffect, createContext, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import BoardComponent from './components/BoardComponent';
-import { Color } from "chess.js";
+import { Chess, Square } from 'chess.js'
 
 export default function Home() {
 
   const socketRef = useRef<WebSocket>(null!)
-  const [isPlayerTurn, setPlayerTurn] = useState(false)
-  const [playerColor, setPlayerColor] = useState<Color>("b")
-  const [lastMsg, setLastMsg] = useState(JSON.stringify({ "type": "test" }))
   const [isPlaying, setIsPlaying] = useState(false)
-  const [socketState, setSocketState] = useState("CONNECTING");
+  const [gameState, setGameState] = useState<any>({
+    'fen': 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+  });
+  const chessBoard = useRef<Chess>(new Chess(gameState.game_fen));
 
-  const readyStateMap: Record<number, string> = {
-    0: "CONNECTING",
-    1: "OPEN",
-    2: "CLOSING",
-    3: "CLOSED",
-  };
+  const startGame = (playerId: string) => {
+    if (socketRef.current && ![WebSocket.CLOSED, WebSocket.CLOSING as number].includes(socketRef.current.readyState))
+      socketRef.current.close();
+    socketRef.current = new WebSocket("ws://localhost:8082/ws");
 
-  useEffect(() => {
-    // Criar socket só uma vez
-    const socket = new WebSocket("ws://localhost:8082/ws");
+    socketRef.current.onmessage = e => {
+      const msg = JSON.parse(e.data);
 
-    socket.onopen = () => {
-      console.log("Conectado ao servidor!");
-      // make a request to play the game
-    };
+      if (msg.type === 'welcome') {
+        const gameState = JSON.parse(msg.data);
+        setGameState(gameState);
+        chessBoard.current = new Chess(gameState.game_fen)
+      } else if (msg.type === 'game_started') alert("game started")
+      else if (msg.type === 'game_ended') alert(`game ended, winner: ${JSON.parse(msg.data).winner_id}`)
+      else if (msg.type === 'player_moved') {
+        const data = JSON.parse(msg.data);
 
-    socket.onmessage = (event) => {
-      console.log("Evento recebido: " + event.data);
-      if (event.data.type == "moveValidation") {
-        setLastMsg(event.data)
-        setPlayerTurn(event.data.turn)
+        chessBoard.current.move({
+          from: data.move_s1,
+          to: data.move_s2
+        })
+
+        setGameState((prev: any) => ({
+          ...prev,
+          last_move_s1: data.move_s1,
+          last_move_s2: data.move_s2,
+          fen: chessBoard.current.fen()
+        }));
       }
-      if (event.data.type == "startGame") {
-        setPlayerColor(event.data.data.color)
-        setPlayerTurn(event.data.data.turn)
-        setIsPlaying(true)
-      }
+    }
 
-      if (event.data.type == "endGame") {
-        setIsPlaying(false)
-      }
-    };
+    socketRef.current.onerror = e => console.error(`Error: ${e}`);
+    socketRef.current.onopen = () => {
+      setIsPlaying(true);
+      socketRef.current.send(JSON.stringify(
+        {
+          "type": "init",
+          "data": JSON.stringify({
+            "room_id": "",
+            "player_id": playerId
+          })
+        }
+      ))
+    }
 
-    socket.onerror = (err) => {
-      console.log("Erro no WebSocket:", err);
-    };
+    socketRef.current.onclose = () => console.log("socket closed")
+  }
 
-    socket.onclose = () => {
-      console.log("Conexão fechada!");
-    };
+  const sendMove = (s1: Square, s2: Square, move: string) => {
+    chessBoard.current.move({
+      from: s1,
+      to: s2
+    });
 
-    socketRef.current = socket
+    setGameState((prev: any) => ({
+      ...prev,
+      last_move_s1: s1,
+      last_move_s2: s2,
+      fen: chessBoard.current.fen()
+    }))
 
-    const interval = setInterval(() => {
-      if (socketRef.current) {
-        setSocketState(readyStateMap[socketRef.current.readyState]);
-      }
-    }, 500);
+    socketRef.current.send(JSON.stringify({
+      'type': 'player_moved', 'data': JSON.stringify({
+        'move_s1': s1,
+        'move_s2': s2,
+        'move_notation': move
+      })
+    }));
 
-    return () => {
-      clearInterval(interval);
-      socket.close();
-    };
-  }, []);
+  }
 
   return (
     <div className="main">
 
       {!isPlaying ? (
         <>
-        <h1>{socketState} - Waiting for game to start</h1>
-        <button id="request-game" hidden={isPlaying} onClick={() => setIsPlaying(true)}>Request match</button>
+          <button id="request-game" onClick={() => setIsPlaying(true)}>Request match</button>
+          <button onClick={() => startGame(`CLIENT 1`)}> Join as P1</button>
+          <button onClick={() => startGame(`CLIENT 2`)}> Join as P2</button>
         </>
       ) : (
         <BoardComponent
-          wsRef={socketRef}
-          lastMessage={lastMsg}
-          perspectiveColor={playerColor}
-          isPlayerTurn={isPlayerTurn}
+          chessBoard={chessBoard}
+          gameState={gameState}
+          sendMove={sendMove}
         />
       )}
     </div>
