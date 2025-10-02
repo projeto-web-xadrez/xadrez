@@ -2,205 +2,99 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
-	"sync"
-	"time"
-	grpc_server "xadrez-game-server/game_server_grpc"
+	"os"
+	"xadrez-game-server/gamelogic"
+	"xadrez-game-server/internalgrpc"
 
 	"github.com/corentings/chess/v2"
 	"github.com/gorilla/websocket"
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )
 
+const DEFAULT_GRPC_ADDRESS = "localhost:9191"
+const DEFAULT_WS_PLAYER_ADDRESS = "localhost:8082"
+const DEFAULT_WS_PLAYER_PATH = "/ws"
+
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true }, // Allow all connections
+	ReadBufferSize:  1024 * 8,                                   // Incoming messages are capped at 8 KB
+	WriteBufferSize: 1024 * 8,                                   // Outcoming messsages are capped at 8 KB
+	CheckOrigin:     func(r *http.Request) bool { return true }, // Allow all connections
 }
 
-type Message struct {
-	Type string                 `json:"type"`
-	Data map[string]interface{} `json:"data"`
+type InternalServer struct {
+	internalgrpc.UnimplementedInternalServer
 }
 
-// É um map de salas
-type Hub struct {
-	rooms map[string]*Room
-	mu    sync.RWMutex
+func (s *InternalServer) RequestRoom(ctx context.Context, req *internalgrpc.RequestRoomMessage) (*internalgrpc.RoomResponse, error) {
+	room, err := gamelogic.CreateNewRoom(req.PlayerId_1, req.PlayerId_2)
+	if err != nil {
+		error_msg := err.Error()
+		return &internalgrpc.RoomResponse{
+			RoomId:   "",
+			ErrorMsg: &error_msg,
+		}, nil
+	}
+
+	return &internalgrpc.RoomResponse{
+		RoomId: room.RoomID,
+	}, nil
 }
 
-// Contendo o que cada sala possui. Um id montado por client1_client2
-// Lista de clientes que estão ali
-type Room struct {
-	state   string
-	RoomId  string
-	clients map[string]*Client // clientid -> *Client
-	chess   *chess.Game
-	mu      sync.RWMutex
-}
-
-// O channel é utilizado para evitar problemas com concorrencia
-type Client struct {
-	connected bool
-	channel   chan Message
-	color     string
-	id        string
-}
-
-// Matchmaker pra gerenciar as salas abertas
-var Matchmaker = &Hub{
-	rooms: make(map[string]*Room),
-}
-
-func handleConnections(w http.ResponseWriter, r *http.Request) {
-	// Upgrade initial GET request to a WebSocket
+func handlePlayerConnection(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer ws.Close()
-
-	fmt.Printf("\nClient connected")
-
-	// Fetch query do cliente
-	parameters := r.URL.Query()
-	clientId := parameters.Get("clientId")
-	roomId := parameters.Get("roomId")
-
-	// Cria o cliente
-
-	client := Client{
-		connected: true,
-		channel:   make(chan Message),
-		color:     "b",
-		id:        clientId,
-	}
-
-	current_room := Matchmaker.rooms[roomId]
-	// Adiciona o cliente na sala
-
-	// Verifica a existência da Room
-	if current_room == nil {
 		return
 	}
 
-	current_room.clients[client.id] = &client
-
-	// TODO: analisar se o cara foi desconectado e dar um tempo pra ele voltar
-	// por enquanto podemos cancelar a partida
-
-	/* if len(current_room.clients) == 2 {
-		// Podemos iniciar a partida
-		generic_message := Message{
-			Type: "startGame",
-			Data: make(map[string]interface{}),
-		}
-
-		sent_first := false
-
-		for key, _ := range current_room.clients {
-			if !sent_first {
-				generic_message.Data["cor"] = "b"
-				key.send <- generic_message
-				sent_first = true
-			} else {
-				generic_message.Data["cor"] = "w"
-				key.send <- generic_message
-			}
-		}
-	} */
-
-	for {
-		// Read message from browser
-		var obj Message
-		err := ws.ReadJSON(&obj)
-		if err != nil {
-			//log.fatal (esse lixo encerra o programa)
-			return
-		}
-
-		switch obj.Type {
-		case "tryMove":
-			response := map[string]interface{}{
-				"type": "moveValidation",
-				"from": obj.Data["from"],
-				"to":   obj.Data["to"],
-			}
-
-			responseBytes, err := json.Marshal(response)
-			if err != nil {
-				fmt.Printf("error encoding json file %v", err)
-				break
-			}
-
-			// sem a go routine vamos bloquear a leitura de outras instancias por causa do delay 1, dps acho q da pra tirar
-			go func(resp []byte) {
-				time.Sleep(1 * time.Second)
-				if err := ws.WriteMessage(websocket.TextMessage, responseBytes); err != nil {
-					fmt.Println("write error", err)
-				}
-			}(responseBytes)
-
-			break
-		default:
-			break
-		}
-	}
-}
-
-type GameServer struct {
-	grpc_server.UnimplementedGameServerServer
-	//RequestRoom(context.Context, *RequestRoomMessage) (*Room, error)
-	//mustEmbedUnimplementedGameServerServer()
-}
-
-func (s *GameServer) RequestRoom(ctx context.Context, req *grpc_server.RequestRoomMessage) (*grpc_server.Room, error) {
-	fmt.Printf("Room was requested for %s & %s", req.ClientId_1, req.ClientId_2)
-
-	room := Room{
-		"WaitingPlayers",
-		req.ClientId_1 + "_" + req.ClientId_2 + "_room",
-		make(map[string]*Client),
-		chess.NewGame(),
-		sync.RWMutex{},
-	}
-
-	fmt.Println(room.chess.Position().Board().Draw())
-
-	// Adiciona a room no matchmaker
-	Matchmaker.rooms[req.ClientId_1+"_"+req.ClientId_2+"_room"] = &room
-
-	// Sala criada no grpc
-	room2 := grpc_server.Room{
-		RoomId: req.ClientId_1 + "_" + req.ClientId_2 + "_room",
-	}
-
-	return &room2, nil
+	gamelogic.HandleNewClient(ws)
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		print("Couldn't load .env file, using default values.\n")
+	}
+
+	grpcAddress := os.Getenv("GRPC_ADDRESS")
+	WSPlayerAddress := os.Getenv("WS_PLAYER_ADDRESS")
+	WSPlayerPath := os.Getenv("WS_PLAYER_PATH")
+
+	if grpcAddress == "" {
+		grpcAddress = DEFAULT_GRPC_ADDRESS
+	}
+	if WSPlayerAddress == "" {
+		WSPlayerAddress = DEFAULT_WS_PLAYER_ADDRESS
+	}
+	if WSPlayerPath == "" {
+		WSPlayerPath = DEFAULT_WS_PLAYER_PATH
+
+	}
+
 	go func() {
-		grpc_listener, err := net.Listen("tcp", "localhost:9191")
+		grpcListener, err := net.Listen("tcp", grpcAddress)
 		if err != nil {
-			panic("Couldn't start GRPC server")
+			panic(err)
 		}
 
 		server := grpc.NewServer()
-		grpc_server.RegisterGameServerServer(server, &GameServer{})
-		server.Serve(grpc_listener)
+		internalgrpc.RegisterInternalServer(server, &InternalServer{})
+		fmt.Printf("GRPC internal server listening at %s\n", grpcAddress)
+		err = server.Serve(grpcListener)
+		if err != nil {
+			panic(err)
+		}
 	}()
 
-	http.HandleFunc("/ws", handleConnections)
+	http.HandleFunc(WSPlayerPath, handlePlayerConnection)
 
-	// Esse websocket vai lidar com os moveValidations
-	fmt.Printf("Started listening at 8082\n")
-	err := http.ListenAndServe("localhost:8082", nil)
+	fmt.Printf("WS player server listening at %s\n", WSPlayerAddress)
+	err = http.ListenAndServe(WSPlayerAddress, nil)
 	if err != nil {
-		fmt.Printf("Found an error %v", err)
-		return
+		panic(err)
 	}
 
-	fmt.Println("Hello world")
 }

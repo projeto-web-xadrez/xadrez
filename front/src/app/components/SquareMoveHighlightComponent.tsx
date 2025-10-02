@@ -7,7 +7,7 @@ interface PieceSettings {
     relativeY: number,
     width: number,
     height: number,
-    square: Square,
+    squareTo: Square,
     squareFrom: Square,
     isCapture: boolean,
     move: string
@@ -24,7 +24,7 @@ function SquareMoveHighlightComponent(props: PieceSettings) {
     }
 
     return (
-        <img src='transparent.png' style={styles} data-square={props.square} data-square-from={props.squareFrom} data-move={props.move} data-type='highlight' key={props.key} />
+        <img src='transparent.png' style={styles} data-square={props.squareTo} data-square-from={props.squareFrom} data-move={props.move} data-type='highlight' key={props.key} />
     );
 }
 

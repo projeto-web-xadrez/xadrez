@@ -29,3 +29,8 @@ build-game-server:
 	mkdir -p ${OUT_PATH}
 	cd ${GAME_SERVER_DIRECTORY} && go build -o ${OUT_PATH}/${GAME_SERVER_DIRECTORY}
 
+.PHONY: gen-grpc
+gen-grpc:
+	cd ${GAME_SERVER_DIRECTORY} && protoc --go_out=. --go-grpc_out=. -I.. ../proto/*.proto
+	cd ${API_DIRECTORY} && protoc --go_out=. --go-grpc_out=. -I.. ../proto/*.proto
+

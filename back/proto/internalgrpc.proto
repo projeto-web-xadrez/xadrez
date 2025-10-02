@@ -1,0 +1,16 @@
+syntax = "proto3";
+option go_package = "./internalgrpc";
+
+message RequestRoomMessage {
+    string player_id_1 = 1;
+    string player_id_2 = 2;
+}
+
+message RoomResponse {
+    string room_id = 1;
+    optional string error_msg = 2;
+}
+
+service Internal {
+    rpc RequestRoom(RequestRoomMessage) returns (RoomResponse) {}
+}

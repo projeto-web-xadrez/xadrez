@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"sync"
 	"time"
-	grpc_server "xadrez-api/game_server_grpc"
+	"xadrez-api/internalgrpc"
 
 	"github.com/gorilla/websocket"
 	"google.golang.org/grpc"
 )
 
-var grpc_game_server_conn grpc_server.GameServerClient
+var internal_grpc_conn internalgrpc.InternalClient
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true }, // Allow all connections
@@ -32,7 +32,6 @@ var queue = make([]clientObj, 0)
 func enqueue(element clientObj) {
 	queue = append(queue, element) // Simply append to enqueue.
 	fmt.Println("Enqueued:", element)
-	return
 }
 
 func dequeue() clientObj {
@@ -74,10 +73,10 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 				defer cancel()
 
-				room, err := grpc_game_server_conn.RequestRoom(ctx,
-					&grpc_server.RequestRoomMessage{
-						ClientId_1: dequeue().id,
-						ClientId_2: dequeue().id,
+				room, err := internal_grpc_conn.RequestRoom(ctx,
+					&internalgrpc.RequestRoomMessage{
+						PlayerId_1: dequeue().id,
+						PlayerId_2: dequeue().id,
 					})
 
 				if err != nil {
@@ -92,18 +91,23 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 }
 
 func testing() {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	room, err := grpc_game_server_conn.RequestRoom(ctx,
-		&grpc_server.RequestRoomMessage{
-			ClientId_1: "CLIENT 1",
-			ClientId_2: "CLIENT 2",
+	room, err := internal_grpc_conn.RequestRoom(ctx,
+		&internalgrpc.RequestRoomMessage{
+			PlayerId_1: "CLIENT 1",
+			PlayerId_2: "CLIENT 2",
 		})
 
 	if err != nil {
 		fmt.Printf("%v", err)
 		panic("Error acquiring a room")
+	}
+
+	if room.ErrorMsg != nil {
+		println("Error: ", *room.ErrorMsg)
+		return
 	}
 
 	println("Room: " + room.RoomId)
@@ -117,7 +121,7 @@ func main() {
 	}
 
 	defer conn.Close()
-	grpc_game_server_conn = grpc_server.NewGameServerClient(conn)
+	internal_grpc_conn = internalgrpc.NewInternalClient(conn)
 
 	testing()
 
