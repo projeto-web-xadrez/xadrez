@@ -11,6 +11,25 @@ import SquarePieceHighlightComponent from './SquarePieceHighlightComponent';
 const DEFAULT_BOARD_BG = 'board_bg/maple.jpg'
 const DEFAULT_PIECE_STYLE = 'merida'; //cburnett
 
+const getMoveHighlightSquare = (move: Move): Square => {
+    if(!move.isPromotion())
+        return move.to;
+
+    const piece = move.promotion as 'q' | 'b' | 'n' | 'r';
+    const offset = {
+        'q': 0,
+        'b': 1,
+        'n': 2,
+        'r': 3
+    }[piece];
+
+    const row = (move.to.charCodeAt(1) - '0'.charCodeAt(0)) 
+                + (move.color === 'b' ? offset : -offset);
+    
+    const newSquare = move.to[0] + row as Square;
+    return newSquare;
+}
+
 const getRelativePositionBySquare = (square: Square, perspective: string) => {
     let column = square.charCodeAt(0) - ('a'.charCodeAt(0));
     let row = 7 - (square.charCodeAt(1) - ('1'.charCodeAt(0)));
@@ -150,9 +169,10 @@ function Board({ sendMove, gameState, chessBoard }: BoardProps) {
                 move => SquareMoveHighlightComponent({
                     key: id++,
                     move,
-                    ...getRelativePositionBySquare(move.to, gameState.color),
+                    ...getRelativePositionBySquare(getMoveHighlightSquare(move), gameState.color),
                     height: 50,
-                    width: 50
+                    width: 50,
+                    pieceStyle: DEFAULT_PIECE_STYLE
                 })
             );
 

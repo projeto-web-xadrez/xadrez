@@ -72,10 +72,7 @@ export default function Home() {
   }
 
   const sendMove = (move: Move) => {
-    chessBoard.current.move({
-      from: move.from,
-      to: move.to
-    });
+    chessBoard.current.move(move);
 
     setGameState((prev: any) => ({
       ...prev,
