@@ -6,6 +6,7 @@ import PieceComponent from './PieceComponent';
 import SquareMoveHighlightComponent from './SquareMoveHighlightComponent';
 import SquareLastMoveComponent from './SquareLastMoveComponent';
 import SquareCheckedKingComponent from './SquareCheckedKingComponent';
+import SquarePieceHighlightComponent from './SquarePieceHighlightComponent';
 
 const DEFAULT_BOARD_BG = 'board_bg/maple.jpg'
 const DEFAULT_PIECE_STYLE = 'merida'; //cburnett
@@ -73,6 +74,7 @@ function Board({ sendMove, gameState, chessBoard }: BoardProps) {
     };
 
     const [currentHighlights, setCurrentHighlights] = useState<Array<any>>([]);
+    const [pieceHighlighted, setPieceHighlighted] = useState<any>(null);
 
     const currentPieces = regeneratePieces(chessBoard.current, gameState.color);
     const lastMoves = chessBoard.current.moveNumber() === 1 ? [] : [SquareLastMoveComponent({
@@ -113,6 +115,7 @@ function Board({ sendMove, gameState, chessBoard }: BoardProps) {
 
         if (!type || type === 'board' || !element.dataset.square) {
             setCurrentHighlights([]);
+            setPieceHighlighted(null);
             return;
         }
 
@@ -124,6 +127,7 @@ function Board({ sendMove, gameState, chessBoard }: BoardProps) {
                 square: element.dataset['square-from'] as Square
             }).find(m => m.san === element.dataset.move) as Move;
             setCurrentHighlights([]);
+            setPieceHighlighted(null);
             sendMove(move);
             return;
         }
@@ -131,11 +135,13 @@ function Board({ sendMove, gameState, chessBoard }: BoardProps) {
         if (type === 'piece') {
             if (element.dataset.color !== gameState.color || (gameState.color !== chessBoard.current.turn())) {
                 setCurrentHighlights([]);
+                setPieceHighlighted(null);
                 return;
             }
 
-            if(currentHighlights.length != 0 && currentHighlights[0].props['data-square-from'] === element.dataset.square) {
+            if (currentHighlights.length != 0 && currentHighlights[0].props['data-square-from'] === element.dataset.square) {
                 setCurrentHighlights([]);
+                setPieceHighlighted(null);
                 return;
             }
 
@@ -149,7 +155,14 @@ function Board({ sendMove, gameState, chessBoard }: BoardProps) {
                     width: 50
                 })
             );
+
             setCurrentHighlights(highlights);
+            setPieceHighlighted(SquarePieceHighlightComponent({
+                ...getRelativePositionBySquare(square, gameState.color),
+                height: 50,
+                width: 50,
+            }));
+
             return;
         }
     };
@@ -168,6 +181,7 @@ function Board({ sendMove, gameState, chessBoard }: BoardProps) {
             {lastMoves}
             {currentPieces}
             {currentHighlights}
+            {pieceHighlighted}
             {checkedKing}
         </div>
     );
