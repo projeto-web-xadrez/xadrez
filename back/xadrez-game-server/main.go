@@ -9,6 +9,7 @@ import (
 	"xadrez-game-server/gamelogic"
 	"xadrez-game-server/internalgrpc"
 
+	"github.com/corentings/chess/v2"
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"

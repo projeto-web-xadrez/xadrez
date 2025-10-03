@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import BoardComponent from './components/BoardComponent';
 import { Chess, Move } from 'chess.js'
-
+import SoundPlayerComponent, { SoundPlayerHandle } from './components/SoundPlayerComponent';
 
 export default function Home() {
-
+  
+  const soundRef = useRef<SoundPlayerHandle>(null);
   const socketRef = useRef<WebSocket>(null!)
   const [isPlaying, setIsPlaying] = useState(false)
   const [gameState, setGameState] = useState<any>({
@@ -27,7 +28,9 @@ export default function Home() {
         setGameState(gameState);
         chessBoard.current = new Chess(gameState.game_fen)
       } else if (msg.type === 'game_started') alert('game started')
-      else if (msg.type === 'game_ended') alert(`game ended, winner: ${JSON.parse(msg.data).winner_id}`)
+      else if (msg.type === 'game_ended') {
+        soundRef.current?.playSound('sounds/GameEnd.mp3');
+      }
       else if (msg.type === 'player_moved') {
         const data = JSON.parse(msg.data);
 
@@ -45,7 +48,9 @@ export default function Home() {
           fen: chessBoard.current.fen()
         }));
 
-        playMoveSound(move);
+        const soundFile = move.isCapture() ?
+          'sounds/Capture.mp3' : 'sounds/Move.mp3';
+        soundRef.current?.playSound(soundFile);
       }
     }
 
@@ -64,18 +69,6 @@ export default function Home() {
     }
 
     socketRef.current.onclose = () => console.log('socket closed');
-  }
-
-  const [audioSrc, setAudioSrc] = useState<string>();
-
-  const audioRef = useRef<any>(null);
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-
-  const playMoveSound = (move: Move) => {
-    const soundFile = move.isCapture() ?
-      'sounds/Capture.mp3' : 'sounds/Move.mp3';
-    setAudioSrc(soundFile);
-    setIsPlayingAudio(true);
   }
 
   const sendMove = (move: Move) => {
@@ -99,32 +92,23 @@ export default function Home() {
       })
     }));
 
-    playMoveSound(move);
-
+    const soundFile = move.isCapture() ?
+      'sounds/Capture.mp3' : 'sounds/Move.mp3';
+    soundRef.current?.playSound(soundFile);
   }
-
-
-
-  useEffect(() => {
-    if (audioRef.current) {
-      if (isPlayingAudio)
-        audioRef.current.play();
-      else audioRef.current.pause();
-    }
-  }, [isPlayingAudio]);
 
   return (
     <div className='main'>
 
       {!isPlaying ? (
         <>
-          <button id='request-game' onClick={() => setIsPlayingAudio(true)}>Request match</button>
+
           <button onClick={() => startGame(`CLIENT 1`)}> Join as P1</button>
           <button onClick={() => startGame(`CLIENT 2`)}> Join as P2</button>
         </>
       ) : (
         <>
-          <audio ref={audioRef} src={audioSrc} onEnded={() => setIsPlayingAudio(false)} />
+          <SoundPlayerComponent minDelayBetweenSounds={50} ref={soundRef} />
           <BoardComponent
             chessBoard={chessBoard}
             gameState={gameState}
