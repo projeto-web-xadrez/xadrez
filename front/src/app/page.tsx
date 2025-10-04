@@ -2,7 +2,8 @@
 
 import { useRef, useState } from 'react';
 import BoardComponent from './components/BoardComponent';
-import { Chess, Move } from 'chess.js'
+import Login from "./components/LoginComponent";
+import { Chess, Square, Move } from 'chess.js'
 import SoundPlayerComponent, { SoundPlayerHandle } from './components/SoundPlayerComponent';
 
 export default function Home() {
