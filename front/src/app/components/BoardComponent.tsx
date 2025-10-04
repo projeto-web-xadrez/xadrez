@@ -67,6 +67,7 @@ interface BoardProps {
 }
 
 function Board({ sendMove, gameState, chessBoard }: BoardProps) {
+    console.log('called')
     const style: React.CSSProperties = {
         width: '400px',
         height: '400px'
