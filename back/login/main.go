@@ -141,10 +141,30 @@ func protectedRoute(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("You accessed the protected route."))
 }
 
+// Funcao de teste; retirado daqui: https://www.stackhawk.com/blog/golang-cors-guide-what-it-is-and-how-to-enable-it/#h-what-is-cors
+// TODO: permitir apenas requisições que vierem da pagina de login e register??
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
-	http.HandleFunc("/login", login)
-	http.HandleFunc("/register", register)
-	http.HandleFunc("/logout", logout)
-	http.HandleFunc("/protected", protectedRoute)
-	http.ListenAndServe("localhost:8085", nil)
+	// mux ~= router
+	mux := http.NewServeMux()
+	mux.HandleFunc("/login", login)
+	mux.HandleFunc("/register", register)
+	mux.HandleFunc("/logout", logout)
+	mux.HandleFunc("/protected", protectedRoute)
+
+	handler := corsMiddleware(mux)
+
+	http.ListenAndServe("localhost:8085", handler)
 }

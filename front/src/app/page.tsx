@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import BoardComponent from './components/BoardComponent';
+import Login from "./components/LoginComponent";
 import { Chess, Square } from 'chess.js'
 
 export default function Home() {
@@ -86,8 +87,8 @@ export default function Home() {
 
   return (
     <div className="main">
-
-      {!isPlaying ? (
+      <Login/>
+      {/* {!isPlaying ? (
         <>
           <button id="request-game" onClick={() => setIsPlaying(true)}>Request match</button>
           <button onClick={() => startGame(`CLIENT 1`)}> Join as P1</button>
@@ -99,7 +100,7 @@ export default function Home() {
           gameState={gameState}
           sendMove={sendMove}
         />
-      )}
+      )} */}
     </div>
   );
 }
