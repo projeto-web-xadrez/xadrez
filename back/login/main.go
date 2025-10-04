@@ -38,7 +38,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 	// Cria o token
 	if result := compPass(password, hashedPass); result {
-		fmt.Printf("User logged in successfully")
+		fmt.Println("User logged in successfully")
 		token := genToken(32)
 		csrfToken := genToken(32)
 
@@ -91,7 +91,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 			HashedPassword: result,
 		}
 
-		fmt.Printf("User registered successfully")
+		fmt.Println("User registered successfully")
 		if _, e := w.Write([]byte("User registered")); e != nil {
 			err := http.StatusInternalServerError
 			http.Error(w, "Failed to respond to register", err)
@@ -101,9 +101,11 @@ func register(w http.ResponseWriter, r *http.Request) {
 }
 
 func logout(w http.ResponseWriter, r *http.Request) {
-	if err := Authorize(r); err != nil {
-		fmt.Print(err.Error())
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	username := r.FormValue("username")
+	if user, ok := users[username]; ok {
+		user.CSRFTToken = ""
+		user.Token = ""
+		users[username] = user
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -119,17 +121,30 @@ func logout(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Now().Add(-time.Hour),
 		HttpOnly: false,
 	})
+	fmt.Println("Logout completed successfully")
+}
 
-	username := r.FormValue("username")
-	current_user := users[username]
-	current_user.CSRFTToken = ""
-	current_user.Token = ""
-	users[username] = current_user
+func protectedRoute(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		// throw method not allowed error
+		err := http.StatusMethodNotAllowed
+		http.Error(w, "Invalid Method", err)
+		return
+	}
+
+	if err := Authorize(r); err != nil {
+		fmt.Println(err.Error())
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	w.Write([]byte("You accessed the protected route."))
 }
 
 func main() {
 	http.HandleFunc("/login", login)
 	http.HandleFunc("/register", register)
 	http.HandleFunc("/logout", logout)
+	http.HandleFunc("/protected", protectedRoute)
 	http.ListenAndServe("localhost:8085", nil)
 }

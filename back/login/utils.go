@@ -18,7 +18,7 @@ type AuthError struct {
 }
 
 func (r *AuthError) Error() string {
-	return fmt.Sprintf("status %d err %v", r.StatusCode, r.Err)
+	return fmt.Sprintf("\nstatus %d err %v\n", r.StatusCode, r.Err)
 }
 
 func hashPass(password string) (string, error) {
@@ -51,7 +51,7 @@ func Authorize(r *http.Request) error {
 	}
 
 	session_token, err := r.Cookie("session_token")
-
+	//fmt.Println("Expected %s : got %s", user.Token, session_token.Value)
 	// Identifica quando o token não é valido ou se houve algum erro para pega-lo
 	if err != nil || session_token.Value == "" || session_token.Value != user.Token {
 		return &AuthError{
