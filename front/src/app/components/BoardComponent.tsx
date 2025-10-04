@@ -1,14 +1,34 @@
 'use client';
 
 import { useState } from 'react';
-import { Chess, Square } from 'chess.js'
+import { Chess, Move, Square } from 'chess.js'
 import PieceComponent from './PieceComponent';
 import SquareMoveHighlightComponent from './SquareMoveHighlightComponent';
 import SquareLastMoveComponent from './SquareLastMoveComponent';
 import SquareCheckedKingComponent from './SquareCheckedKingComponent';
+import SquarePieceHighlightComponent from './SquarePieceHighlightComponent';
 
 const DEFAULT_BOARD_BG = 'board_bg/maple.jpg'
 const DEFAULT_PIECE_STYLE = 'merida'; //cburnett
+
+const getMoveHighlightSquare = (move: Move): Square => {
+    if(!move.isPromotion())
+        return move.to;
+
+    const piece = move.promotion as 'q' | 'b' | 'n' | 'r';
+    const offset = {
+        'q': 0,
+        'b': 1,
+        'n': 2,
+        'r': 3
+    }[piece];
+
+    const row = (move.to.charCodeAt(1) - '0'.charCodeAt(0)) 
+                + (move.color === 'b' ? offset : -offset);
+    
+    const newSquare = move.to[0] + row as Square;
+    return newSquare;
+}
 
 const getRelativePositionBySquare = (square: Square, perspective: string) => {
     let column = square.charCodeAt(0) - ('a'.charCodeAt(0));
@@ -62,7 +82,7 @@ const regeneratePieces = (chess: Chess, perspective: string) => {
 
 interface BoardProps {
     gameState: any;
-    sendMove: (s1: Square, s2: Square, move: string) => void;
+    sendMove: (move: Move) => void;
     chessBoard: React.RefObject<Chess>;
 }
 
@@ -73,6 +93,7 @@ function Board({ sendMove, gameState, chessBoard }: BoardProps) {
     };
 
     const [currentHighlights, setCurrentHighlights] = useState<Array<any>>([]);
+    const [pieceHighlighted, setPieceHighlighted] = useState<any>(null);
 
     const currentPieces = regeneratePieces(chessBoard.current, gameState.color);
     const lastMoves = chessBoard.current.moveNumber() === 1 ? [] : [SquareLastMoveComponent({
@@ -113,27 +134,33 @@ function Board({ sendMove, gameState, chessBoard }: BoardProps) {
 
         if (!type || type === 'board' || !element.dataset.square) {
             setCurrentHighlights([]);
+            setPieceHighlighted(null);
             return;
         }
 
         const square: Square = element.dataset.square as Square;
 
         if (type === 'highlight') {
-            const squareFrom: Square = element.dataset.squareFrom as Square;
-            const move = element.dataset.move as string;
+            const move = chessBoard.current.moves({
+                verbose: true,
+                square: element.dataset['square-from'] as Square
+            }).find(m => m.san === element.dataset.move) as Move;
             setCurrentHighlights([]);
-            sendMove(squareFrom, square, move);
+            setPieceHighlighted(null);
+            sendMove(move);
             return;
         }
 
         if (type === 'piece') {
             if (element.dataset.color !== gameState.color || (gameState.color !== chessBoard.current.turn())) {
                 setCurrentHighlights([]);
+                setPieceHighlighted(null);
                 return;
             }
 
-            if(currentHighlights.length != 0 && currentHighlights[0].props['data-square-from'] === element.dataset.square) {
+            if (currentHighlights.length != 0 && currentHighlights[0].props['data-square-from'] === element.dataset.square) {
                 setCurrentHighlights([]);
+                setPieceHighlighted(null);
                 return;
             }
 
@@ -141,16 +168,21 @@ function Board({ sendMove, gameState, chessBoard }: BoardProps) {
             const highlights = chessBoard.current.moves({ square, verbose: true }).map(
                 move => SquareMoveHighlightComponent({
                     key: id++,
-                    squareFrom: move.from,
-                    squareTo: move.to,
-                    move: move.san,
-                    isCapture: move.isCapture(),
-                    ...getRelativePositionBySquare(move.to, gameState.color),
+                    move,
+                    ...getRelativePositionBySquare(getMoveHighlightSquare(move), gameState.color),
                     height: 50,
-                    width: 50
+                    width: 50,
+                    pieceStyle: DEFAULT_PIECE_STYLE
                 })
             );
+
             setCurrentHighlights(highlights);
+            setPieceHighlighted(SquarePieceHighlightComponent({
+                ...getRelativePositionBySquare(square, gameState.color),
+                height: 50,
+                width: 50,
+            }));
+
             return;
         }
     };
@@ -169,6 +201,7 @@ function Board({ sendMove, gameState, chessBoard }: BoardProps) {
             {lastMoves}
             {currentPieces}
             {currentHighlights}
+            {pieceHighlighted}
             {checkedKing}
         </div>
     );
