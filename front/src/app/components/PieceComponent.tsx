@@ -1,7 +1,7 @@
 import React from 'react';
 import { Color, PieceSymbol, Square } from 'chess.js'
 
-interface PieceSettings {
+interface Props {
     key: number,
     relativeX: number,
     relativeY: number,
@@ -13,13 +13,14 @@ interface PieceSettings {
     color: Color
 };
 
-function PieceComponent(props: PieceSettings) {
+function PieceComponent(props: Props) {
     const styles: React.CSSProperties = {
         transform: `translate(${props.relativeX}px, ${props.relativeY}px)`,
         width: props.width,
         height: props.height,
         zIndex: 2,
         position: 'absolute',
+        cursor: 'grab'
     }
 
     const pieceColorType: string = `${props.color}${props.type.toUpperCase()}`;
