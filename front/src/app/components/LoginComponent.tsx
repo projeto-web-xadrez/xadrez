@@ -13,22 +13,25 @@ function Login() {
         // faz o request para a rota de login ou registro
         e.preventDefault() // evita q a pagina recarregue
         if(username == "" || password == "") return
-        const obj = {
-            username: username,
-            password: password
-        }
+
+        const body_obj = new FormData()
+        body_obj.append("username", username)
+        body_obj.append("password", password)
     
         fetch("http://localhost:8085/login", {
             method: "POST",
             headers: {
                 //"Content-Type": "Application/JSON"
             },
-            body: JSON.stringify(obj)
+            body: body_obj
+        })
+        .then((response) => {
+            console.log(response)
         }) 
     };
 
-    const [username, setUsername] = useState<string>();
-    const [password, setPassword] = useState<string>();
+    const [username, setUsername] = useState<string>("");
+    const [password, setPassword] = useState<string>("");
     return (
         <div id='login'>
             <form onSubmit={handleClick}>
@@ -45,9 +48,8 @@ function Login() {
                     }} />
                 </div>
                 <button id='submit-login' type='submit'>Enter</button>
-
             </form>
-
+            <p id="login-response"></p>
         </div>
     );
 }
