@@ -96,7 +96,8 @@ export default function Home() {
   }
 
   return (
-    <div className='main'>
+    <Login/>
+    /*{ <div className='main'>
 
       {!isPlaying ? (
         <>
@@ -114,6 +115,6 @@ export default function Home() {
           />
         </>
       )}
-    </div>
+    </div> }*/
   );
 }
