@@ -168,5 +168,6 @@ func main() {
 
 	handler := corsMiddleware(mux)
 
+	fmt.Println("Login server started listening at 8085")
 	http.ListenAndServe("localhost:8085", handler)
 }
