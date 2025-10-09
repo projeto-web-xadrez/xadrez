@@ -1,16 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import '../styles/login-styles.css'
+import '../styles/register-styles.css'
 
 const style: React.CSSProperties = {
     backgroundColor: 'WHITE',
 
 
 };
-function Login() {
+export default function Register() {
     const handleClick = (e: React.MouseEvent<HTMLFormElement>) => {
-        // faz o request para a rota de login ou registro
+        // faz o request para a rota de register ou registro
         e.preventDefault() // evita q a pagina recarregue
         if(username == "" || password == "") return
 
@@ -18,7 +18,7 @@ function Login() {
         body_obj.append("username", username)
         body_obj.append("password", password)
     
-        fetch("http://localhost:8085/login", {
+        fetch("http://localhost:8085/register", {
             method: "POST",
             headers: {
                 //"Content-Type": "Application/JSON"
@@ -34,7 +34,7 @@ function Login() {
     const [username, setUsername] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     return (
-        <div id='login'>
+        <div id='register'>
             <form onSubmit={handleClick}>
                 <div id='username-div'>
                     <label htmlFor="username-field">Username</label>
@@ -48,13 +48,9 @@ function Login() {
                         setPassword(e.target.value)
                     }} />
                 </div>
-                <button id='submit-login' type='submit'>Enter</button>
+                <button id='submit-register' type='submit'>Enter</button>
             </form>
-            <p id="login-response"></p>
+            <p id="register-response"></p>
         </div>
     );
 }
-
-
-
-export default Login;

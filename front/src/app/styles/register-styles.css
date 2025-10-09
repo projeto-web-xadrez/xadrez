@@ -1,0 +1,58 @@
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+/* Container do login */
+#register {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* ocupa a tela inteira verticalmente */
+    background-color: #f5f5f5;
+}
+
+/* Form */
+#register form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* espaçamento entre campos */
+    padding: 30px;
+    border: 1px solid #000;
+    border-radius: 8px;
+    background-color: #fff;
+    color: #000;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Labels */
+#register label {
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: black;
+    margin-right: 5%;
+}
+
+/* Inputs */
+#register input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* Botão */
+#submit-register {
+    padding: 10px;
+    background-color: #1ae2b0;
+    color: #070606;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#submit-register:hover {
+    background-color: #333;
+}
