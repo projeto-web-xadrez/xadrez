@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import '../styles/register-styles.css'
+import { useRouter } from 'next/navigation';
 
 const style: React.CSSProperties = {
     backgroundColor: 'WHITE',
-
-
 };
+
 export default function Register() {
+    const router = useRouter();
     const handleClick = (e: React.MouseEvent<HTMLFormElement>) => {
         // faz o request para a rota de register ou registro
         e.preventDefault() // evita q a pagina recarregue
@@ -18,6 +19,8 @@ export default function Register() {
         body_obj.append("username", username)
         body_obj.append("password", password)
     
+        localStorage.setItem("username", username); 
+
         fetch("http://localhost:8085/register", {
             method: "POST",
             headers: {
@@ -27,7 +30,9 @@ export default function Register() {
             body: body_obj
         })
         .then((response) => {
-            console.log(response)
+            if(response.status != 200)
+                alert(response.statusText);
+            else router.push('/dashboard');
         }) 
     };
 

@@ -3,12 +3,14 @@
 import Cookies from 'js-cookie';
 import { useEffect, useRef, useState } from 'react';
 import BoardComponent from '../components/BoardComponent';
-import { Chess, Square, Move } from 'chess.js'
-import { useRouter } from 'next/navigation'
+import { Chess, Square, Move } from 'chess.js';
+import { useRouter } from 'next/navigation';
 import SoundPlayerComponent, { SoundPlayerHandle } from '../components/SoundPlayerComponent';
 
 export default function Home() {
-  const Router = useRouter()
+  const router = useRouter()
+
+  const [isAuthenticated, setAuthenticated] = useState(false);
   const soundRef = useRef<SoundPlayerHandle>(null);
   const socketRef = useRef<WebSocket>(null!)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -17,6 +19,19 @@ export default function Home() {
   });
   const chessBoard = useRef<Chess>(new Chess(gameState.game_fen));
 
+  useEffect(() => {
+    const csrf = Cookies.get('csrf_token');
+    if(!csrf) {
+      router.push('/');
+      return
+    }
+
+    setAuthenticated(true);
+  }, [isAuthenticated, router])
+
+  if (!isAuthenticated)
+    return null;
+  
   const startGame = (playerId: string) => {
     if (socketRef.current && ![WebSocket.CLOSED, WebSocket.CLOSING as number].includes(socketRef.current.readyState))
       socketRef.current.close();
@@ -96,13 +111,6 @@ export default function Home() {
     soundRef.current?.playSound(soundFile);
   }
 
-  useEffect(() => {
-    const csrf = Cookies.get("csrf_token")
-    if(!csrf) {
-      Router.push('/')
-      return
-    } 
-  }, [])
 
   return (
     <div className='main'>

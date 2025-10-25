@@ -86,18 +86,46 @@ func register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	password := r.FormValue("password")
-	if result, err := hashPass(password); err == nil {
-		users[username] = Login{
-			HashedPassword: result,
-		}
+	result, err := hashPass(password)
 
-		fmt.Println("User registered successfully")
-		if _, e := w.Write([]byte("User registered")); e != nil {
-			err := http.StatusInternalServerError
-			http.Error(w, "Failed to respond to register", err)
-		}
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
 	}
 
+	users[username] = Login{
+		HashedPassword: result,
+	}
+
+	fmt.Println("User registered successfully")
+
+	token := genToken(32)
+	csrfToken := genToken(32)
+
+	current_user := users[username]
+	current_user.Token = token
+	current_user.CSRFTToken = csrfToken
+	users[username] = current_user
+
+	// seta o token no navegador
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    token,
+		Expires:  time.Now().Add(24 * time.Hour),
+		HttpOnly: true,
+	})
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "csrf_token",
+		Value:    csrfToken,
+		Expires:  time.Now().Add(24 * time.Hour),
+		HttpOnly: false, // garante que só aquele site vai conseguir ler e enviar o token no header
+	})
+
+	if _, e := w.Write([]byte("User registered")); e != nil {
+		err := http.StatusInternalServerError
+		http.Error(w, "Failed to respond to register", err)
+	}
 }
 
 func logout(w http.ResponseWriter, r *http.Request) {

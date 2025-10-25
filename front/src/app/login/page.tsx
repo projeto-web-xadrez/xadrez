@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import '../styles/login-styles.css'
+import { useRouter } from 'next/navigation';
+import '../styles/login-styles.css';
+
 
 const style: React.CSSProperties = {
     backgroundColor: 'WHITE',
@@ -9,6 +11,8 @@ const style: React.CSSProperties = {
 
 };
 export default function Login() {
+    const router = useRouter();
+
     const handleClick = (e: React.MouseEvent<HTMLFormElement>) => {
         // faz o request para a rota de login ou registro
         e.preventDefault() // evita q a pagina recarregue
@@ -17,8 +21,6 @@ export default function Login() {
         const body_obj = new FormData()
         body_obj.append("username", username)
         body_obj.append("password", password)
-
-        localStorage.setItem("username", username); 
     
         fetch("http://localhost:8085/login", {
             method: "POST",
@@ -29,8 +31,10 @@ export default function Login() {
             body: body_obj
         })
         .then((response) => {
-            console.log(response)
-        })
+            if(response.status === 200)
+                router.push('/dashboard');
+            else alert(response.statusText);
+        });
         
     };
 
