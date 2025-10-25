@@ -17,6 +17,8 @@ export default function Login() {
         const body_obj = new FormData()
         body_obj.append("username", username)
         body_obj.append("password", password)
+
+        localStorage.setItem("username", username); 
     
         fetch("http://localhost:8085/login", {
             method: "POST",
@@ -28,7 +30,8 @@ export default function Login() {
         })
         .then((response) => {
             console.log(response)
-        }) 
+        })
+        
     };
 
     const [username, setUsername] = useState<string>("");

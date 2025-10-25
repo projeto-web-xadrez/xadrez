@@ -1,12 +1,14 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import Cookies from 'js-cookie';
+import { useEffect, useRef, useState } from 'react';
 import BoardComponent from '../components/BoardComponent';
 import { Chess, Square, Move } from 'chess.js'
+import { useRouter } from 'next/navigation'
 import SoundPlayerComponent, { SoundPlayerHandle } from '../components/SoundPlayerComponent';
 
 export default function Home() {
-  
+  const Router = useRouter()
   const soundRef = useRef<SoundPlayerHandle>(null);
   const socketRef = useRef<WebSocket>(null!)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -93,6 +95,14 @@ export default function Home() {
       'sounds/Capture.mp3' : 'sounds/Move.mp3';
     soundRef.current?.playSound(soundFile);
   }
+
+  useEffect(() => {
+    const csrf = Cookies.get("csrf_token")
+    if(!csrf) {
+      Router.push('/')
+      return
+    } 
+  }, [])
 
   return (
     <div className='main'>
