@@ -30,12 +30,15 @@ export default function Login() {
             credentials: 'include',
             body: body_obj
         })
-        .then((response) => {
-            if(response.status === 200)
+        .then(async (response) => {
+            if(response.status === 200) {
+                const data = await response.json()
+                localStorage.setItem("clientId", data.data.clientId)
                 router.push('/dashboard');
+            }
+                
             else alert(response.statusText);
-        });
-        
+        })        
     };
 
     const [username, setUsername] = useState<string>("");

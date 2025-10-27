@@ -51,6 +51,7 @@ func HandleNewClient(ws *websocket.Conn) {
 	var msg Message
 	err := ws.ReadJSON(&msg)
 	if err != nil || msg.Type != "init" {
+		println("Mensagem inicial diferente de init ou erro identificado")
 		return
 	}
 
@@ -67,6 +68,7 @@ func HandleNewClient(ws *websocket.Conn) {
 
 	player.Mutex.Lock()
 	// TODO: enviar mensagem "você se conectou por outra tab"
+	println("Se conectou por outra aba")
 	(*player.WSSend) <- Message{
 		Type: "quit",
 		Data: "",
@@ -75,6 +77,7 @@ func HandleNewClient(ws *websocket.Conn) {
 	room := player.Room
 	if room == nil {
 		// TODO: enviar mensagem "você não está em nenhuma sala"
+		println("Sala nao existe")
 		ws.Close()
 		player.Connection = nil
 		return

@@ -46,6 +46,7 @@ export default function Home() {
         chessBoard.current = new Chess(gameState.game_fen)
       } else if (msg.type === 'game_started') alert('game started')
       else if (msg.type === 'game_ended') {
+        console.log(msg)
         soundRef.current?.playSound('sounds/GameEnd.mp3');
       }
       else if (msg.type === 'player_moved') {
@@ -112,6 +113,17 @@ export default function Home() {
   }
 
 
+  function sendInvalidMove() {
+    console.log("mandando mov invalido para o servidor")
+    socketRef.current.send(JSON.stringify({
+      'type': 'player_moved', 'data': JSON.stringify({
+        'move_s1': "eee2",
+        'move_s2': "eee4",
+        'move_notation': "lixo"
+      })
+    }));
+  }
+
   return (
     <div className='main'>
 
@@ -129,6 +141,8 @@ export default function Home() {
             gameState={gameState}
             sendMove={sendMove}
           />
+
+          <button onClick={sendInvalidMove}>Finalizar Partida com move invalido</button>
         </>
       )}
     </div> 
