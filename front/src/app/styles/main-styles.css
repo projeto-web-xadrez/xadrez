@@ -1,0 +1,37 @@
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+
+/* Botão */
+#sign-in {
+    padding: 10px;
+    background-color: #1ae2b0;
+    color: #070606;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#sign-in:hover {
+    background-color: #333;
+}
+
+
+/* Botão */
+#sign-up {
+    padding: 10px;
+    background-color: #1ae2b0;
+    color: #070606;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#sign-up:hover {
+    background-color: #333;
+}

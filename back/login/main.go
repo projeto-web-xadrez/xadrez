@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -9,10 +10,16 @@ import (
 // NAO PRECISAMOS IMPORTAR MANUALMENTE SE OS ARQUIVOS ESTIVEREM NO MESMO DIRETÓRIO
 // E COM O MESMO PACKAGE NO TOPO
 
+type dataObj struct {
+	Type string                 `json:"type"`
+	Data map[string]interface{} `json:"data"`
+}
+
 type Login struct {
 	HashedPassword string
 	Token          string
 	CSRFTToken     string
+	ClientId       string
 }
 
 // Estrutura básica antes de adicionar a db. user -> {Login}
@@ -61,7 +68,17 @@ func login(w http.ResponseWriter, r *http.Request) {
 			HttpOnly: false, // garante que só aquele site vai conseguir ler e enviar o token no header
 		})
 
-		if _, e := w.Write([]byte("User logged in")); e != nil {
+		var result dataObj
+		result.Type = "result"
+		result.Data = make(map[string]interface{})
+		result.Data["clientId"] = current_user.ClientId
+		result.Data["serverResponse"] = "Successfully logged in"
+
+		jsonData, _ := json.Marshal(result)
+
+		w.Header().Set("Content-Type", "application/json")
+
+		if _, e := w.Write([]byte(jsonData)); e != nil {
 			err := http.StatusInternalServerError
 			http.Error(w, "Failed to respond to login", err)
 		}
@@ -86,18 +103,58 @@ func register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	password := r.FormValue("password")
-	if result, err := hashPass(password); err == nil {
-		users[username] = Login{
-			HashedPassword: result,
-		}
+	result, err := hashPass(password)
 
-		fmt.Println("User registered successfully")
-		if _, e := w.Write([]byte("User registered")); e != nil {
-			err := http.StatusInternalServerError
-			http.Error(w, "Failed to respond to register", err)
-		}
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
 	}
 
+	users[username] = Login{
+		HashedPassword: result,
+	}
+
+	fmt.Println("User registered successfully")
+
+	token := genToken(32)
+	csrfToken := genToken(32)
+	clientId := genToken(16)
+
+	current_user := users[username]
+	current_user.Token = token
+	current_user.CSRFTToken = csrfToken
+	current_user.ClientId = clientId
+	users[username] = current_user
+
+	// seta o token no navegador
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    token,
+		Expires:  time.Now().Add(24 * time.Hour),
+		HttpOnly: true,
+	})
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "csrf_token",
+		Value:    csrfToken,
+		Expires:  time.Now().Add(24 * time.Hour),
+		HttpOnly: false, // garante que só aquele site vai conseguir ler e enviar o token no header
+	})
+
+	var final_result dataObj
+	final_result.Type = "result"
+	final_result.Data = make(map[string]interface{})
+	final_result.Data["clientId"] = clientId
+	final_result.Data["serverResponse"] = "User registered"
+
+	jsonData, _ := json.Marshal(final_result)
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if _, e := w.Write([]byte(jsonData)); e != nil {
+		err := http.StatusInternalServerError
+		http.Error(w, "Failed to respond to register", err)
+	}
 }
 
 func logout(w http.ResponseWriter, r *http.Request) {
@@ -141,15 +198,27 @@ func protectedRoute(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("You accessed the protected route."))
 }
 
+var allowedOrigins = map[string]bool{
+	"http://localhost:3000": true,
+	"http://localhost:3001": true,
+}
+
 // Funcao de teste; retirado daqui: https://www.stackhawk.com/blog/golang-cors-guide-what-it-is-and-how-to-enable-it/#h-what-is-cors
 // TODO: permitir apenas requisições que vierem da pagina de login e register??
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		origin := r.Header.Get("Origin")
+		if allowedOrigins[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		}
+		/* w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		// credentials para o client aceitar os cookies
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Allow-Credentials", "true") */
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return

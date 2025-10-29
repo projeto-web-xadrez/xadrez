@@ -1,14 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import '../styles/login-styles.css'
+import { useRouter } from 'next/navigation';
+import '../styles/login-styles.css';
+
 
 const style: React.CSSProperties = {
     backgroundColor: 'WHITE',
 
 
 };
-function Login() {
+export default function Login() {
+    const router = useRouter();
+
     const handleClick = (e: React.MouseEvent<HTMLFormElement>) => {
         // faz o request para a rota de login ou registro
         e.preventDefault() // evita q a pagina recarregue
@@ -26,9 +30,15 @@ function Login() {
             credentials: 'include',
             body: body_obj
         })
-        .then((response) => {
-            console.log(response)
-        }) 
+        .then(async (response) => {
+            if(response.status === 200) {
+                const data = await response.json()
+                localStorage.setItem("clientId", data.data.clientId)
+                router.push('/dashboard');
+            }
+                
+            else alert(response.statusText);
+        })        
     };
 
     const [username, setUsername] = useState<string>("");
@@ -54,7 +64,3 @@ function Login() {
         </div>
     );
 }
-
-
-
-export default Login;

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
@@ -25,6 +26,7 @@ type dataObj struct {
 
 type clientObj struct {
 	id string
+	ws *websocket.Conn
 }
 
 var queue = make([]clientObj, 0)
@@ -53,12 +55,13 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer ws.Close()
-
+	fmt.Println("Client conectado")
 	for {
 		// Read message from browser
 		var obj dataObj
 		err := ws.ReadJSON(&obj)
 		if err != nil {
+			fmt.Println(err)
 			//log.fatal (esse lixo encerra o programa)
 			return
 		}
@@ -67,23 +70,53 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			var client clientObj
 			// TODO: olhar como fazer isso aqui direito kkkk
 			client.id = obj.Data["id"].(string)
+			client.ws = ws
+
 			enqueue(client)
 
 			if len(queue) >= 2 {
 				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 				defer cancel()
 
+				var client1 clientObj
+				client1 = dequeue()
+
+				var client2 clientObj
+				client2 = dequeue()
+
 				room, err := internal_grpc_conn.RequestRoom(ctx,
 					&internalgrpc.RequestRoomMessage{
-						PlayerId_1: dequeue().id,
-						PlayerId_2: dequeue().id,
+						PlayerId_1: client1.id,
+						PlayerId_2: client2.id,
 					})
 
 				if err != nil {
 					panic("Error acquiring a room")
 				}
 
-				w.Write([]byte(room.RoomId))
+				if room.ErrorMsg != nil {
+					println("Error: ", *room.ErrorMsg)
+					return
+				}
+
+				println("Room: " + room.RoomId)
+
+				matchFoundObj := dataObj{
+					Type: "matchFound",
+					Data: map[string]interface{}{
+						"roomId": room.RoomId,
+					},
+				}
+
+				jsonObj, _ := json.Marshal(matchFoundObj)
+
+				if err := client1.ws.WriteMessage(websocket.TextMessage, jsonObj); err != nil {
+					fmt.Println("Falha ao enviar a sala para o client1")
+				}
+
+				if err := client2.ws.WriteMessage(websocket.TextMessage, jsonObj); err != nil {
+					fmt.Println("Falha ao enviar a sala para o client1")
+				}
 			}
 
 		}
