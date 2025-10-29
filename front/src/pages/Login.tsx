@@ -1,8 +1,8 @@
-'use client';
+//'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import '../styles/login-styles.css';
+import { useNavigate } from 'react-router-dom';
 
 
 const style: React.CSSProperties = {
@@ -11,7 +11,7 @@ const style: React.CSSProperties = {
 
 };
 export default function Login() {
-    const router = useRouter();
+    const navigate = useNavigate();
 
     const handleClick = (e: React.MouseEvent<HTMLFormElement>) => {
         // faz o request para a rota de login ou registro
@@ -34,7 +34,7 @@ export default function Login() {
             if(response.status === 200) {
                 const data = await response.json()
                 localStorage.setItem("clientId", data.data.clientId)
-                router.push('/dashboard');
+                navigate('/dashboard');
             }
                 
             else alert(response.statusText);

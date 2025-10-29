@@ -2,14 +2,14 @@
 
 import { useState } from 'react';
 import '../styles/register-styles.css'
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 
 const style: React.CSSProperties = {
     backgroundColor: 'WHITE',
 };
 
 export default function Register() {
-    const router = useRouter();
+    const navigate = useNavigate();
     const handleClick = (e: React.MouseEvent<HTMLFormElement>) => {
         // faz o request para a rota de register ou registro
         e.preventDefault() // evita q a pagina recarregue
@@ -18,8 +18,6 @@ export default function Register() {
         const body_obj = new FormData()
         body_obj.append("username", username)
         body_obj.append("password", password)
-    
-        localStorage.setItem("username", username); 
 
         fetch("http://localhost:8085/register", {
             method: "POST",
@@ -29,14 +27,10 @@ export default function Register() {
             credentials: 'include',
             body: body_obj
         })
-        .then(async (response) => {
+        .then((response) => {
             if(response.status != 200)
                 alert(response.statusText);
-            else {
-                const data = await response.json()
-                localStorage.setItem("clientId", data.data.clientId)
-                router.push('/dashboard')
-            };
+            else navigate('/dashboard');
         }) 
     };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Color, PieceSymbol, Square } from 'chess.js'
+import { type Color, type PieceSymbol, type Square } from 'chess.js'
 
 interface Props {
     key: number,

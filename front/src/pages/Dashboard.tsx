@@ -4,12 +4,12 @@ import Cookies from 'js-cookie';
 import { useEffect, useRef, useState } from 'react';
 import BoardComponent from '../components/BoardComponent';
 import GameEndedComponent from '../components/GameEndedComponent';
-import { Chess, Square, Move } from 'chess.js';
-import { useRouter } from 'next/navigation';
-import SoundPlayerComponent, { SoundPlayerHandle } from '../components/SoundPlayerComponent';
+import { Chess, type Square, Move } from 'chess.js';
+import SoundPlayerComponent, { type SoundPlayerHandle } from '../components/SoundPlayerComponent';
+import { useNavigate } from 'react-router-dom';
 
 export default function Home() {
-  const router = useRouter()
+  const navigate = useNavigate();
 
   const [isAuthenticated, setAuthenticated] = useState(false);
   const soundRef = useRef<SoundPlayerHandle>(null);
@@ -28,12 +28,12 @@ export default function Home() {
   useEffect(() => {
     const csrf = Cookies.get('csrf_token');
     if(!csrf) {
-      router.push('/');
+      navigate('/login');
       return
     }
 
     setAuthenticated(true);
-  }, [isAuthenticated, router])
+  }, [isAuthenticated])
 
   if (!isAuthenticated)
     return null;

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Move, Square } from 'chess.js'
 
 interface Props {
     relativeX: number,

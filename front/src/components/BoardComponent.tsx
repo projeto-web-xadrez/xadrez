@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Chess, Move, Square } from 'chess.js'
+import { Chess, Move, type Square } from 'chess.js'
 import PieceComponent from './PieceComponent';
 import SquareMoveHighlightComponent from './SquareMoveHighlightComponent';
 import SquareLastMoveComponent from './SquareLastMoveComponent';
@@ -12,7 +12,7 @@ const DEFAULT_BOARD_BG = 'board_bg/maple.jpg'
 const DEFAULT_PIECE_STYLE = 'merida'; //cburnett
 
 const getMoveHighlightSquare = (move: Move): Square => {
-    if(!move.isPromotion())
+    if (!move.isPromotion())
         return move.to;
 
     const piece = move.promotion as 'q' | 'b' | 'n' | 'r';
@@ -23,9 +23,9 @@ const getMoveHighlightSquare = (move: Move): Square => {
         'r': 3
     }[piece];
 
-    const row = (move.to.charCodeAt(1) - '0'.charCodeAt(0)) 
-                + (move.color === 'b' ? offset : -offset);
-    
+    const row = (move.to.charCodeAt(1) - '0'.charCodeAt(0))
+        + (move.color === 'b' ? offset : -offset);
+
     const newSquare = move.to[0] + row as Square;
     return newSquare;
 }
@@ -64,15 +64,17 @@ const regeneratePieces = (chess: Chess, perspective: string) => {
                     j : 7 - j;
 
             pieces.push(
-                PieceComponent({
-                    key: id++,
-                    pieceStyle: DEFAULT_PIECE_STYLE,
-                    relativeX: 50 * perspectiveColumn,
-                    relativeY: 50 * perspectiveRow,
-                    width: 50,
-                    height: 50,
-                    ...square
-                })
+                <PieceComponent
+                    {...{
+                        key: id++,
+                        pieceStyle: DEFAULT_PIECE_STYLE,
+                        relativeX: 50 * perspectiveColumn,
+                        relativeY: 50 * perspectiveRow,
+                        width: 50,
+                        height: 50,
+                        ...square
+                    }}
+                />
             );
         }
     }
@@ -97,33 +99,39 @@ function Board({ sendMove, gameState, chessBoard }: BoardProps) {
     const [pieceHighlighted, setPieceHighlighted] = useState<any>(null);
 
     const currentPieces = regeneratePieces(chessBoard.current, gameState.color);
-    const lastMoves = chessBoard.current.moveNumber() === 1 ? [] : [SquareLastMoveComponent({
-        key: 0,
-        color: 'rgba(155,199,0,.41)',
-        height: 50,
-        width: 50,
-        ...getRelativePositionBySquare(gameState.last_move_s1, gameState.color)
-    }),
-    SquareLastMoveComponent({
-        key: 1,
-        color: 'rgba(155,199,0,.41)',
-        height: 50,
-        width: 50,
-        ...getRelativePositionBySquare(gameState.last_move_s2, gameState.color)
-    })
+    const lastMoves = chessBoard.current.moveNumber() === 1 ? [] : [<SquareLastMoveComponent
+        {...{
+            key: 0,
+            color: 'rgba(155,199,0,.41)',
+            height: 50,
+            width: 50,
+            ...getRelativePositionBySquare(gameState.last_move_s1, gameState.color)
+        }}
+    />,
+    <SquareLastMoveComponent
+        {...{
+            key: 1,
+            color: 'rgba(155,199,0,.41)',
+            height: 50,
+            width: 50,
+            ...getRelativePositionBySquare(gameState.last_move_s2, gameState.color)
+        }}
+    />
     ]
 
     const checkedKing = chessBoard.current.isCheck() ?
-        SquareCheckedKingComponent({
-            key: 0,
-            color: 'rgba(199,0,0,.61)',
-            height: 50,
-            width: 50,
-            ...getRelativePositionBySquare(chessBoard.current.findPiece({
-                color: chessBoard.current.turn(),
-                type: 'k'
-            })[0], gameState.color)
-        })
+        <SquareCheckedKingComponent
+            {...{
+                key: 0,
+                color: 'rgba(199,0,0,.61)',
+                height: 50,
+                width: 50,
+                ...getRelativePositionBySquare(chessBoard.current.findPiece({
+                    color: chessBoard.current.turn(),
+                    type: 'k'
+                })[0], gameState.color)
+            }}
+        />
         : null;
 
     const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -167,22 +175,24 @@ function Board({ sendMove, gameState, chessBoard }: BoardProps) {
 
             let id = 0;
             const highlights = chessBoard.current.moves({ square, verbose: true }).map(
-                move => SquareMoveHighlightComponent({
-                    key: id++,
-                    move,
-                    ...getRelativePositionBySquare(getMoveHighlightSquare(move), gameState.color),
-                    height: 50,
-                    width: 50,
-                    pieceStyle: DEFAULT_PIECE_STYLE
-                })
+                move => <SquareMoveHighlightComponent
+                    {...getRelativePositionBySquare(getMoveHighlightSquare(move), gameState.color)}
+                    key={id++}
+                    move={move}
+                    height={50}
+                    width={50}
+                    pieceStyle={DEFAULT_PIECE_STYLE}
+                />
             );
 
             setCurrentHighlights(highlights);
-            setPieceHighlighted(SquarePieceHighlightComponent({
-                ...getRelativePositionBySquare(square, gameState.color),
-                height: 50,
-                width: 50,
-            }));
+            setPieceHighlighted(<SquarePieceHighlightComponent
+                {...{
+                    ...getRelativePositionBySquare(square, gameState.color),
+                    height: 50,
+                    width: 50,
+                }}
+            />);
 
             return;
         }

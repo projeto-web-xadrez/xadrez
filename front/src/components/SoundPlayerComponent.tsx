@@ -1,6 +1,6 @@
 'use client';
 
-import React, { forwardRef, useRef, useState, useImperativeHandle } from 'react';
+import { forwardRef, useRef, useState, useImperativeHandle } from 'react';
 import { Mutex } from 'async-mutex'
 
 export interface SoundPlayerHandle {
@@ -21,7 +21,7 @@ const SoundPlayerComponent = forwardRef<SoundPlayerHandle, SoundPlayerProps>((pr
         playSound: (soundSrc: string) => {
             mutex.current.acquire().then(() => {
                 audioSourcesMap.current.set(idCounter.current++, soundSrc);
-                setAudioSources(audioSourcesMap.current.entries().toArray());
+                setAudioSources([...audioSourcesMap.current.entries()]);
                 setTimeout(() => mutex.current.release(), props.minDelayBetweenSounds);
             });
         }
@@ -30,7 +30,7 @@ const SoundPlayerComponent = forwardRef<SoundPlayerHandle, SoundPlayerProps>((pr
     return audioSources.map(([key, src]) =>
         <audio autoPlay key={key} src={src} onEnded={() => {
             audioSourcesMap.current.delete(key);
-            setAudioSources(audioSourcesMap.current.entries().toArray());
+            setAudioSources([...audioSourcesMap.current.entries()]);
         }} />
     );
 });
