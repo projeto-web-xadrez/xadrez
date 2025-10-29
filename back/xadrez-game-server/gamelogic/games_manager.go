@@ -67,11 +67,12 @@ func HandleNewClient(ws *websocket.Conn) {
 	}
 
 	player.Mutex.Lock()
-	// TODO: enviar mensagem "você se conectou por outra tab"
-	println("Se conectou por outra aba")
+	// Envia para o canal referenciado no ponteiro uma mensagem para se desconectar.
+	// Se tiver apenas uma aba, esse canal é nulo, caso haja duas, o primeiro conectado
+	// receberá um sinal para desconectar o front
 	(*player.WSSend) <- Message{
 		Type: "quit",
-		Data: "",
+		Data: "redundantConnection",
 	}
 
 	room := player.Room

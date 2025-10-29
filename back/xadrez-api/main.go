@@ -156,7 +156,7 @@ func main() {
 	defer conn.Close()
 	internal_grpc_conn = internalgrpc.NewInternalClient(conn)
 
-	testing()
+	//testing()
 
 	var Wg sync.WaitGroup
 	Wg.Add(1)

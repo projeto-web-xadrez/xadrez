@@ -1,0 +1,17 @@
+version: "3.9"
+services:
+  login:
+    build: ./back/login
+    ports:
+      - "8085:8085"
+
+  api:
+    build: ./back/xadrez-api
+    ports:
+      - "8080:8080"
+
+  gameserver:
+    build: ./back/xadrez-game-server
+    ports:
+      - "8082:8082"
+      - "9191:9191"

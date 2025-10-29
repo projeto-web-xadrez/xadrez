@@ -3,6 +3,7 @@
 import Cookies from 'js-cookie';
 import { useEffect, useRef, useState } from 'react';
 import BoardComponent from '../components/BoardComponent';
+import GameEndedComponent from '../components/GameEndedComponent';
 import { Chess, Square, Move } from 'chess.js';
 import { useRouter } from 'next/navigation';
 import SoundPlayerComponent, { SoundPlayerHandle } from '../components/SoundPlayerComponent';
@@ -15,9 +16,13 @@ export default function Home() {
   const socketRef = useRef<WebSocket>(null!)
   const ApiSocketRef = useRef<WebSocket>(null!)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [gameEnded, setGameEnded] = useState(false);
+  const [winner, setWinner] = useState<string | null>(null);
+
   const [gameState, setGameState] = useState<any>({
-    'fen': 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+    fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
   });
+
   const chessBoard = useRef<Chess>(new Chess(gameState.game_fen));
 
   useEffect(() => {
@@ -49,6 +54,7 @@ export default function Home() {
       else if (msg.type === 'game_ended') {
         console.log(msg)
         soundRef.current?.playSound('sounds/GameEnd.mp3');
+        setIsPlaying(false)
       }
       else if (msg.type === 'player_moved') {
         const data = JSON.parse(msg.data);
@@ -182,6 +188,7 @@ export default function Home() {
           <button onClick={sendInvalidMove}>Finalizar Partida com move invalido</button>
         </>
       )}
+      
     </div> 
   );
 }
