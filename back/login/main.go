@@ -48,11 +48,9 @@ func login(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("User logged in successfully")
 		token := genToken(32)
 		csrfToken := genToken(32)
-		clientId := genToken(16)
 
 		current_user.Token = token
 		current_user.CSRFTToken = csrfToken
-		current_user.ClientId = clientId
 		users[username] = current_user
 
 		// seta o token no navegador
@@ -73,7 +71,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 		var result dataObj
 		result.Type = "result"
 		result.Data = make(map[string]interface{})
-		result.Data["clientId"] = clientId
+		result.Data["clientId"] = current_user.ClientId
 		result.Data["serverResponse"] = "Successfully logged in"
 
 		jsonData, _ := json.Marshal(result)
@@ -125,6 +123,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 	current_user := users[username]
 	current_user.Token = token
 	current_user.CSRFTToken = csrfToken
+	current_user.ClientId = clientId
 	users[username] = current_user
 
 	// seta o token no navegador
