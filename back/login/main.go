@@ -200,7 +200,6 @@ func protectedRoute(w http.ResponseWriter, r *http.Request) {
 
 var allowedOrigins = map[string]bool{
 	"http://localhost:3000": true,
-	"http://localhost:3001": true,
 }
 
 // Funcao de teste; retirado daqui: https://www.stackhawk.com/blog/golang-cors-guide-what-it-is-and-how-to-enable-it/#h-what-is-cors
@@ -238,5 +237,5 @@ func main() {
 	handler := corsMiddleware(mux)
 
 	fmt.Println("Login server started listening at 8085")
-	http.ListenAndServe("localhost:8085", handler)
+	http.ListenAndServe("0.0.0.0:8085", handler)
 }
