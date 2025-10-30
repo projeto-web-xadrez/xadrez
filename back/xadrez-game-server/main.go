@@ -14,8 +14,8 @@ import (
 	"google.golang.org/grpc"
 )
 
-const DEFAULT_GRPC_ADDRESS = "localhost:9191"
-const DEFAULT_WS_PLAYER_ADDRESS = "localhost:8082"
+const DEFAULT_GRPC_ADDRESS = "0.0.0.0:9191"
+const DEFAULT_WS_PLAYER_ADDRESS = "0.0.0.0:8082"
 const DEFAULT_WS_PLAYER_PATH = "/ws"
 
 var upgrader = websocket.Upgrader{

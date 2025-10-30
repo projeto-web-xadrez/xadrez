@@ -1,17 +1,63 @@
-version: "3.9"
 services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: xadrez-dev
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      PGDATA: /var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+  redis:
+    image: redis:8
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
   login:
     build: ./back/login
     ports:
       - "8085:8085"
-
+    networks:
+      - internal
   api:
     build: ./back/xadrez-api
     ports:
       - "8080:8080"
-
+    networks:
+      - internal
   gameserver:
     build: ./back/xadrez-game-server
     ports:
       - "8082:8082"
       - "9191:9191"
+    networks:
+      - internal
+  front:
+    build: ./front
+    ports:
+      - "3000:3000"
+    develop:
+      watch:
+        - action: sync
+          path: ./front
+          target: /app
+          ignore:
+            - ./front/node_modules/
+            - ./front/.git/
+        - action: rebuild
+          path: ./front/package.json
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  internal:
+    driver: bridge

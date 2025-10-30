@@ -91,6 +91,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 					})
 
 				if err != nil {
+					fmt.Printf("%v\n", err)
 					panic("Error acquiring a room")
 				}
 
@@ -148,7 +149,7 @@ func testing() {
 
 func main() {
 
-	conn, err := grpc.NewClient("localhost:9191", grpc.WithInsecure())
+	conn, err := grpc.NewClient("172.21.0.1:9191", grpc.WithInsecure())
 	if err != nil {
 		panic("Couldn't stablish GRPC connection with game-server")
 	}
@@ -167,7 +168,7 @@ func main() {
 	go func() {
 		defer Wg.Done()
 		fmt.Println("WebSocket server started on :8080")
-		err := http.ListenAndServe("localhost:8080", server_ws)
+		err := http.ListenAndServe("0.0.0.0:8080", server_ws)
 		if err != nil {
 			fmt.Println("ListenAndServe:", err)
 		}
