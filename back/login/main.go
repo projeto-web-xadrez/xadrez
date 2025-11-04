@@ -200,6 +200,7 @@ func protectedRoute(w http.ResponseWriter, r *http.Request) {
 
 var allowedOrigins = map[string]bool{
 	"http://localhost:3000": true,
+	"http://localhost:3001": true,
 }
 
 // Funcao de teste; retirado daqui: https://www.stackhawk.com/blog/golang-cors-guide-what-it-is-and-how-to-enable-it/#h-what-is-cors

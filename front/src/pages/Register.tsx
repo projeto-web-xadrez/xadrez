@@ -27,10 +27,14 @@ export default function Register() {
             credentials: 'include',
             body: body_obj
         })
-        .then((response) => {
+        .then(async (response) => {
             if(response.status != 200)
                 alert(response.statusText);
-            else navigate('/dashboard');
+            else {
+                const data = await response.json()
+                localStorage.setItem("clientId", data.data.clientId)
+                navigate('/dashboard');
+            } 
         }) 
     };
 

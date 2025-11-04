@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: admin
       PGDATA: /var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5431:5431"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:

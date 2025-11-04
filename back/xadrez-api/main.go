@@ -75,7 +75,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			enqueue(client)
 
 			if len(queue) >= 2 {
-				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 				defer cancel()
 
 				var client1 clientObj
@@ -148,8 +148,7 @@ func testing() {
 }
 
 func main() {
-
-	conn, err := grpc.NewClient("172.21.0.1:9191", grpc.WithInsecure())
+	conn, err := grpc.NewClient("gameserver:9191", grpc.WithInsecure())
 	if err != nil {
 		panic("Couldn't stablish GRPC connection with game-server")
 	}
