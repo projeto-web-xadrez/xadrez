@@ -1,3 +1,4 @@
+import Cookies from 'js-cookie'
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,10 +18,11 @@ const SignOutComponent: React.FC<SignOutProps> = ({ setAuthenticated }) => {
     }
 
     body_obj.append("username", user)
-
+    const csrf = Cookies.get('csrf_token');
     fetch("http://localhost:8085/logout", {
       method: "POST",
       headers: {
+        "X-CSRF-Token": csrf || "",
         //"Content-Type": "Application/JSON"
       },
       credentials: 'include',

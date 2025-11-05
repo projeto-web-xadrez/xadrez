@@ -160,6 +160,14 @@ func register(w http.ResponseWriter, r *http.Request) {
 func logout(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	if user, ok := users[username]; ok {
+		// Se quisermos proteger a rota adicionamos essa parte:
+
+		if err := Authorize(r); err != nil {
+			fmt.Println(err.Error())
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
 		user.CSRFTToken = ""
 		user.Token = ""
 		users[username] = user
@@ -211,7 +219,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 		if allowedOrigins[origin] {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-CSRF-Token")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		}
 		/* w.Header().Set("Access-Control-Allow-Origin", origin)
