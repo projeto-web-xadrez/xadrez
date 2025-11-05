@@ -2,11 +2,14 @@
 
 import Cookies from 'js-cookie';
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Chess, type Move } from 'chess.js';
+
+// Components
 import BoardComponent from '../components/BoardComponent';
 import GameEndedComponent from '../components/GameEndedComponent';
-import { Chess, type Square, Move } from 'chess.js';
 import SoundPlayerComponent, { type SoundPlayerHandle } from '../components/SoundPlayerComponent';
-import { useNavigate } from 'react-router-dom';
+import SignOutComponent from '../components/SignOutComponent';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -27,7 +30,7 @@ export default function Home() {
 
   useEffect(() => {
     const csrf = Cookies.get('csrf_token');
-    if(!csrf) {
+    if (!csrf) {
       navigate('/login');
       return
     }
@@ -37,45 +40,59 @@ export default function Home() {
 
   if (!isAuthenticated)
     return null;
-  
+
   const startGame = (playerId: string, roomId: string) => {
     if (socketRef.current && ![WebSocket.CLOSED, WebSocket.CLOSING as number].includes(socketRef.current.readyState) || playerId == "null")
       socketRef.current.close();
     socketRef.current = new WebSocket('ws://localhost:8082/ws');
 
-    socketRef.current.onmessage = e => {
+    socketRef.current.onmessage = (e) => {
       const msg = JSON.parse(e.data);
+      console.log(msg)
+      switch (msg.type) {
+        case 'welcome': {
+          const gameState = JSON.parse(msg.data);
+          setGameState(gameState);
+          chessBoard.current = new Chess(gameState.game_fen);
+          break;
+        }
 
-      if (msg.type === 'welcome') {
-        const gameState = JSON.parse(msg.data);
-        setGameState(gameState);
-        chessBoard.current = new Chess(gameState.game_fen)
-      } else if (msg.type === 'game_started') alert('game started')
-      else if (msg.type === 'game_ended') {
-        console.log(msg)
-        soundRef.current?.playSound('sounds/GameEnd.mp3');
-        setIsPlaying(false)
-      }
-      else if (msg.type === 'player_moved') {
-        const data = JSON.parse(msg.data);
+        case 'game_ended': {
+          const winner = JSON.parse(msg.data).winner_id
+          setWinner(winner);
+          setGameEnded(true);
+          soundRef.current?.playSound('sounds/GameEnd.mp3');
+          break;
+        }
 
-        const move = chessBoard.current.moves({
-          verbose: true,
-          square: data.move_s1
-        }).find(m => m.san === data.move_notation) as Move;
+        case 'game_started': {
+          alert("game_started")
+          break;
+        }
 
-        chessBoard.current.move(move);
+        case 'player_moved': {
+          const data = JSON.parse(msg.data);
 
-        setGameState((prev: any) => ({
-          ...prev,
-          last_move_s1: data.move_s1,
-          last_move_s2: data.move_s2,
-          fen: chessBoard.current.fen()
-        }));
+          const move = chessBoard.current.moves({
+            verbose: true,
+            square: data.move_s1
+          }).find(m => m.san === data.move_notation) as Move;
 
-        const soundFile = move.isCapture() ?
-          'sounds/Capture.mp3' : 'sounds/Move.mp3';
-        soundRef.current?.playSound(soundFile);
+          chessBoard.current.move(move);
+
+          setGameState((prev: any) => ({
+            ...prev,
+            last_move_s1: data.move_s1,
+            last_move_s2: data.move_s2,
+            fen: chessBoard.current.fen()
+          }));
+
+          const soundFile = move.isCapture() ? 'sounds/Capture.mp3' : 'sounds/Move.mp3';
+          soundRef.current?.playSound(soundFile);
+          break;
+        }
+
+        default: break;
       }
     }
 
@@ -100,10 +117,10 @@ export default function Home() {
     const playerId = localStorage.getItem("clientId") || "null";
     console.log(playerId)
     if (ApiSocketRef.current && ![WebSocket.CLOSED, WebSocket.CLOSING as number].includes(ApiSocketRef.current.readyState) || playerId == "null") {
-        ApiSocketRef.current.close();
-        console.log("[XADREZ-API] Fechando conexao")
+      ApiSocketRef.current.close();
+      console.log("[XADREZ-API] Fechando conexao")
     }
-      
+
     ApiSocketRef.current = new WebSocket('ws://localhost:8080/ws');
 
     ApiSocketRef.current.onmessage = (e) => {
@@ -113,7 +130,7 @@ export default function Home() {
       if (msg.type === 'matchFound') {
         console.log("Partida encontrada, conectando a sala " + msg.data.roomId)
         startGame(playerId, msg.data.roomId)
-      } 
+      }
     }
 
     ApiSocketRef.current.onerror = e => console.error(`Error: ${e}`);
@@ -154,7 +171,6 @@ export default function Home() {
     soundRef.current?.playSound(soundFile);
   }
 
-
   function sendInvalidMove() {
     console.log("mandando mov invalido para o servidor")
     socketRef.current.send(JSON.stringify({
@@ -168,27 +184,38 @@ export default function Home() {
 
   return (
     <div className='main'>
-
       {!isPlaying && isAuthenticated ? (
         <>
-
-          {/* <button onClick={() => startGame(`CLIENT 1`)}> Join as P1</button>
-          <button onClick={() => startGame(`CLIENT 2`)}> Join as P2</button> */}
           <button onClick={() => requestMatch()}>Request Match</button>
+          <SignOutComponent setAuthenticated={setAuthenticated} />
         </>
       ) : (
         <>
-          <SoundPlayerComponent minDelayBetweenSounds={50} ref={soundRef} />
-          <BoardComponent
-            chessBoard={chessBoard}
-            gameState={gameState}
-            sendMove={sendMove}
-          />
+          {!gameEnded ? (
+            <>
+              <SoundPlayerComponent minDelayBetweenSounds={50} ref={soundRef} />
+              <BoardComponent
+                chessBoard={chessBoard}
+                gameState={gameState}
+                sendMove={sendMove}
+              />
 
-          <button onClick={sendInvalidMove}>Finalizar Partida com move invalido</button>
+              <button onClick={sendInvalidMove}>
+                Finalizar Partida com move invalido
+              </button>
+            </>
+          ) : (
+            <GameEndedComponent
+              playerId={localStorage.getItem("clientId") || ""}
+              winner={winner || ""}
+              setIsPlaying={setIsPlaying}
+              setGameEnded={setGameEnded}
+              setWinner={setWinner}
+            />
+          )}
         </>
       )}
-      
-    </div> 
+    </div>
+
   );
 }

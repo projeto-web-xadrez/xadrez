@@ -4,9 +4,11 @@ interface GameEndedProps {
   playerId: string;
   winner: string;
   setIsPlaying: React.Dispatch<React.SetStateAction<boolean>>;
+  setGameEnded: React.Dispatch<React.SetStateAction<boolean>>;
+  setWinner: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-const GameEndedComponent: React.FC<GameEndedProps> = ({ playerId, winner, setIsPlaying }) => {
+const GameEndedComponent: React.FC<GameEndedProps> = ({ playerId, winner, setIsPlaying, setGameEnded, setWinner }) => {
   const isWinner = playerId === winner;
 
   const containerStyle: React.CSSProperties = {
@@ -55,7 +57,11 @@ const GameEndedComponent: React.FC<GameEndedProps> = ({ playerId, winner, setIsP
         <p style={messageStyle}>
           {isWinner ? 'Você venceu! 🏆' : 'Você perdeu 😢'}
         </p>
-        <button style={buttonStyle} onClick={() => setIsPlaying(false)}>
+        <button style={buttonStyle} onClick={() => {
+          setIsPlaying(false)
+          setGameEnded(false)
+          setWinner(null)
+        }}>
           Voltar para o menu
         </button>
       </div>

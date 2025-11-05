@@ -148,7 +148,7 @@ func testing() {
 }
 
 func main() {
-	conn, err := grpc.NewClient("gameserver:9191", grpc.WithInsecure())
+	conn, err := grpc.NewClient("0.0.0.0:9191", grpc.WithInsecure())
 	if err != nil {
 		panic("Couldn't stablish GRPC connection with game-server")
 	}

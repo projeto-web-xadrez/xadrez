@@ -4,10 +4,6 @@ import { useState } from 'react';
 import '../styles/register-styles.css'
 import { useNavigate } from 'react-router-dom';
 
-const style: React.CSSProperties = {
-    backgroundColor: 'WHITE',
-};
-
 export default function Register() {
     const navigate = useNavigate();
     const handleClick = (e: React.MouseEvent<HTMLFormElement>) => {
@@ -33,6 +29,7 @@ export default function Register() {
             else {
                 const data = await response.json()
                 localStorage.setItem("clientId", data.data.clientId)
+                localStorage.setItem("username", username)
                 navigate('/dashboard');
             } 
         }) 

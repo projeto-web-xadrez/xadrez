@@ -4,12 +4,6 @@ import { useState } from 'react';
 import '../styles/login-styles.css';
 import { useNavigate } from 'react-router-dom';
 
-
-const style: React.CSSProperties = {
-    backgroundColor: 'WHITE',
-
-
-};
 export default function Login() {
     const navigate = useNavigate();
 
@@ -34,6 +28,7 @@ export default function Login() {
             if(response.status === 200) {
                 const data = await response.json()
                 localStorage.setItem("clientId", data.data.clientId)
+                localStorage.setItem("username", username)
                 navigate('/dashboard');
             }
                 
