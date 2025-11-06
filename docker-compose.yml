@@ -7,9 +7,10 @@ services:
       POSTGRES_PASSWORD: admin
       PGDATA: /var/lib/postgresql/data
     ports:
-      - "5431:5431"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./back/db-schemas/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - internal
   redis:
