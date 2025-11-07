@@ -13,5 +13,5 @@ COPY ./Makefile .
 
 EXPOSE 8080
 
-RUN make xadrez-api
-CMD ["/app/bin/xadrez-api"]
+RUN make api
+CMD ["/app/bin/api"]

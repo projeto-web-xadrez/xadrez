@@ -14,5 +14,5 @@ COPY ./Makefile .
 EXPOSE 8082
 EXPOSE 9191
 
-RUN make xadrez-game-server
-CMD ["/app/bin/xadrez-game-server"]
+RUN make game-server
+CMD ["/app/bin/game-server"]
