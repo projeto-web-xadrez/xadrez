@@ -3,7 +3,7 @@ TARGET := $(firstword $(MAKECMDGOALS))
 OUT_DIR := bin
 OUT_PATH := $(shell pwd)/${OUT_DIR}
 SRC_DIR := src
-PROJECTS := api game-server login
+PROJECTS := api game-server login auth
 
 .PHONY: all
 all: $(PROJECTS)

@@ -602,6 +602,7 @@ type ConfirmEmailRequestMessage struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	ClientIdentification  *ClientIdentification  `protobuf:"bytes,1,opt,name=client_identification,json=clientIdentification,proto3" json:"client_identification,omitempty"`
 	EmailConfirmationCode string                 `protobuf:"bytes,2,opt,name=email_confirmation_code,json=emailConfirmationCode,proto3" json:"email_confirmation_code,omitempty"`
+	Data                  *string                `protobuf:"bytes,3,opt,name=data,proto3,oneof" json:"data,omitempty"` // Additional data for custom confirmations
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -646,6 +647,13 @@ func (x *ConfirmEmailRequestMessage) GetClientIdentification() *ClientIdentifica
 func (x *ConfirmEmailRequestMessage) GetEmailConfirmationCode() string {
 	if x != nil {
 		return x.EmailConfirmationCode
+	}
+	return ""
+}
+
+func (x *ConfirmEmailRequestMessage) GetData() string {
+	if x != nil && x.Data != nil {
+		return *x.Data
 	}
 	return ""
 }
@@ -714,6 +722,7 @@ type ChangeEmailRequestMessage struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	ClientIdentification *ClientIdentification  `protobuf:"bytes,1,opt,name=client_identification,json=clientIdentification,proto3" json:"client_identification,omitempty"`
 	NewEmail             string                 `protobuf:"bytes,2,opt,name=new_email,json=newEmail,proto3" json:"new_email,omitempty"`
+	Token                *Token                 `protobuf:"bytes,3,opt,name=token,proto3" json:"token,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -760,6 +769,13 @@ func (x *ChangeEmailRequestMessage) GetNewEmail() string {
 		return x.NewEmail
 	}
 	return ""
+}
+
+func (x *ChangeEmailRequestMessage) GetToken() *Token {
+	if x != nil {
+		return x.Token
+	}
+	return nil
 }
 
 type ChangeEmailResponseMessage struct {
@@ -810,6 +826,7 @@ type ChangePasswordRequestMessage struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	ClientIdentification *ClientIdentification  `protobuf:"bytes,1,opt,name=client_identification,json=clientIdentification,proto3" json:"client_identification,omitempty"`
 	Email                string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	Token                *Token                 `protobuf:"bytes,3,opt,name=token,proto3,oneof" json:"token,omitempty"` // It's not mandatory for the user to be logged in
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -856,6 +873,13 @@ func (x *ChangePasswordRequestMessage) GetEmail() string {
 		return x.Email
 	}
 	return ""
+}
+
+func (x *ChangePasswordRequestMessage) GetToken() *Token {
+	if x != nil {
+		return x.Token
+	}
+	return nil
 }
 
 type ChangePasswordResponseMessage struct {
@@ -954,24 +978,29 @@ const file_auth_grpc_proto_rawDesc = "" +
 	"\x05token\x18\x02 \x01(\v2\x06.TokenH\x00R\x05token\x88\x01\x01\x12\"\n" +
 	"\x04user\x18\x03 \x01(\v2\t.UserDataH\x01R\x04user\x88\x01\x01B\b\n" +
 	"\x06_tokenB\a\n" +
-	"\x05_user\"\xa0\x01\n" +
+	"\x05_user\"\xc2\x01\n" +
 	"\x1aConfirmEmailRequestMessage\x12J\n" +
 	"\x15client_identification\x18\x01 \x01(\v2\x15.ClientIdentificationR\x14clientIdentification\x126\n" +
-	"\x17email_confirmation_code\x18\x02 \x01(\tR\x15emailConfirmationCode\"\x92\x01\n" +
+	"\x17email_confirmation_code\x18\x02 \x01(\tR\x15emailConfirmationCode\x12\x17\n" +
+	"\x04data\x18\x03 \x01(\tH\x00R\x04data\x88\x01\x01B\a\n" +
+	"\x05_data\"\x92\x01\n" +
 	"\x1bConfirmEmailResponseMessage\x12\x19\n" +
 	"\x03res\x18\x01 \x01(\v2\a.ResultR\x03res\x12!\n" +
 	"\x05token\x18\x02 \x01(\v2\x06.TokenH\x00R\x05token\x88\x01\x01\x12\"\n" +
 	"\x04user\x18\x03 \x01(\v2\t.UserDataH\x01R\x04user\x88\x01\x01B\b\n" +
 	"\x06_tokenB\a\n" +
-	"\x05_user\"\x84\x01\n" +
+	"\x05_user\"\xa2\x01\n" +
 	"\x19ChangeEmailRequestMessage\x12J\n" +
 	"\x15client_identification\x18\x01 \x01(\v2\x15.ClientIdentificationR\x14clientIdentification\x12\x1b\n" +
-	"\tnew_email\x18\x02 \x01(\tR\bnewEmail\"7\n" +
+	"\tnew_email\x18\x02 \x01(\tR\bnewEmail\x12\x1c\n" +
+	"\x05token\x18\x03 \x01(\v2\x06.TokenR\x05token\"7\n" +
 	"\x1aChangeEmailResponseMessage\x12\x19\n" +
-	"\x03res\x18\x01 \x01(\v2\a.ResultR\x03res\"\x80\x01\n" +
+	"\x03res\x18\x01 \x01(\v2\a.ResultR\x03res\"\xad\x01\n" +
 	"\x1cChangePasswordRequestMessage\x12J\n" +
 	"\x15client_identification\x18\x01 \x01(\v2\x15.ClientIdentificationR\x14clientIdentification\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\":\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\x12!\n" +
+	"\x05token\x18\x03 \x01(\v2\x06.TokenH\x00R\x05token\x88\x01\x01B\b\n" +
+	"\x06_token\":\n" +
 	"\x1dChangePasswordResponseMessage\x12\x19\n" +
 	"\x03res\x18\x01 \x01(\v2\a.ResultR\x03res2\xc5\x03\n" +
 	"\x04Auth\x12T\n" +
@@ -1033,26 +1062,28 @@ var file_auth_grpc_proto_depIdxs = []int32{
 	4,  // 14: ConfirmEmailResponseMessage.token:type_name -> Token
 	1,  // 15: ConfirmEmailResponseMessage.user:type_name -> UserData
 	0,  // 16: ChangeEmailRequestMessage.client_identification:type_name -> ClientIdentification
-	2,  // 17: ChangeEmailResponseMessage.res:type_name -> Result
-	0,  // 18: ChangePasswordRequestMessage.client_identification:type_name -> ClientIdentification
-	2,  // 19: ChangePasswordResponseMessage.res:type_name -> Result
-	3,  // 20: Auth.RegisterAccount:input_type -> RegisterAccountRequestMessage
-	6,  // 21: Auth.Login:input_type -> LoginRequestMessage
-	8,  // 22: Auth.CheckToken:input_type -> CheckTokenRequestMessage
-	10, // 23: Auth.ConfirmEmail:input_type -> ConfirmEmailRequestMessage
-	12, // 24: Auth.ChangeEmail:input_type -> ChangeEmailRequestMessage
-	14, // 25: Auth.ChangePassword:input_type -> ChangePasswordRequestMessage
-	5,  // 26: Auth.RegisterAccount:output_type -> RegisterAccountResponseMessage
-	7,  // 27: Auth.Login:output_type -> LoginResponseMessage
-	9,  // 28: Auth.CheckToken:output_type -> CheckTokenResponseMessage
-	11, // 29: Auth.ConfirmEmail:output_type -> ConfirmEmailResponseMessage
-	13, // 30: Auth.ChangeEmail:output_type -> ChangeEmailResponseMessage
-	15, // 31: Auth.ChangePassword:output_type -> ChangePasswordResponseMessage
-	26, // [26:32] is the sub-list for method output_type
-	20, // [20:26] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	4,  // 17: ChangeEmailRequestMessage.token:type_name -> Token
+	2,  // 18: ChangeEmailResponseMessage.res:type_name -> Result
+	0,  // 19: ChangePasswordRequestMessage.client_identification:type_name -> ClientIdentification
+	4,  // 20: ChangePasswordRequestMessage.token:type_name -> Token
+	2,  // 21: ChangePasswordResponseMessage.res:type_name -> Result
+	3,  // 22: Auth.RegisterAccount:input_type -> RegisterAccountRequestMessage
+	6,  // 23: Auth.Login:input_type -> LoginRequestMessage
+	8,  // 24: Auth.CheckToken:input_type -> CheckTokenRequestMessage
+	10, // 25: Auth.ConfirmEmail:input_type -> ConfirmEmailRequestMessage
+	12, // 26: Auth.ChangeEmail:input_type -> ChangeEmailRequestMessage
+	14, // 27: Auth.ChangePassword:input_type -> ChangePasswordRequestMessage
+	5,  // 28: Auth.RegisterAccount:output_type -> RegisterAccountResponseMessage
+	7,  // 29: Auth.Login:output_type -> LoginResponseMessage
+	9,  // 30: Auth.CheckToken:output_type -> CheckTokenResponseMessage
+	11, // 31: Auth.ConfirmEmail:output_type -> ConfirmEmailResponseMessage
+	13, // 32: Auth.ChangeEmail:output_type -> ChangeEmailResponseMessage
+	15, // 33: Auth.ChangePassword:output_type -> ChangePasswordResponseMessage
+	28, // [28:34] is the sub-list for method output_type
+	22, // [22:28] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_auth_grpc_proto_init() }
@@ -1064,7 +1095,9 @@ func file_auth_grpc_proto_init() {
 	file_auth_grpc_proto_msgTypes[5].OneofWrappers = []any{}
 	file_auth_grpc_proto_msgTypes[7].OneofWrappers = []any{}
 	file_auth_grpc_proto_msgTypes[9].OneofWrappers = []any{}
+	file_auth_grpc_proto_msgTypes[10].OneofWrappers = []any{}
 	file_auth_grpc_proto_msgTypes[11].OneofWrappers = []any{}
+	file_auth_grpc_proto_msgTypes[14].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

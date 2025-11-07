@@ -63,6 +63,7 @@ message CheckTokenResponseMessage {
 message ConfirmEmailRequestMessage {
     ClientIdentification client_identification = 1;
     string email_confirmation_code = 2;
+    optional string data = 3; // Additional data for custom confirmations
 }
 
 message ConfirmEmailResponseMessage {
@@ -74,6 +75,7 @@ message ConfirmEmailResponseMessage {
 message ChangeEmailRequestMessage {
     ClientIdentification client_identification = 1;
     string new_email = 2;
+    Token token = 3;
 }
 
 message ChangeEmailResponseMessage {
@@ -83,6 +85,7 @@ message ChangeEmailResponseMessage {
 message ChangePasswordRequestMessage {
     ClientIdentification client_identification = 1;
     string email = 2;
+    optional Token token = 3; // It's not mandatory for the user to be logged in
 }
 
 message ChangePasswordResponseMessage {
