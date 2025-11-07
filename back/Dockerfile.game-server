@@ -4,24 +4,12 @@ RUN apk add --no-cache git gcompat bash make protoc coreutils
 
 WORKDIR /app
 
-# Instala as dependencias
-RUN mkdir xadrez-game-server
-RUN mkdir proto
-COPY ./proto/go.mod ./proto/go.sum ./proto/
-COPY ./xadrez-game-server/go.mod ./xadrez-game-server/go.sum ./xadrez-game-server/
-
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
-
-COPY ./login/go.mod ./login/go.mod
-COPY ./xadrez-api/go.mod ./xadrez-api/go.mod
-COPY ./Makefile ./go.work ./go.work.sum ./
-COPY ./xadrez-game-server ./xadrez-game-server
-COPY ./proto ./proto
-
-RUN cd proto && go mod download
-RUN cd xadrez-game-server && go mod download
+COPY ./src/ ./src/
+COPY ./proto/ ./proto/
+COPY ./Makefile .
 
 EXPOSE 8082
 EXPOSE 9191

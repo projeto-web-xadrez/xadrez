@@ -1,7 +1,8 @@
-PROTOBUFF_DIRECTYORY := proto
+PROTOBUFF_DIR := proto
 TARGET := $(firstword $(MAKECMDGOALS))
-OUT_DIRECTORY := bin
-OUT_PATH := $(shell pwd)/${OUT_DIRECTORY}
+OUT_DIR := bin
+OUT_PATH := $(shell pwd)/${OUT_DIR}
+SRC_DIR := src
 PROJECTS := xadrez-api xadrez-game-server login
 
 .PHONY: all
@@ -10,9 +11,9 @@ all: $(PROJECTS)
 .PHONY: proto
 proto:
 	@echo "Building protobuf files"
-	cd $(PROTOBUFF_DIRECTYORY) && ./generate.sh
+	cd $(PROTOBUFF_DIR) && ./generate.sh
 
 .PHONY: $(PROJECTS)
 $(PROJECTS): proto
 	@echo "Building $@"
-	go build -o ${OUT_PATH}/$@ $@;
+	@cd ${SRC_DIR} && go build -o ${OUT_PATH}/$@ $@;

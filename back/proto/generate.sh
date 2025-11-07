@@ -1,4 +1,8 @@
 #!/bin/bash
+
+output_dir=$(echo $(cd ../ && pwd))/src/proto-generated
+mkdir -p $output_dir
+
 proto_files=$(ls | grep '\.proto$')
 
 get_file_last_change() {
@@ -27,8 +31,8 @@ for source_file in $proto_files; do
     proto_dir="$(cat $source_file | grep go_package | awk -F'"' '{print $2}')"
     proto_dir="${proto_dir#./}"
 
-    generated_file_1="$proto_dir/$proto_name.pb.go"
-    generated_file_2="$proto_dir/$proto_name"
+    generated_file_1="$output_dir/$proto_dir/$proto_name.pb.go"
+    generated_file_2="$output_dir/$proto_dir/$proto_name"
     generated_file_2+="_grpc.pb.go"
 
     get_file_last_change $generated_file_1
@@ -39,7 +43,7 @@ for source_file in $proto_files; do
     if [[ "$source_time" -ge "$t1" ]] || [[ "$source_time" -ge "$t2" ]]; then
         echo "Building $source_file"
         
-        protoc --go_out=. --go-grpc_out=. -I. $source_file
+        protoc --go_out=$output_dir  --go-grpc_out=$output_dir -I. $source_file
         continue
     fi
     

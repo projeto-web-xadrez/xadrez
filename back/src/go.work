@@ -2,7 +2,7 @@ go 1.25.1
 
 use (
 	./login
-	./proto
+	./proto-generated
 	./xadrez-api
 	./xadrez-game-server
 )
