@@ -22,19 +22,25 @@ services:
     networks:
       - internal
   login:
-    build: ./back/login
+    build:
+      context: ./back
+      dockerfile: ./Dockerfile.login
     ports:
       - "8085:8085"
     networks:
       - internal
   api:
-    build: ./back/xadrez-api
+    build:
+      context: ./back
+      dockerfile: ./Dockerfile.api
     ports:
       - "8080:8080"
     networks:
       - internal
   gameserver:
-    build: ./back/xadrez-game-server
+    build:
+      context: ./back
+      dockerfile: ./Dockerfile.game-server
     ports:
       - "8082:8082"
       - "9191:9191"
