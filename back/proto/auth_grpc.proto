@@ -1,0 +1,99 @@
+syntax = "proto3";
+option go_package = "./auth_grpc";
+
+import "google/protobuf/timestamp.proto";
+
+message ClientIdentification {
+    string ip = 1;
+    string user_agent = 2;
+}
+
+message UserData {
+    string user_id = 1;
+    string email = 2;
+    string username = 3;
+}
+
+message Result {
+  int32 code = 1;
+  string message = 2;
+}
+
+message RegisterAccountRequestMessage {
+    ClientIdentification client_identification = 1;
+    string username = 2;
+    string email = 3;
+    string password = 4; 
+}
+
+message Token {
+    string session_token = 1;
+    string csrf_token = 2;
+    optional google.protobuf.Timestamp expiration = 3;
+    optional google.protobuf.Timestamp issued = 4;
+}
+
+message RegisterAccountResponseMessage {
+    Result res = 1;
+    optional Token token = 2;
+}
+
+message LoginRequestMessage {
+    ClientIdentification client_identification = 1;
+    string email = 2;
+    string password = 3;
+}
+
+message LoginResponseMessage {
+    Result res = 1;
+    optional Token token = 2;
+    optional UserData user = 3;
+}
+
+message CheckTokenRequestMessage {
+    Token token = 1;
+}
+
+message CheckTokenResponseMessage {
+    bool valid = 1;
+    optional Token token = 2;
+    optional UserData user = 3;
+}
+
+message ConfirmEmailRequestMessage {
+    ClientIdentification client_identification = 1;
+    string email_confirmation_code = 2;
+}
+
+message ConfirmEmailResponseMessage {
+    Result res = 1;
+    optional Token token = 2;
+    optional UserData user = 3;
+}
+
+message ChangeEmailRequestMessage {
+    ClientIdentification client_identification = 1;
+    string new_email = 2;
+}
+
+message ChangeEmailResponseMessage {
+    Result res = 1;
+}
+
+message ChangePasswordRequestMessage {
+    ClientIdentification client_identification = 1;
+    string email = 2;
+}
+
+message ChangePasswordResponseMessage {
+    Result res = 1;
+}
+
+service Auth {
+    rpc RegisterAccount(RegisterAccountRequestMessage) returns (RegisterAccountResponseMessage) {}
+    rpc Login(LoginRequestMessage) returns (LoginResponseMessage) {}
+    rpc CheckToken(CheckTokenRequestMessage) returns (CheckTokenResponseMessage) {}
+    rpc ConfirmEmail(ConfirmEmailRequestMessage) returns (ConfirmEmailResponseMessage) {}
+    rpc ChangeEmail(ChangeEmailRequestMessage) returns (ChangeEmailResponseMessage) {}
+    rpc ChangePassword(ChangePasswordRequestMessage) returns (ChangePasswordResponseMessage) {}
+}

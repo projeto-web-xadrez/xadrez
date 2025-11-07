@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"proto-generated/internalgrpc"
+	"proto-generated/matchmaking_grpc"
 	"sync"
 	"time"
 
@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var internal_grpc_conn internalgrpc.InternalClient
+var matchmaking_grpc_conn matchmaking_grpc.MatchMakingClient
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true }, // Allow all connections
@@ -84,8 +84,8 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 				var client2 clientObj
 				client2 = dequeue()
 
-				room, err := internal_grpc_conn.RequestRoom(ctx,
-					&internalgrpc.RequestRoomMessage{
+				room, err := matchmaking_grpc_conn.RequestRoom(ctx,
+					&matchmaking_grpc.RequestRoomMessage{
 						PlayerId_1: client1.id,
 						PlayerId_2: client2.id,
 					})
@@ -128,8 +128,8 @@ func testing() {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	room, err := internal_grpc_conn.RequestRoom(ctx,
-		&internalgrpc.RequestRoomMessage{
+	room, err := matchmaking_grpc_conn.RequestRoom(ctx,
+		&matchmaking_grpc.RequestRoomMessage{
 			PlayerId_1: "CLIENT 1",
 			PlayerId_2: "CLIENT 2",
 		})
@@ -154,7 +154,7 @@ func main() {
 	}
 
 	defer conn.Close()
-	internal_grpc_conn = internalgrpc.NewInternalClient(conn)
+	matchmaking_grpc_conn = matchmaking_grpc.NewMatchMakingClient(conn)
 
 	//testing()
 

@@ -1,8 +1,9 @@
 go 1.25.1
 
 use (
+	./api
+	./auth
+	./game-server
 	./login
 	./proto-generated
-	./api
-	./game-server
 )
