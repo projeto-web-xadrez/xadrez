@@ -1,0 +1,17 @@
+FROM golang:1.25-alpine
+
+RUN apk add --no-cache git gcompat bash make protoc coreutils
+
+WORKDIR /app
+
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+COPY ./src/ ./src/
+COPY ./proto/ ./proto/
+COPY ./Makefile .
+
+EXPOSE 8085
+
+RUN make login
+CMD ["/app/bin/login"]

@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"game-server/gamelogic"
 	"net"
 	"net/http"
 	"os"
-	"xadrez-game-server/gamelogic"
-	"xadrez-game-server/internalgrpc"
+	"proto-generated/internalgrpc"
 
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"

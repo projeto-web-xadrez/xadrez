@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"proto-generated/internalgrpc"
 	"sync"
 	"time"
-	"xadrez-api/internalgrpc"
 
 	"github.com/gorilla/websocket"
 	"google.golang.org/grpc"

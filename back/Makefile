@@ -1,36 +1,19 @@
-API_DIRECTORY := "xadrez-api"
-GAME_SERVER_DIRECTORY := "xadrez-game-server"
-OUT_DIRECTORY := "bin"
+PROTOBUFF_DIR := proto
+TARGET := $(firstword $(MAKECMDGOALS))
+OUT_DIR := bin
+OUT_PATH := $(shell pwd)/${OUT_DIR}
+SRC_DIR := src
+PROJECTS := api game-server login
 
-OUT_PATH := $(shell pwd)/${OUT_DIRECTORY}
-.PHONY: run-api
-run-api:
-	cd ${API_DIRECTORY} && go run .
+.PHONY: all
+all: $(PROJECTS)
 
-.PHONY: api-tests
-api-tests:
-	cd ${API_DIRECTORY} && go test ./...
+.PHONY: proto
+proto:
+	@echo "Building protobuf files"
+	cd $(PROTOBUFF_DIR) && ./generate.sh
 
-.PHONY: build-api
-build-api:
-	mkdir -p ${OUT_PATH}
-	cd ${API_DIRECTORY} && go build -o ${OUT_PATH}/${API_DIRECTORY}
-
-.PHONY: run-game-server
-run-game-server:
-	cd ${GAME_SERVER_DIRECTORY} && go run .
-
-.PHONY: game-server-tests
-game-server-tests:
-	cd ${GAME_SERVER_DIRECTORY} && go test ./...
-
-.PHONY: build-game-server
-build-game-server:
-	mkdir -p ${OUT_PATH}
-	cd ${GAME_SERVER_DIRECTORY} && go build -o ${OUT_PATH}/${GAME_SERVER_DIRECTORY}
-
-.PHONY: gen-grpc
-gen-grpc:
-	cd ${GAME_SERVER_DIRECTORY} && protoc --go_out=. --go-grpc_out=. -I.. ../proto/*.proto
-	cd ${API_DIRECTORY} && protoc --go_out=. --go-grpc_out=. -I.. ../proto/*.proto
-
+.PHONY: $(PROJECTS)
+$(PROJECTS): proto
+	@echo "Building $@"
+	@cd ${SRC_DIR} && go build -o ${OUT_PATH}/$@ $@;

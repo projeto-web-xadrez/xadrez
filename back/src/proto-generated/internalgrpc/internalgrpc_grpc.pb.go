@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v6.32.1
-// source: proto/internalgrpc.proto
+// source: internalgrpc.proto
 
 package internalgrpc
 
@@ -117,5 +117,5 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/internalgrpc.proto",
+	Metadata: "internalgrpc.proto",
 }
