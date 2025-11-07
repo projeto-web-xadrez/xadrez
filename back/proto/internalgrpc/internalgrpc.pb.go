@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.9
 // 	protoc        v6.32.1
-// source: proto/internalgrpc.proto
+// source: internalgrpc.proto
 
 package internalgrpc
 
@@ -31,7 +31,7 @@ type RequestRoomMessage struct {
 
 func (x *RequestRoomMessage) Reset() {
 	*x = RequestRoomMessage{}
-	mi := &file_proto_internalgrpc_proto_msgTypes[0]
+	mi := &file_internalgrpc_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -43,7 +43,7 @@ func (x *RequestRoomMessage) String() string {
 func (*RequestRoomMessage) ProtoMessage() {}
 
 func (x *RequestRoomMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_internalgrpc_proto_msgTypes[0]
+	mi := &file_internalgrpc_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -56,7 +56,7 @@ func (x *RequestRoomMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestRoomMessage.ProtoReflect.Descriptor instead.
 func (*RequestRoomMessage) Descriptor() ([]byte, []int) {
-	return file_proto_internalgrpc_proto_rawDescGZIP(), []int{0}
+	return file_internalgrpc_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *RequestRoomMessage) GetPlayerId_1() string {
@@ -83,7 +83,7 @@ type RoomResponse struct {
 
 func (x *RoomResponse) Reset() {
 	*x = RoomResponse{}
-	mi := &file_proto_internalgrpc_proto_msgTypes[1]
+	mi := &file_internalgrpc_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -95,7 +95,7 @@ func (x *RoomResponse) String() string {
 func (*RoomResponse) ProtoMessage() {}
 
 func (x *RoomResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_internalgrpc_proto_msgTypes[1]
+	mi := &file_internalgrpc_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -108,7 +108,7 @@ func (x *RoomResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RoomResponse.ProtoReflect.Descriptor instead.
 func (*RoomResponse) Descriptor() ([]byte, []int) {
-	return file_proto_internalgrpc_proto_rawDescGZIP(), []int{1}
+	return file_internalgrpc_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *RoomResponse) GetRoomId() string {
@@ -125,11 +125,11 @@ func (x *RoomResponse) GetErrorMsg() string {
 	return ""
 }
 
-var File_proto_internalgrpc_proto protoreflect.FileDescriptor
+var File_internalgrpc_proto protoreflect.FileDescriptor
 
-const file_proto_internalgrpc_proto_rawDesc = "" +
+const file_internalgrpc_proto_rawDesc = "" +
 	"\n" +
-	"\x18proto/internalgrpc.proto\"T\n" +
+	"\x12internalgrpc.proto\"T\n" +
 	"\x12RequestRoomMessage\x12\x1e\n" +
 	"\vplayer_id_1\x18\x01 \x01(\tR\tplayerId1\x12\x1e\n" +
 	"\vplayer_id_2\x18\x02 \x01(\tR\tplayerId2\"W\n" +
@@ -142,23 +142,23 @@ const file_proto_internalgrpc_proto_rawDesc = "" +
 	"\vRequestRoom\x12\x13.RequestRoomMessage\x1a\r.RoomResponse\"\x00B\x10Z\x0e./internalgrpcb\x06proto3"
 
 var (
-	file_proto_internalgrpc_proto_rawDescOnce sync.Once
-	file_proto_internalgrpc_proto_rawDescData []byte
+	file_internalgrpc_proto_rawDescOnce sync.Once
+	file_internalgrpc_proto_rawDescData []byte
 )
 
-func file_proto_internalgrpc_proto_rawDescGZIP() []byte {
-	file_proto_internalgrpc_proto_rawDescOnce.Do(func() {
-		file_proto_internalgrpc_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_internalgrpc_proto_rawDesc), len(file_proto_internalgrpc_proto_rawDesc)))
+func file_internalgrpc_proto_rawDescGZIP() []byte {
+	file_internalgrpc_proto_rawDescOnce.Do(func() {
+		file_internalgrpc_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_internalgrpc_proto_rawDesc), len(file_internalgrpc_proto_rawDesc)))
 	})
-	return file_proto_internalgrpc_proto_rawDescData
+	return file_internalgrpc_proto_rawDescData
 }
 
-var file_proto_internalgrpc_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_proto_internalgrpc_proto_goTypes = []any{
+var file_internalgrpc_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_internalgrpc_proto_goTypes = []any{
 	(*RequestRoomMessage)(nil), // 0: RequestRoomMessage
 	(*RoomResponse)(nil),       // 1: RoomResponse
 }
-var file_proto_internalgrpc_proto_depIdxs = []int32{
+var file_internalgrpc_proto_depIdxs = []int32{
 	0, // 0: Internal.RequestRoom:input_type -> RequestRoomMessage
 	1, // 1: Internal.RequestRoom:output_type -> RoomResponse
 	1, // [1:2] is the sub-list for method output_type
@@ -168,27 +168,27 @@ var file_proto_internalgrpc_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_proto_internalgrpc_proto_init() }
-func file_proto_internalgrpc_proto_init() {
-	if File_proto_internalgrpc_proto != nil {
+func init() { file_internalgrpc_proto_init() }
+func file_internalgrpc_proto_init() {
+	if File_internalgrpc_proto != nil {
 		return
 	}
-	file_proto_internalgrpc_proto_msgTypes[1].OneofWrappers = []any{}
+	file_internalgrpc_proto_msgTypes[1].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_internalgrpc_proto_rawDesc), len(file_proto_internalgrpc_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internalgrpc_proto_rawDesc), len(file_internalgrpc_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_proto_internalgrpc_proto_goTypes,
-		DependencyIndexes: file_proto_internalgrpc_proto_depIdxs,
-		MessageInfos:      file_proto_internalgrpc_proto_msgTypes,
+		GoTypes:           file_internalgrpc_proto_goTypes,
+		DependencyIndexes: file_internalgrpc_proto_depIdxs,
+		MessageInfos:      file_internalgrpc_proto_msgTypes,
 	}.Build()
-	File_proto_internalgrpc_proto = out.File
-	file_proto_internalgrpc_proto_goTypes = nil
-	file_proto_internalgrpc_proto_depIdxs = nil
+	File_internalgrpc_proto = out.File
+	file_internalgrpc_proto_goTypes = nil
+	file_internalgrpc_proto_depIdxs = nil
 }

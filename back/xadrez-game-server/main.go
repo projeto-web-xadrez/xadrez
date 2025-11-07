@@ -6,8 +6,8 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"proto-generated/internalgrpc"
 	"xadrez-game-server/gamelogic"
-	"xadrez-game-server/internalgrpc"
 
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
