@@ -4,30 +4,49 @@ RUN apk add --no-cache git gcompat bash make protoc protobuf-dev coreutils
 
 WORKDIR /app
 
+# Install protoc generators
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
-RUN mkdir -p src/api src/auth src/game-server src/login src/proto-generated src/utils src/database
+# Copy workspace file to src directory
+COPY src/go.work src/go.work.sum ./src/
+
+# Copy module files to src subdirectories (matching go.work structure)
 COPY src/api/go.mod src/api/go.sum src/api/
 COPY src/auth/go.mod src/auth/go.sum src/auth/
 COPY src/game-server/go.mod src/game-server/go.sum src/game-server/
 COPY src/login/go.mod src/login/go.sum src/login/
 COPY src/database/go.mod src/database/go.sum src/database/
-COPY src/utils/go.mod src/utils/
+COPY src/utils/go.mod src/utils/go.sum src/utils/
 COPY src/proto-generated/go.mod src/proto-generated/go.sum src/proto-generated/
-COPY src/go.work src/go.work.sum src/
 
-RUN cd src && go mod download
+# Now download dependencies (from workspace root within src)
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    cd src && go mod download
 
-COPY ./Makefile .
+# Copy proto files and generate code
 COPY ./proto/ ./proto/
-COPY ./src/utils/ ./src/utils/
-COPY ./src/database/ ./src/database/
-COPY ./src/auth/ ./src/auth/
+COPY ./Makefile .
+
+# Generate protobuf code using the correct target
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    make proto
+
+# Now copy the remaining source code to src subdirectories
+COPY ./src/ ./src/
+
+# Create bin directory for make output
+RUN mkdir -p bin
+
+# Build the application
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    make auth
 
 EXPOSE 8989
 
-RUN make auth
 CMD ["/app/bin/auth"]

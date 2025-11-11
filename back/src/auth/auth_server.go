@@ -3,9 +3,7 @@ package main
 import (
 	"auth/email"
 	"context"
-	"database"
 	"database/repositories"
-	"fmt"
 	"proto-generated/auth_grpc"
 
 	"utils"
@@ -51,39 +49,39 @@ func (server *AuthServer) RegisterAccount(ctx context.Context, req *auth_grpc.Re
 			},
 		}, nil
 	}
+	/*
+		user, err := server.userRepo.CreateUser(ctx, req.Username, req.Email, req.Password)
+		if err != nil {
 
-	user, err := server.userRepo.CreateUser(ctx, req.Username, req.Email, req.Password)
-	if err != nil {
-
-		if codifiedErr, ok := err.(*database.ConflictError); ok {
-			switch codifiedErr.Constraint {
-			case "user_email_key":
-				return &auth_grpc.RegisterAccountResponseMessage{
-					Res: &auth_grpc.Result{
-						Code:    0,
-						Message: "Confirm the email address",
-					},
-				}, nil
-			case "user_username_key":
-				return &auth_grpc.RegisterAccountResponseMessage{
-					Res: &auth_grpc.Result{
-						Code:    4,
-						Message: "Username already registered",
-					},
-				}, nil
+			if codifiedErr, ok := err.(*database.ConflictError); ok {
+				switch codifiedErr.Constraint {
+				case "user_email_key":
+					return &auth_grpc.RegisterAccountResponseMessage{
+						Res: &auth_grpc.Result{
+							Code:    0,
+							Message: "Confirm the email address",
+						},
+					}, nil
+				case "user_username_key":
+					return &auth_grpc.RegisterAccountResponseMessage{
+						Res: &auth_grpc.Result{
+							Code:    4,
+							Message: "Username already registered",
+						},
+					}, nil
+				}
 			}
-		}
 
-		fmt.Println("Unknown trying to register user: %v\n", err)
-		return &auth_grpc.RegisterAccountResponseMessage{
-			Res: &auth_grpc.Result{
-				Code:    -1,
-				Message: "Unknown error",
-			},
-		}, nil
-	}
+			fmt.Println("Unknown trying to register user: %v\n", err)
+			return &auth_grpc.RegisterAccountResponseMessage{
+				Res: &auth_grpc.Result{
+					Code:    -1,
+					Message: "Unknown error",
+				},
+			}, nil
+		}*/
 
-	fmt.Printf("%v\n", user)
+	//fmt.Printf("%v\n", user)
 
 	return &auth_grpc.RegisterAccountResponseMessage{
 		Res: &auth_grpc.Result{
