@@ -24,7 +24,9 @@ TODO:
 - Once the request gets accepted, perform the registration
 */
 func (server *AuthServer) RegisterAccount(ctx context.Context, req *auth_grpc.RegisterAccountRequestMessage) (*auth_grpc.RegisterAccountResponseMessage, error) {
-	if !utils.ValidateEmail(req.Email) {
+	var err error = nil
+	req.Email, err = utils.NormalizeEmail(req.Email)
+	if err != nil {
 		return &auth_grpc.RegisterAccountResponseMessage{
 			Res: &auth_grpc.Result{
 				Code:    1,
