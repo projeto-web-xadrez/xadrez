@@ -1,15 +1,30 @@
 FROM golang:1.25-alpine
 
-RUN apk add --no-cache git gcompat bash make protoc coreutils
+RUN apk add --no-cache git gcompat bash make protoc protobuf-dev coreutils
 
 WORKDIR /app
 
-RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
-COPY ./src/ ./src/
-COPY ./proto/ ./proto/
+RUN mkdir -p src/api src/auth src/game-server src/login src/proto-generated src/utils src/database
+COPY src/api/go.mod src/api/go.sum src/api/
+COPY src/auth/go.mod src/auth/go.sum src/auth/
+COPY src/game-server/go.mod src/game-server/go.sum src/game-server/
+COPY src/login/go.mod src/login/go.sum src/login/
+COPY src/database/go.mod src/database/go.sum src/database/
+COPY src/utils/go.mod src/utils/
+COPY src/proto-generated/go.mod src/proto-generated/go.sum src/proto-generated/
+COPY src/go.work src/go.work.sum src/
+
+RUN cd src && go mod download
+
 COPY ./Makefile .
+COPY ./proto/ ./proto/
+COPY ./src/api/ ./src/api/
+COPY ./src/utils/ ./src/utils/
 
 EXPOSE 8080
 

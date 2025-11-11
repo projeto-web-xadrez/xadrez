@@ -6,4 +6,6 @@ use (
 	./game-server
 	./login
 	./proto-generated
+	./database
+	./utils
 )

@@ -1,4 +1,5 @@
 CREATE SCHEMA IF NOT EXISTS chess;
+CREATE EXTENSION IF NOT EXISTS citext;
 
 /*
 DROP TABLE IF EXISTS chess.game;
@@ -15,17 +16,17 @@ CREATE TYPE chess.game_result_reason AS ENUM('win_checkmate', 'win_resignation',
 CREATE TYPE chess.game_category AS ENUM('bullet', 'blitz', 'rapid');
 
 CREATE TABLE IF NOT EXISTS chess.user(
-    user_id UUID PRIMARY KEY,
-    username VARCHAR(20) UNIQUE NOT NULL,
-    email VARCHAR(320) UNIQUE NOT NULL,
+    user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username citext UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    password_hash VARCHAR(320) NOT NULL
+    password_hash TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS chess.game(
-    game_id UUID PRIMARY KEY,
+    game_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     category chess.game_category NOT NULL,
-    time_control VARCHAR(10) NOT NULL,
+    time_control TEXT NOT NULL,
     white_id UUID NOT NULL REFERENCES chess.user(user_id),
     black_id UUID NOT NULL REFERENCES chess.user(user_id),
     pgn TEXT NOT NULL,

@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: admin
       PGDATA: /var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5432:5432" #TODO: remove this port
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./back/db-schemas/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -16,7 +16,7 @@ services:
   redis:
     image: redis:8
     ports:
-      - "6379:6379"
+      - "6379:6379" #TODO: remove this port
     volumes:
       - redis_data:/data
     networks:
@@ -43,9 +43,22 @@ services:
       dockerfile: ./Dockerfile.game-server
     ports:
       - "8082:8082"
-      - "9191:9191"
+      - "9191:9191" #TODO: remove this port
     networks:
       - internal
+  auth:
+    build:
+      context: ./back
+      dockerfile: ./Dockerfile.auth
+    ports:
+      - "8989:8989" #TODO: remove this port
+    networks:
+      - internal
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - ./back/.env
   front:
     build: ./front
     ports:

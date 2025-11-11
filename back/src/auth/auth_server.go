@@ -1,8 +1,14 @@
 package main
 
 import (
+	"auth/email"
 	"context"
+	"database"
+	"database/repositories"
+	"fmt"
 	"proto-generated/auth_grpc"
+
+	"utils"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -10,6 +16,8 @@ import (
 
 type AuthServer struct {
 	auth_grpc.UnimplementedAuthServer
+	userRepo    *repositories.UserRepo
+	emailSender *email.EmailSender
 }
 
 /*
@@ -17,8 +25,72 @@ TODO:
 - Assert that neither the email nor the username is already in use, and make an email request to the provided email
 - Once the request gets accepted, perform the registration
 */
-func (AuthServer) RegisterAccount(context.Context, *auth_grpc.RegisterAccountRequestMessage) (*auth_grpc.RegisterAccountResponseMessage, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RegisterAccount not implemented")
+func (server *AuthServer) RegisterAccount(ctx context.Context, req *auth_grpc.RegisterAccountRequestMessage) (*auth_grpc.RegisterAccountResponseMessage, error) {
+	if !utils.ValidateEmail(req.Email) {
+		return &auth_grpc.RegisterAccountResponseMessage{
+			Res: &auth_grpc.Result{
+				Code:    1,
+				Message: "Invalid email",
+			},
+		}, nil
+	}
+
+	if !utils.ValidateUsername(req.Username) {
+		return &auth_grpc.RegisterAccountResponseMessage{
+			Res: &auth_grpc.Result{
+				Code:    2,
+				Message: "Invalid username",
+			},
+		}, nil
+	}
+	if !utils.ValidatePassword(req.Password) {
+		return &auth_grpc.RegisterAccountResponseMessage{
+			Res: &auth_grpc.Result{
+				Code:    3,
+				Message: "Password too weak",
+			},
+		}, nil
+	}
+
+	user, err := server.userRepo.CreateUser(ctx, req.Username, req.Email, req.Password)
+	if err != nil {
+
+		if codifiedErr, ok := err.(*database.ConflictError); ok {
+			switch codifiedErr.Constraint {
+			case "user_email_key":
+				return &auth_grpc.RegisterAccountResponseMessage{
+					Res: &auth_grpc.Result{
+						Code:    0,
+						Message: "Confirm the email address",
+					},
+				}, nil
+			case "user_username_key":
+				return &auth_grpc.RegisterAccountResponseMessage{
+					Res: &auth_grpc.Result{
+						Code:    4,
+						Message: "Username already registered",
+					},
+				}, nil
+			}
+		}
+
+		fmt.Println("Unknown trying to register user: %v\n", err)
+		return &auth_grpc.RegisterAccountResponseMessage{
+			Res: &auth_grpc.Result{
+				Code:    -1,
+				Message: "Unknown error",
+			},
+		}, nil
+	}
+
+	fmt.Printf("%v\n", user)
+
+	return &auth_grpc.RegisterAccountResponseMessage{
+		Res: &auth_grpc.Result{
+			Code:    0,
+			Message: "Confirm the email address",
+		},
+	}, nil
 }
 
 /*

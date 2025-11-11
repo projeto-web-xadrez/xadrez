@@ -24,10 +24,10 @@ RUN cd src && go mod download
 COPY ./Makefile .
 COPY ./proto/ ./proto/
 COPY ./src/utils/ ./src/utils/
-COPY ./src/game-server/ ./src/game-server/
+COPY ./src/database/ ./src/database/
+COPY ./src/auth/ ./src/auth/
 
-EXPOSE 8082
-EXPOSE 9191
+EXPOSE 8989
 
-RUN make game-server
-CMD ["/app/bin/game-server"]
+RUN make auth
+CMD ["/app/bin/auth"]

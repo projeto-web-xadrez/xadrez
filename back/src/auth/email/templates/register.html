@@ -1,0 +1,37 @@
+<!-- templates/welcome.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #4F46E5; color: white; padding: 20px; text-align: center; }
+        .content { background: #f9f9f9; padding: 20px; }
+        .footer { background: #eee; padding: 10px; text-align: center; font-size: 12px; }
+        .button { background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to {{.CompanyName}}!</h1>
+        </div>
+        <div class="content">
+            <p>Hello {{.Name}},</p>
+            <p>Thank you for joining {{.CompanyName}}. We're excited to have you on board!</p>
+            
+            {{if .ActivationLink}}
+            <p style="text-align: center;">
+                <a href="{{.ActivationLink}}" class="button">Activate Your Account</a>
+            </p>
+            {{end}}
+            
+            <p>If you have any questions, feel free to reply to this email.</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2025 {{.CompanyName}}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
