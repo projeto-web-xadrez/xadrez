@@ -54,7 +54,7 @@ func (repo *UserRepo) CreateUser(ctx context.Context, username string, email str
 	return &user, nil
 }
 
-func (repo *UserRepo) CheckUserExistence(ctx context.Context, username string, email string) (bool, bool, error) {
+func (repo *UserRepo) CheckUsernameOrPasswordExistence(ctx context.Context, username string, email string) (bool, bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM chess.user WHERE username = $1),
     				 EXISTS(SELECT 1 FROM chess.user WHERE email = $2);`
 

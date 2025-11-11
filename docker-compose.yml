@@ -29,6 +29,16 @@ services:
       - "8085:8085"
     networks:
       - internal
+    develop:
+      watch:
+        - action: rebuild
+          path: ./back
+          target: /app
+          ignore: 
+            - ./back/.git
+            - ./back/.gitignore
+            - ./back/bin
+            - ./back/db-schemas
   api:
     build:
       context: ./back
@@ -37,6 +47,16 @@ services:
       - "8080:8080"
     networks:
       - internal
+    develop:
+      watch:
+        - action: rebuild
+          path: ./back
+          target: /app
+          ignore: 
+            - ./back/.git
+            - ./back/.gitignore
+            - ./back/bin
+            - ./back/db-schemas
   gameserver:
     build:
       context: ./back
@@ -46,6 +66,16 @@ services:
       - "9191:9191" #TODO: remove this port
     networks:
       - internal
+    develop:
+      watch:
+        - action: rebuild
+          path: ./back
+          target: /app
+          ignore: 
+            - ./back/.git
+            - ./back/.gitignore
+            - ./back/bin
+            - ./back/db-schemas
   auth:
     build:
       context: ./back
@@ -59,6 +89,16 @@ services:
       - redis
     env_file:
       - ./back/.env
+    develop:
+      watch:
+        - action: rebuild
+          path: ./back
+          target: /app
+          ignore: 
+            - ./back/.git
+            - ./back/.gitignore
+            - ./back/bin
+            - ./back/db-schemas
   front:
     build: ./front
     ports:
