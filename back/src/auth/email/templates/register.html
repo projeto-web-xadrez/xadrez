@@ -1,36 +1,72 @@
-<!-- templates/welcome.html -->
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #4F46E5; color: white; padding: 20px; text-align: center; }
-        .content { background: #f9f9f9; padding: 20px; }
-        .footer { background: #eee; padding: 10px; text-align: center; font-size: 12px; }
-        .button { background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; }
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4a90e2;
+            margin-bottom: 20px;
+        }
+        .code-box {
+            background: #ffffff;
+            border: 2px dashed #4a90e2;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 5px;
+            color: #4a90e2;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #666;
+        }
+        .button {
+            display: inline-block;
+            background: #4a90e2;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>Welcome to {{.CompanyName}}!</h1>
-        </div>
-        <div class="content">
-            <p>Hello {{.Name}},</p>
-            <p>Thank you for joining {{.CompanyName}}. We're excited to have you on board!</p>
-            
-            {{if .ActivationLink}}
-            <p style="text-align: center;">
-                <a href="{{.ActivationLink}}" class="button">Activate Your Account</a>
-            </p>
-            {{end}}
-            
-            <p>If you have any questions, feel free to reply to this email.</p>
-        </div>
+        <div class="logo">Projeto Xadrez Web</div>
+        
+        <h2>Welcome to Projeto Xadrez Web!</h2>
+        
+        <p>Thank you for registering an account. To complete your registration, please use the following verification code:</p>
+        
+        <div class="code-box">{{.Code}}</div>
+        
+        <p>This code will expire in 10 minutes for security reasons.</p>
+        
+        <p>If you didn't create an account with us, please ignore this email.</p>
+        
         <div class="footer">
-            <p>&copy; 2025 {{.CompanyName}}. All rights reserved.</p>
+            <p>Need help? Contact us at projeto.xadrez.web@gmail.com</p>
+            <p>&copy; 2025 Projeto Xadrez Web. All rights reserved.</p>
         </div>
     </div>
 </body>
