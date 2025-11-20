@@ -11,6 +11,9 @@ COPY ./src/ ./src/
 COPY ./proto/ ./proto/
 COPY ./Makefile .
 
+RUN chmod +x /app/proto/generate.sh
+RUN dos2unix /app/proto/generate.sh
+
 EXPOSE 8085
 
 RUN make login

@@ -1,10 +1,6 @@
-'use client';
-
-import Cookies from 'js-cookie';
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Chess, type Move } from 'chess.js';
-
+import { useAuth } from '../context/AuthContext';
 // Components
 import BoardComponent from '../components/BoardComponent';
 import GameEndedComponent from '../components/GameEndedComponent';
@@ -12,16 +8,16 @@ import SoundPlayerComponent, { type SoundPlayerHandle } from '../components/Soun
 import SignOutComponent from '../components/SignOutComponent';
 
 export default function Home() {
-  const navigate = useNavigate();
 
-  const [isAuthenticated, setAuthenticated] = useState(false);
   const soundRef = useRef<SoundPlayerHandle>(null);
   const socketRef = useRef<WebSocket>(null!)
   const ApiSocketRef = useRef<WebSocket>(null!)
   const [isPlaying, setIsPlaying] = useState(false)
   const [gameEnded, setGameEnded] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
+  const { isAuthenticated, clientId } = useAuth();
 
+  
   const [gameState, setGameState] = useState<any>({
     fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
   });
@@ -29,14 +25,9 @@ export default function Home() {
   const chessBoard = useRef<Chess>(new Chess(gameState.game_fen));
 
   useEffect(() => {
-    const csrf = Cookies.get('csrf_token');
-    if (!csrf) {
-      navigate('/login');
-      return
-    }
-
-    setAuthenticated(true);
-  }, [isAuthenticated])
+    if (!isAuthenticated) return;
+    console.log("User ID:", clientId);
+  }, [isAuthenticated]);
 
   if (!isAuthenticated)
     return null;
@@ -187,7 +178,7 @@ export default function Home() {
       {!isPlaying && isAuthenticated ? (
         <>
           <button onClick={() => requestMatch()}>Request Match</button>
-          <SignOutComponent setAuthenticated={setAuthenticated} />
+          <SignOutComponent/>
         </>
       ) : (
         <>
