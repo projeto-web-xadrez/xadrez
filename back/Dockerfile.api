@@ -1,15 +1,20 @@
 FROM golang:1.25-alpine
 
-RUN apk add --no-cache git gcompat bash make protoc coreutils
+RUN apk add --no-cache git gcompat bash make protoc coreutils dos2unix
 
 WORKDIR /app
 
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
+# copie TUDO antes de rodar make
 COPY ./src/ ./src/
 COPY ./proto/ ./proto/
 COPY ./Makefile .
+
+# garanta perms e CRLF
+RUN chmod +x /app/proto/generate.sh
+RUN dos2unix /app/proto/generate.sh
 
 EXPOSE 8080
 

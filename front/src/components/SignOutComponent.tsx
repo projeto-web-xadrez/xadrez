@@ -1,44 +1,8 @@
-import Cookies from 'js-cookie'
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
-interface SignOutProps {
-  setAuthenticated: React.Dispatch<React.SetStateAction<boolean>>;
-}
-
-const SignOutComponent: React.FC<SignOutProps> = ({ setAuthenticated }) => {
-  const navigate = useNavigate();
-
-  const signOutUser = async () => {
-    const body_obj = new FormData()
-    let user = localStorage.getItem("username") || ""
-
-    if(user == "") {
-      console.log("Username not found") 
-    }
-
-    body_obj.append("username", user)
-    const csrf = Cookies.get('csrf_token');
-    fetch("http://localhost:8085/logout", {
-      method: "POST",
-      headers: {
-        "X-CSRF-Token": csrf || "",
-        //"Content-Type": "Application/JSON"
-      },
-      credentials: 'include',
-      body: body_obj
-    })
-      .then(async (response) => {
-        if (response.status === 200) {
-          localStorage.removeItem("clientId")
-          localStorage.removeItem("username")
-          setAuthenticated(false)
-          navigate('/');
-        }
-
-        else alert(response.statusText);
-      })
-  }
+const SignOutComponent: React.FC = () => {
+   const { logout } = useAuth();
 
   const buttonStyle: React.CSSProperties = {
     padding: '10px 20px',
@@ -51,7 +15,7 @@ const SignOutComponent: React.FC<SignOutProps> = ({ setAuthenticated }) => {
   };
 
   return (
-    <button style={buttonStyle} onClick={() => signOutUser()}>
+    <button style={buttonStyle} onClick={() => logout()}>
       Sign out
     </button>
   );

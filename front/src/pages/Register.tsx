@@ -2,37 +2,22 @@
 
 import { useState } from 'react';
 import '../styles/register-styles.css'
-import { useNavigate } from 'react-router-dom';
+//import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function Register() {
-    const navigate = useNavigate();
+    //const navigate = useNavigate();
+    const {register} = useAuth()
+
     const handleClick = (e: React.MouseEvent<HTMLFormElement>) => {
         // faz o request para a rota de register ou registro
         e.preventDefault() // evita q a pagina recarregue
         if(username == "" || password == "") return
 
-        const body_obj = new FormData()
-        body_obj.append("username", username)
-        body_obj.append("password", password)
-
-        fetch("http://localhost:8085/register", {
-            method: "POST",
-            headers: {
-                //"Content-Type": "Application/JSON"
-            },
-            credentials: 'include',
-            body: body_obj
-        })
-        .then(async (response) => {
-            if(response.status != 200)
-                alert(response.statusText);
-            else {
-                const data = await response.json()
-                localStorage.setItem("clientId", data.data.clientId)
-                localStorage.setItem("username", username)
-                navigate('/dashboard');
-            } 
-        }) 
+        const ok = register(username, password)
+        if(!ok) {
+            alert("failed to register user")
+        }
     };
 
     const [username, setUsername] = useState<string>("");
