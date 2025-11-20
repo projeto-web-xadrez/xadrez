@@ -11,7 +11,8 @@ function App() {
   const {isAuthenticated} = useAuth()
 
   return (
-    <Routes>
+    <div className='xadrez'>
+      <Routes>
         <Route path="/" element={
             isAuthenticated
                 ? <Navigate to="/dashboard" replace />
@@ -20,6 +21,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
     </Routes>
+    </div>
+    
   )
 }
 

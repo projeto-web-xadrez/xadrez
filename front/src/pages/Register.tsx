@@ -2,11 +2,9 @@
 
 import { useState } from 'react';
 import '../styles/register-styles.css'
-//import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Register() {
-    //const navigate = useNavigate();
     const {register} = useAuth()
 
     const handleClick = (e: React.MouseEvent<HTMLFormElement>) => {
