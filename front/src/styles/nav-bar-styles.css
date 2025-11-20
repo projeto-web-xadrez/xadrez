@@ -1,0 +1,113 @@
+/* -------------------------- */
+/* NAVBAR BASE                */
+/* -------------------------- */
+.navbar {
+    width: 100%;
+    height: 60px;
+
+    background: #111;               /* fundo dark */
+    color: #eee;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 20px;
+
+    position: sticky;
+    top: 0;
+    z-index: 10;
+
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    font-family: sans-serif;
+}
+
+/* -------------------------- */
+/* LINKS                      */
+/* -------------------------- */
+.nav-links {
+    display: flex;
+    gap: 20px;
+}
+
+.nav-links a {
+    color: #ddd;
+    text-decoration: none;
+    font-size: 16px;
+    padding: 8px 4px;
+    transition: 0.2s ease;
+}
+
+.nav-links a:hover {
+    color: white;
+    transform: translateY(-1px);
+}
+
+.nav-links a.active {
+    color: #4ba3ff;
+}
+
+/* -------------------------- */
+/* PROFILE BUTTON             */
+/* -------------------------- */
+.profile {
+    position: relative;
+}
+
+.profile-btn {
+    background: #222;
+    color: #eee;
+    border: 1px solid #333;
+    padding: 8px 14px;
+    border-radius: 6px;
+
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.profile-btn:hover {
+    background: #333;
+}
+
+/* -------------------------- */
+/* PROFILE DROPDOWN           */
+/* -------------------------- */
+.profile-menu {
+    position: absolute;
+    right: 0;
+    margin-top: 8px;
+
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+
+    min-width: 160px;
+    padding: 8px 0;
+
+    display: none;
+    flex-direction: column;
+}
+
+.profile-menu.open {
+    display: flex;
+}
+
+.profile-menu button,
+.profile-menu a {
+    text-align: left;
+    background: none;
+    border: none;
+
+    color: #ddd;
+    padding: 10px 14px;
+    font-size: 14px;
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+.profile-menu button:hover,
+.profile-menu a:hover {
+    background: #333;
+}
