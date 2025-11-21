@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext';
 import BoardComponent from '../components/BoardComponent';
 import GameEndedComponent from '../components/GameEndedComponent';
 import SoundPlayerComponent, { type SoundPlayerHandle } from '../components/SoundPlayerComponent';
-import SignOutComponent from '../components/SignOutComponent';
 
 export default function Home() {
 
@@ -178,7 +177,6 @@ export default function Home() {
       {!isPlaying && isAuthenticated ? (
         <>
           <button onClick={() => requestMatch()}>Request Match</button>
-          <SignOutComponent/>
         </>
       ) : (
         <>

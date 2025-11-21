@@ -17,10 +17,17 @@ export const AuthContext = createContext<AuthContextType>(null!);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const navigate = useNavigate();
+    const savedUser = localStorage.getItem("username");
+    const savedId = localStorage.getItem("clientId");
+    const csrf = Cookies.get("csrf_token");
 
-    const [isAuthenticated, setAuthenticated] = useState(false);
-    const [username, setUsername] = useState<string | null>(null);
-    const [clientId, setClientId] = useState<string | null>(null);
+    const [username, setUsername] = useState<string | null>(savedUser);
+    const [clientId, setClientId] = useState<string | null>(savedId);
+
+    const [isAuthenticated, setAuthenticated] = useState(() => {
+        return !!(csrf && savedUser && savedId);
+    });
+    
 
     // Carregar autenticação via cookie + localStorage ao iniciar
     useEffect(() => {
