@@ -22,8 +22,17 @@ type Login struct {
 	ClientId       string
 }
 
+type Session struct {
+	ClientId   string
+	Username   string
+	CSRFTToken string
+}
+
 // Estrutura básica antes de adicionar a db. user -> {Login}
 var users = map[string]Login{}
+
+// Estrutura basica para pegar userid e username pela session (tabela session)
+var sessions = map[string]Session{}
 
 func login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -45,13 +54,22 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 	// Cria o token
 	if result := compPass(password, hashedPass); result {
-		fmt.Println("User logged in successfully")
+		fmt.Println("Session logged in successfully")
 		token := genToken(32)
 		csrfToken := genToken(32)
+
+		// remove token anterior
+		delete(sessions, current_user.Token)
 
 		current_user.Token = token
 		current_user.CSRFTToken = csrfToken
 		users[username] = current_user
+
+		sessions[token] = Session{
+			ClientId:   current_user.ClientId,
+			Username:   username,
+			CSRFTToken: csrfToken,
+		}
 
 		// seta o token no navegador
 		http.SetCookie(w, &http.Cookie{
@@ -99,7 +117,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	if _, ok := users[username]; ok {
 		err := http.StatusConflict
-		http.Error(w, "User already registered", err)
+		http.Error(w, "Session already registered", err)
 		return
 	}
 	password := r.FormValue("password")
@@ -114,7 +132,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 		HashedPassword: result,
 	}
 
-	fmt.Println("User registered successfully")
+	fmt.Println("Session registered successfully")
 
 	token := genToken(32)
 	csrfToken := genToken(32)
@@ -125,6 +143,12 @@ func register(w http.ResponseWriter, r *http.Request) {
 	current_user.CSRFTToken = csrfToken
 	current_user.ClientId = clientId
 	users[username] = current_user
+
+	sessions[token] = Session{
+		ClientId:   clientId,
+		Username:   username,
+		CSRFTToken: csrfToken,
+	}
 
 	// seta o token no navegador
 	http.SetCookie(w, &http.Cookie{
@@ -145,7 +169,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 	final_result.Type = "result"
 	final_result.Data = make(map[string]interface{})
 	final_result.Data["clientId"] = clientId
-	final_result.Data["serverResponse"] = "User registered"
+	final_result.Data["serverResponse"] = "Session registered"
 
 	jsonData, _ := json.Marshal(final_result)
 
@@ -158,19 +182,12 @@ func register(w http.ResponseWriter, r *http.Request) {
 }
 
 func logout(w http.ResponseWriter, r *http.Request) {
-	username := r.FormValue("username")
-	if user, ok := users[username]; ok {
-		// Se quisermos proteger a rota adicionamos essa parte:
-
-		if err := Authorize(r); err != nil {
-			fmt.Println(err.Error())
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
+	sessionCookie, err := r.Cookie("session_token")
+	if err == nil {
+		sessionToken := sessionCookie.Value
+		if _, ok := sessions[sessionToken]; ok {
+			delete(sessions, sessionToken)
 		}
-
-		user.CSRFTToken = ""
-		user.Token = ""
-		users[username] = user
 	}
 
 	http.SetCookie(w, &http.Cookie{
