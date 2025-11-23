@@ -34,7 +34,7 @@ export default function Home() {
   const startGame = (playerId: string, roomId: string) => {
     if (socketRef.current && ![WebSocket.CLOSED, WebSocket.CLOSING as number].includes(socketRef.current.readyState) || playerId == "null")
       socketRef.current.close();
-    socketRef.current = new WebSocket('ws://localhost:8082/ws');
+    socketRef.current = new WebSocket('ws://localhost:80/gameserver/ws');
 
     socketRef.current.onmessage = (e) => {
       const msg = JSON.parse(e.data);

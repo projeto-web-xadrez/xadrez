@@ -83,6 +83,8 @@ func login(w http.ResponseWriter, r *http.Request) {
 			Value:    token,
 			Expires:  time.Now().Add(24 * time.Hour),
 			HttpOnly: true,
+			Path:     "/",
+			SameSite: http.SameSiteLaxMode,
 		})
 
 		http.SetCookie(w, &http.Cookie{
@@ -90,6 +92,8 @@ func login(w http.ResponseWriter, r *http.Request) {
 			Value:    csrfToken,
 			Expires:  time.Now().Add(24 * time.Hour),
 			HttpOnly: false, // garante que só aquele site vai conseguir ler e enviar o token no header
+			Path:     "/",
+			SameSite: http.SameSiteLaxMode,
 		})
 
 		var result dataObj
@@ -162,6 +166,8 @@ func register(w http.ResponseWriter, r *http.Request) {
 		Value:    token,
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	http.SetCookie(w, &http.Cookie{
@@ -169,6 +175,8 @@ func register(w http.ResponseWriter, r *http.Request) {
 		Value:    csrfToken,
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: false, // garante que só aquele site vai conseguir ler e enviar o token no header
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	var final_result dataObj
@@ -261,8 +269,9 @@ func validateUserSession(w http.ResponseWriter, r *http.Request) {
 }
 
 var allowedOrigins = map[string]bool{
-	"http://localhost:3000": true,
-	"http://localhost:3001": true,
+	"http://localhost:80": true,
+	"http://localhost":    true,
+	"localhost":           true,
 }
 
 // Funcao de teste; retirado daqui: https://www.stackhawk.com/blog/golang-cors-guide-what-it-is-and-how-to-enable-it/#h-what-is-cors

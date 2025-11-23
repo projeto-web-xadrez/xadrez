@@ -28,7 +28,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (isAuthenticated) {
-            ws.current = new WebSocket("ws://localhost:8080/ws");
+            ws.current = new WebSocket("ws://localhost:80/api/ws");
 
             ws.current.onopen = () => setConnected(true);
             ws.current.onerror = (err) => console.error("[WS] ERROR", err);
@@ -46,7 +46,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
         // cleanup ao deslogar ou desmontar componente
         return () => {
-            ws?.current.close();
+            ws?.current?.close();
             //socket.current = null
             setConnected(false);
         };

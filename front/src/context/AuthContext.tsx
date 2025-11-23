@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body.append("username", username);
         body.append("password", password);
 
-        const res = await fetch("http://localhost:8085/login", {
+        const res = await fetch("http://localhost:80/loginapi/login", {
             method: "POST",
             credentials: "include",
             body
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body_obj.append("username", username)
         body_obj.append("password", password)
 
-        const response = await fetch("http://localhost:8085/register", {
+        const response = await fetch("http://localhost:80/loginapi/register", {
             method: "POST",
             headers: {
                 //"Content-Type": "Application/JSON"
