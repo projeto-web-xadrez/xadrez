@@ -28,6 +28,12 @@ type Session struct {
 	CSRFTToken string
 }
 
+type ValidateResponse struct {
+	Valid    bool   `json:"valid"`
+	Username string `json:"username"`
+	ClientId string `json:"clientId"`
+}
+
 // Estrutura básica antes de adicionar a db. user -> {Login}
 var users = map[string]Login{}
 
@@ -223,6 +229,37 @@ func protectedRoute(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("You accessed the protected route."))
 }
 
+func validateUserSession(w http.ResponseWriter, r *http.Request) {
+	sessionCookie, err := r.Cookie("session_token")
+
+	if err != nil {
+		http.Error(w, "Session token not present", http.StatusUnauthorized)
+		return
+	}
+
+	//csrf := r.Header.Get("X-CSRF-Token")
+	user_session, ok := sessions[sessionCookie.Value]
+
+	if !ok {
+		http.Error(w, "Invalid session", http.StatusUnauthorized)
+		return
+	}
+
+	/* if csrf == "" || user_session.CSRFTToken != csrf {
+		http.Error(w, "Invalid csrf", http.StatusUnauthorized)
+		return
+	} */
+
+	var response = ValidateResponse{
+		Valid:    true,
+		Username: user_session.Username,
+		ClientId: user_session.ClientId,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
+}
+
 var allowedOrigins = map[string]bool{
 	"http://localhost:3000": true,
 	"http://localhost:3001": true,
@@ -258,6 +295,7 @@ func main() {
 	mux.HandleFunc("/login", login)
 	mux.HandleFunc("/register", register)
 	mux.HandleFunc("/logout", logout)
+	mux.HandleFunc("/validate-session", validateUserSession)
 	mux.HandleFunc("/protected", protectedRoute)
 
 	handler := corsMiddleware(mux)
