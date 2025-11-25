@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"proto-generated/internalgrpc"
+	"proto-generated/matchmaking_grpc"
 	"sync"
 	"time"
 
@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var internal_grpc_conn internalgrpc.InternalClient
+var matchmaking_grpc_conn matchmaking_grpc.MatchMakingClient
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true }, // Allow all connections

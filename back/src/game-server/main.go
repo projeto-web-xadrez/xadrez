@@ -7,7 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"proto-generated/internalgrpc"
+	"proto-generated/matchmaking_grpc"
 
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
@@ -24,21 +24,21 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true }, // Allow all connections
 }
 
-type InternalServer struct {
-	internalgrpc.UnimplementedInternalServer
+type MatchMakingServer struct {
+	matchmaking_grpc.UnimplementedMatchMakingServer
 }
 
-func (s *InternalServer) RequestRoom(ctx context.Context, req *internalgrpc.RequestRoomMessage) (*internalgrpc.RoomResponse, error) {
+func (s *MatchMakingServer) RequestRoom(ctx context.Context, req *matchmaking_grpc.RequestRoomMessage) (*matchmaking_grpc.RoomResponse, error) {
 	room, err := gamelogic.CreateNewRoom(req.PlayerId_1, req.PlayerId_2)
 	if err != nil {
 		error_msg := err.Error()
-		return &internalgrpc.RoomResponse{
+		return &matchmaking_grpc.RoomResponse{
 			RoomId:   "",
 			ErrorMsg: &error_msg,
 		}, nil
 	}
 
-	return &internalgrpc.RoomResponse{
+	return &matchmaking_grpc.RoomResponse{
 		RoomId: room.RoomID,
 	}, nil
 }
@@ -80,7 +80,7 @@ func main() {
 		}
 
 		server := grpc.NewServer()
-		internalgrpc.RegisterInternalServer(server, &InternalServer{})
+		matchmaking_grpc.RegisterMatchMakingServer(server, &MatchMakingServer{})
 		fmt.Printf("GRPC internal server listening at %s\n", grpcAddress)
 		err = server.Serve(grpcListener)
 		if err != nil {

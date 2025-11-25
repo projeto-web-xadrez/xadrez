@@ -1,0 +1,104 @@
+syntax = "proto3";
+option go_package = "./auth_grpc";
+
+import "google/protobuf/timestamp.proto";
+
+message Result {
+  bool ok = 1;
+  int32 code = 2;
+  string message = 3;
+}
+
+message Session {
+    string token = 1;
+    string user_id = 2;
+    string email = 3;
+    string username = 4;
+    google.protobuf.Timestamp issued = 5;
+    google.protobuf.Timestamp expires = 6;
+}
+
+message UserLoggedIn {
+    Result res = 1;
+    optional Session session = 2;
+}
+
+message LoginInput {
+    string origin_ip = 1;
+    string email = 2;
+    string password = 3;
+}
+
+message EmailVerificationInput {
+    string origin_ip = 1;
+    string verification_token = 2;
+    string verification_code = 3;
+}
+
+message EmailVerificationPending {
+    Result res = 1;
+    optional string verification_token = 2;
+    optional string email = 3;
+    optional string verification_type = 4;
+}
+
+message StartRegistrationInput {
+    string origin_ip = 1;
+    string username = 2;
+    string email = 3;
+    string password = 4; 
+}
+
+message StartPasswordChangeInput {
+    string origin_ip = 1;
+    string email = 2;
+}
+
+message PasswordChangeRequest {
+    Result res = 1;
+    optional string password_change_token = 2;
+    optional string password_change_code = 3;
+}
+
+message PasswordChangeInput {
+    string origin_ip = 1;
+    string new_password = 2;
+    string password_change_token = 3;
+    string password_change_code = 4;
+}
+
+message StartEmailChangeInput {
+    string origin_ip = 1;
+    string token = 2;
+}
+
+message EmailChangeRequest {
+    Result res = 1;
+    optional string email_change_token = 2;
+}
+
+message ChangeEmailInput {
+    string origin_ip = 1;
+    string email_change_token = 2;
+    string new_email = 3;
+}
+
+service Auth {
+    // Authentication
+    rpc Login(LoginInput) returns (UserLoggedIn);
+    
+    // Registration flow
+    rpc StartRegistration(StartRegistrationInput) returns (EmailVerificationPending);
+    rpc ConfirmRegistration(EmailVerificationInput) returns (UserLoggedIn);
+    
+    // Password change flow
+    rpc StartPasswordChange(StartPasswordChangeInput) returns (EmailVerificationPending);
+    rpc PasswordChangeVerifyEmail(EmailVerificationInput) returns (PasswordChangeRequest);
+    rpc ChangePassword(PasswordChangeInput) returns (UserLoggedIn);
+
+    // Email change flow
+    rpc StartEmailChange(StartEmailChangeInput) returns (EmailVerificationPending);
+    rpc EmailChangeVerifyCurrentEmail(EmailVerificationInput) returns (EmailChangeRequest);
+    rpc ChangeEmail(ChangeEmailInput) returns (EmailVerificationPending);
+    rpc ConfirmEmailChange(EmailVerificationInput) returns (UserLoggedIn);
+}

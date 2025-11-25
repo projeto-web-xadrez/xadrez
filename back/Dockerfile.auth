@@ -45,8 +45,8 @@ RUN mkdir -p bin
 # Build the application
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    make login
+    make auth
 
-EXPOSE 8085
+EXPOSE 8989
 
-CMD ["/app/bin/login"]
+CMD ["/app/bin/auth"]

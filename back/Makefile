@@ -6,7 +6,7 @@ SRC_DIR := src
 PROJECTS := api game-server login
 
 .PHONY: all
-all: $(PROJECTS)
+all: $(PROJECTS) auth
 
 .PHONY: proto
 proto:
@@ -17,3 +17,9 @@ proto:
 $(PROJECTS): proto
 	@echo "Building $@"
 	@cd ${SRC_DIR} && go build -o ${OUT_PATH}/$@ $@;
+
+.PHONY: auth
+auth: proto
+	@echo "Building $@"
+	@cd ${SRC_DIR} && go build -o ${OUT_PATH}/$@ $@;
+	cp -r ${SRC_DIR}/auth/mailsender/templates ${OUT_PATH}
