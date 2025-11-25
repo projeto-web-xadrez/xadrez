@@ -31,6 +31,8 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 COPY ./proto/ ./proto/
 COPY ./Makefile .
 
+RUN chmod +x /app/proto/generate.sh
+
 # Generate protobuf code using the correct target
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
