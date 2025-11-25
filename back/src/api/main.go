@@ -168,8 +168,8 @@ func matchmaking() {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	room, err := internal_grpc_conn.RequestRoom(ctx,
-		&internalgrpc.RequestRoomMessage{
+	room, err := matchmaking_grpc_conn.RequestRoom(ctx,
+		&matchmaking_grpc.RequestRoomMessage{
 			PlayerId_1: player1,
 			PlayerId_2: player2,
 		})
@@ -325,7 +325,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	internal_grpc_conn = internalgrpc.NewInternalClient(conn)
+	matchmaking_grpc_conn = matchmaking_grpc.NewMatchMakingClient(conn)
 
 	// WaitGroup apenas para o servidor WebSocket
 	var wg sync.WaitGroup
