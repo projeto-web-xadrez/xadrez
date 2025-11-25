@@ -29,6 +29,7 @@ const (
 	Auth_EmailChangeVerifyCurrentEmail_FullMethodName = "/Auth/EmailChangeVerifyCurrentEmail"
 	Auth_ChangeEmail_FullMethodName                   = "/Auth/ChangeEmail"
 	Auth_ConfirmEmailChange_FullMethodName            = "/Auth/ConfirmEmailChange"
+	Auth_ValidateSession_FullMethodName               = "/Auth/ValidateSession"
 )
 
 // AuthClient is the client API for Auth service.
@@ -49,6 +50,8 @@ type AuthClient interface {
 	EmailChangeVerifyCurrentEmail(ctx context.Context, in *EmailVerificationInput, opts ...grpc.CallOption) (*EmailChangeRequest, error)
 	ChangeEmail(ctx context.Context, in *ChangeEmailInput, opts ...grpc.CallOption) (*EmailVerificationPending, error)
 	ConfirmEmailChange(ctx context.Context, in *EmailVerificationInput, opts ...grpc.CallOption) (*UserLoggedIn, error)
+	// Validate session
+	ValidateSession(ctx context.Context, in *SessionValidationInput, opts ...grpc.CallOption) (*UserLoggedIn, error)
 }
 
 type authClient struct {
@@ -159,6 +162,16 @@ func (c *authClient) ConfirmEmailChange(ctx context.Context, in *EmailVerificati
 	return out, nil
 }
 
+func (c *authClient) ValidateSession(ctx context.Context, in *SessionValidationInput, opts ...grpc.CallOption) (*UserLoggedIn, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UserLoggedIn)
+	err := c.cc.Invoke(ctx, Auth_ValidateSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServer is the server API for Auth service.
 // All implementations must embed UnimplementedAuthServer
 // for forward compatibility.
@@ -177,6 +190,8 @@ type AuthServer interface {
 	EmailChangeVerifyCurrentEmail(context.Context, *EmailVerificationInput) (*EmailChangeRequest, error)
 	ChangeEmail(context.Context, *ChangeEmailInput) (*EmailVerificationPending, error)
 	ConfirmEmailChange(context.Context, *EmailVerificationInput) (*UserLoggedIn, error)
+	// Validate session
+	ValidateSession(context.Context, *SessionValidationInput) (*UserLoggedIn, error)
 	mustEmbedUnimplementedAuthServer()
 }
 
@@ -216,6 +231,9 @@ func (UnimplementedAuthServer) ChangeEmail(context.Context, *ChangeEmailInput) (
 }
 func (UnimplementedAuthServer) ConfirmEmailChange(context.Context, *EmailVerificationInput) (*UserLoggedIn, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ConfirmEmailChange not implemented")
+}
+func (UnimplementedAuthServer) ValidateSession(context.Context, *SessionValidationInput) (*UserLoggedIn, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ValidateSession not implemented")
 }
 func (UnimplementedAuthServer) mustEmbedUnimplementedAuthServer() {}
 func (UnimplementedAuthServer) testEmbeddedByValue()              {}
@@ -418,6 +436,24 @@ func _Auth_ConfirmEmailChange_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Auth_ValidateSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionValidationInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).ValidateSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Auth_ValidateSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).ValidateSession(ctx, req.(*SessionValidationInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Auth_ServiceDesc is the grpc.ServiceDesc for Auth service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -464,6 +500,10 @@ var Auth_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ConfirmEmailChange",
 			Handler:    _Auth_ConfirmEmailChange_Handler,
+		},
+		{
+			MethodName: "ValidateSession",
+			Handler:    _Auth_ValidateSession_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
