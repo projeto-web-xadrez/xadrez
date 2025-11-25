@@ -11,7 +11,7 @@ type WebSocketContextType = {
 export const WebSocketContext = createContext<WebSocketContextType>(null!);
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
-    const { isAuthenticated } = useAuth(); // supondo user.id
+    const { isAuthenticated, checkValidToken } = useAuth(); // supondo user.id
     const [isConnected, setConnected] = useState(false);
     const ws = useRef<WebSocket>(null!)
 
@@ -27,12 +27,27 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     }
 
     useEffect(() => {
+        const pingInterval = setInterval(() => {
+            if (ws?.current) {
+                ws?.current?.send(JSON.stringify({ "type": "ping", "data": { "ping": "ping" } }))
+            }
+        }, 15 * 1000);
+
         if (isAuthenticated) {
             ws.current = new WebSocket("ws://localhost:80/api/ws");
 
             ws.current.onopen = () => setConnected(true);
-            ws.current.onerror = (err) => console.error("[WS] ERROR", err);
-            ws.current.onclose = () => setConnected(false);
+            ws.current.onerror = (err) => {
+                console.log("[WS-API] ERROR", err);
+            }
+            ws.current.onclose = async (event) => {
+                console.log(event.code + event.reason)
+                console.log("[WS-API] Servidor foi finalizado. ")
+                setConnected(false);
+
+                // TODO: lidar com o token sendo invalidado no meio da acao
+                checkValidToken()
+            }
 
             ws.current.onmessage = (event) => {
                 const rawData = JSON.parse(event.data)
@@ -40,14 +55,19 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
                 const data = rawData.data
 
                 if (channels.current?.[dataType]) channels.current[dataType](data)
-                
+
             };
+
         }
 
         // cleanup ao deslogar ou desmontar componente
         return () => {
-            ws?.current?.close();
+            if (ws && ws?.current?.readyState !== WebSocket.CLOSING
+                && ws?.current?.readyState !== WebSocket.CLOSED
+            ) ws?.current?.close();
+
             //socket.current = null
+            clearInterval(pingInterval)
             setConnected(false);
         };
     }, [isAuthenticated]);
@@ -56,10 +76,10 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         if (!ws || ws.current.readyState !== WebSocket.OPEN) return false;
         try {
             ws.current?.send(JSON.stringify({ type, data }));
-        } catch(err) {
+        } catch (err) {
             return false
         }
-        
+
         return true;
     }
 

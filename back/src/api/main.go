@@ -64,8 +64,11 @@ func safeRegisterMatchRequest(client clientObj) bool {
 
 	currentState, ok := usersMap[client.id]
 	if ok && currentState != "idle" {
+		fmt.Println("denied :: " + client.id + " ; he's either already in queue or state not idle")
 		return false
 	}
+
+	fmt.Println("Registering " + client.id + " in queue")
 	usersMap[client.id] = "searching"
 	clients[client.id] = client.ws
 	queue = append(queue, client.id)
@@ -245,6 +248,24 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		userData, err := ValidateWithLoginServer(r)
 
 		if err != nil {
+			fmt.Println("Client session was not valid")
+			http.SetCookie(w, &http.Cookie{
+				Name:     "session_token",
+				Value:    "",
+				Expires:  time.Now().Add(-time.Hour),
+				HttpOnly: true,
+				Path:     "/",
+				SameSite: http.SameSiteLaxMode,
+			})
+
+			http.SetCookie(w, &http.Cookie{
+				Name:     "csrf_token",
+				Value:    "",
+				Expires:  time.Now().Add(-time.Hour),
+				HttpOnly: false,
+				Path:     "/",
+				SameSite: http.SameSiteLaxMode,
+			})
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -289,7 +310,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if obj.Type == "requestMatch" {
-			fmt.Println("Registering " + client.id + " in queue")
+			fmt.Println("Processing " + client.id + " request")
 			safeRegisterMatchRequest(client)
 
 		}

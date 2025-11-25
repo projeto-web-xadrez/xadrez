@@ -209,6 +209,8 @@ func logout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Expires:  time.Now().Add(-time.Hour),
 		HttpOnly: true,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	http.SetCookie(w, &http.Cookie{
@@ -216,6 +218,8 @@ func logout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Expires:  time.Now().Add(-time.Hour),
 		HttpOnly: false,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
 	})
 	fmt.Println("Logout completed successfully")
 }
