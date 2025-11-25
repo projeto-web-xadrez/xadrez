@@ -1,26 +1,21 @@
-'use client';
-
-import Cookies from 'js-cookie';
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Chess, type Move } from 'chess.js';
-
+import { useAuth } from '../context/AuthContext';
+import { useWebsocket } from '../context/WebSocketContext';
 // Components
 import BoardComponent from '../components/BoardComponent';
 import GameEndedComponent from '../components/GameEndedComponent';
 import SoundPlayerComponent, { type SoundPlayerHandle } from '../components/SoundPlayerComponent';
-import SignOutComponent from '../components/SignOutComponent';
 
 export default function Home() {
-  const navigate = useNavigate();
-
-  const [isAuthenticated, setAuthenticated] = useState(false);
+  const playerId = localStorage.getItem("clientId") || "null";
   const soundRef = useRef<SoundPlayerHandle>(null);
   const socketRef = useRef<WebSocket>(null!)
-  const ApiSocketRef = useRef<WebSocket>(null!)
   const [isPlaying, setIsPlaying] = useState(false)
   const [gameEnded, setGameEnded] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
+  const { isAuthenticated, clientId } = useAuth();
+  const { isConnected, sendMessage, subscribe, unsubscribe } = useWebsocket()
 
   const [gameState, setGameState] = useState<any>({
     fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
@@ -29,14 +24,9 @@ export default function Home() {
   const chessBoard = useRef<Chess>(new Chess(gameState.game_fen));
 
   useEffect(() => {
-    const csrf = Cookies.get('csrf_token');
-    if (!csrf) {
-      navigate('/login');
-      return
-    }
-
-    setAuthenticated(true);
-  }, [isAuthenticated])
+    if (!isAuthenticated) return;
+    console.log("User ID:", clientId);
+  }, [isAuthenticated]);
 
   if (!isAuthenticated)
     return null;
@@ -44,7 +34,7 @@ export default function Home() {
   const startGame = (playerId: string, roomId: string) => {
     if (socketRef.current && ![WebSocket.CLOSED, WebSocket.CLOSING as number].includes(socketRef.current.readyState) || playerId == "null")
       socketRef.current.close();
-    socketRef.current = new WebSocket('ws://localhost:8082/ws');
+    socketRef.current = new WebSocket('ws://localhost:80/gameserver/ws');
 
     socketRef.current.onmessage = (e) => {
       const msg = JSON.parse(e.data);
@@ -113,40 +103,20 @@ export default function Home() {
     socketRef.current.onclose = () => console.log('[GAME-SERVER] Socket closed');
   }
 
+  const startGameRef = useRef(startGame);
+  startGameRef.current = startGame;
+
   const requestMatch = () => {
-    const playerId = localStorage.getItem("clientId") || "null";
-    console.log(playerId)
-    if (ApiSocketRef.current && ![WebSocket.CLOSED, WebSocket.CLOSING as number].includes(ApiSocketRef.current.readyState) || playerId == "null") {
-      ApiSocketRef.current.close();
-      console.log("[XADREZ-API] Fechando conexao")
-    }
+    const ok = sendMessage("requestMatch", { id: playerId });
 
-    ApiSocketRef.current = new WebSocket('ws://localhost:8080/ws');
+    if (!ok) return;
 
-    ApiSocketRef.current.onmessage = (e) => {
-      const msg = JSON.parse(e.data);
-      console.log(e)
-      console.log(msg)
-      if (msg.type === 'matchFound') {
-        console.log("Partida encontrada, conectando a sala " + msg.data.roomId)
-        startGame(playerId, msg.data.roomId)
-      }
-    }
+    subscribe("matchFound", (data) => {
+      unsubscribe("matchFound"); // evita múltiplas execuções
+      startGameRef.current(playerId, data.roomId);
+    });
+  };
 
-    ApiSocketRef.current.onerror = e => console.error(`Error: ${e}`);
-    ApiSocketRef.current.onopen = () => {
-      ApiSocketRef.current.send(JSON.stringify(
-        {
-          'type': 'requestMatch',
-          'data': {
-            'id': playerId
-          }
-        }
-      ))
-    }
-
-    ApiSocketRef.current.onclose = () => console.log('[XADREZ-API] Socket Closed');
-  }
 
   const sendMove = (move: Move) => {
     chessBoard.current.move(move);
@@ -186,8 +156,7 @@ export default function Home() {
     <div className='main'>
       {!isPlaying && isAuthenticated ? (
         <>
-          <button onClick={() => requestMatch()}>Request Match</button>
-          <SignOutComponent setAuthenticated={setAuthenticated} />
+          <button disabled={!isConnected} onClick={() => requestMatch()}>Request Match</button>
         </>
       ) : (
         <>

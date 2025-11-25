@@ -1,4 +1,16 @@
 services:
+  proxy:
+    image: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - internal
+    depends_on:
+      - login
+      - api
+      - gameserver
   postgres:
     image: postgres:18
     environment:
@@ -103,6 +115,8 @@ services:
     build: ./front
     ports:
       - "3000:3000"
+    networks:
+      - internal
     develop:
       watch:
         - action: sync

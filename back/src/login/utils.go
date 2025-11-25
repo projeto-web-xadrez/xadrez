@@ -41,28 +41,26 @@ func genToken(length int) string {
 }
 
 func Authorize(r *http.Request) error {
-	username := r.FormValue("username")
-	user, ok := users[username]
-	if !ok {
+	session_token, err := r.Cookie("session_token")
+
+	if err != nil {
 		return &AuthError{
 			StatusCode: http.StatusUnauthorized,
-			Err:        errors.New("User not registered"),
+			Err:        errors.New("Session token not present"),
 		}
 	}
 
-	session_token, err := r.Cookie("session_token")
-	//fmt.Println("Expected %s : got %s", user.Token, session_token.Value)
-	// Identifica quando o token não é valido ou se houve algum erro para pega-lo
-	if err != nil || session_token.Value == "" || session_token.Value != user.Token {
+	session, ok := sessions[session_token.Value]
+	if !ok {
 		return &AuthError{
 			StatusCode: http.StatusUnauthorized,
-			Err:        errors.New("Session token different from expected"),
+			Err:        errors.New("Session token is not valid"),
 		}
 	}
 
 	csrf := r.Header.Get("X-CSRF-Token")
 
-	if csrf == "" || csrf != user.CSRFTToken {
+	if csrf == "" || csrf != session.CSRFTToken {
 		return &AuthError{
 			StatusCode: http.StatusUnauthorized,
 			Err:        errors.New("CSRF token different than expected"),
