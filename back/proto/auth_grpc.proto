@@ -29,6 +29,10 @@ message LoginInput {
     string password = 3;
 }
 
+message SessionValidationInput {
+    string token = 1;
+}
+
 message EmailVerificationInput {
     string origin_ip = 1;
     string verification_token = 2;
@@ -101,4 +105,7 @@ service Auth {
     rpc EmailChangeVerifyCurrentEmail(EmailVerificationInput) returns (EmailChangeRequest);
     rpc ChangeEmail(ChangeEmailInput) returns (EmailVerificationPending);
     rpc ConfirmEmailChange(EmailVerificationInput) returns (UserLoggedIn);
+
+    // Validate session
+    rpc ValidateSession(SessionValidationInput) returns (UserLoggedIn);
 }

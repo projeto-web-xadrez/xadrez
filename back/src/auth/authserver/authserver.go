@@ -75,7 +75,7 @@ func (server *AuthServer) StartRegistration(ctx context.Context, req *auth_grpc.
 		}, nil
 	}
 
-	usernameExists, emailExists, err := server.userRepo.CheckUsernameOrPasswordExistence(ctx, req.Username, req.Email)
+	usernameExists, emailExists, err := server.userRepo.CheckUsernameOrEmailExistence(ctx, req.Username, req.Email)
 	if err != nil {
 		return &auth_grpc.EmailVerificationPending{
 			Res: &RES_ERR_UNKNOWN,

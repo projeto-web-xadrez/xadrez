@@ -1,11 +1,17 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"proto-generated/auth_grpc"
 	"time"
+
+	"google.golang.org/grpc"
 )
+
+var auth_server_grpc auth_grpc.AuthClient
 
 // NAO PRECISAMOS IMPORTAR MANUALMENTE SE OS ARQUIVOS ESTIVEREM NO MESMO DIRETÓRIO
 // E COM O MESMO PACKAGE NO TOPO
@@ -47,73 +53,64 @@ func login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid Method", err)
 		return
 	}
-	// verificar se o usuário está registrado
-	username := r.FormValue("username")
-	if _, ok := users[username]; !ok {
-		err := http.StatusConflict
-		http.Error(w, "User is not registered", err)
+
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+
+	loginInput := auth_grpc.LoginInput{
+		Email:    email,
+		Password: password,
+	}
+
+	ctx := context.Background()
+	userLoggedInMessage, err := auth_server_grpc.Login(ctx, &loginInput)
+
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return
 	}
-	password := r.FormValue("password")
-	current_user := users[username]
-	hashedPass := current_user.HashedPassword
 
-	// Cria o token
-	if result := compPass(password, hashedPass); result {
-		fmt.Println("Session logged in successfully")
-		token := genToken(32)
-		csrfToken := genToken(32)
-
-		// remove token anterior
-		delete(sessions, current_user.Token)
-
-		current_user.Token = token
-		current_user.CSRFTToken = csrfToken
-		users[username] = current_user
-
-		sessions[token] = Session{
-			ClientId:   current_user.ClientId,
-			Username:   username,
-			CSRFTToken: csrfToken,
-		}
-
-		// seta o token no navegador
-		http.SetCookie(w, &http.Cookie{
-			Name:     "session_token",
-			Value:    token,
-			Expires:  time.Now().Add(24 * time.Hour),
-			HttpOnly: true,
-			Path:     "/",
-			SameSite: http.SameSiteLaxMode,
-		})
-
-		http.SetCookie(w, &http.Cookie{
-			Name:     "csrf_token",
-			Value:    csrfToken,
-			Expires:  time.Now().Add(24 * time.Hour),
-			HttpOnly: false, // garante que só aquele site vai conseguir ler e enviar o token no header
-			Path:     "/",
-			SameSite: http.SameSiteLaxMode,
-		})
-
-		var result dataObj
-		result.Type = "result"
-		result.Data = make(map[string]interface{})
-		result.Data["clientId"] = current_user.ClientId
-		result.Data["serverResponse"] = "Successfully logged in"
-
-		jsonData, _ := json.Marshal(result)
-
-		w.Header().Set("Content-Type", "application/json")
-
-		if _, e := w.Write([]byte(jsonData)); e != nil {
-			err := http.StatusInternalServerError
-			http.Error(w, "Failed to respond to login", err)
-		}
-	} else {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	if !userLoggedInMessage.Res.Ok {
+		http.Error(w, userLoggedInMessage.Res.Message, http.StatusConflict)
+		return
 	}
 
+	current_session := userLoggedInMessage.Session
+	csrf_token := GenerateCSRFToken(current_session.Token)
+
+	// seta o token no navegador
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    current_session.Token,
+		Expires:  current_session.GetExpires().AsTime(),
+		HttpOnly: true,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "csrf_token",
+		Value:    csrf_token,
+		Expires:  current_session.GetExpires().AsTime(),
+		HttpOnly: false, // garante que só aquele site vai conseguir ler e enviar o token no header
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	var final_result dataObj
+	final_result.Type = "result"
+	final_result.Data = make(map[string]interface{})
+	final_result.Data["clientId"] = current_session.UserId
+	final_result.Data["serverResponse"] = "User registered"
+
+	jsonData, _ := json.Marshal(final_result)
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if _, e := w.Write([]byte(jsonData)); e != nil {
+		err := http.StatusInternalServerError
+		http.Error(w, "Failed to respond to register", err)
+	}
 }
 
 func register(w http.ResponseWriter, r *http.Request) {
@@ -124,47 +121,93 @@ func register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// verificar se o usuário ja existe
+	email := r.FormValue("email")
 	username := r.FormValue("username")
-	if _, ok := users[username]; ok {
-		err := http.StatusConflict
-		http.Error(w, "Session already registered", err)
+	password := r.FormValue("password")
+
+	// Missing fields
+	if email == "" || username == "" || password == "" {
+		err := http.StatusExpectationFailed
+		http.Error(w, "Missing fields", err)
 		return
 	}
-	password := r.FormValue("password")
-	result, err := hashPass(password)
+	ctx := context.Background()
+	registrationInput := auth_grpc.StartRegistrationInput{
+		Username: username,
+		Password: password,
+		Email:    email,
+	}
 
+	verificationPendingMessage, err := auth_server_grpc.StartRegistration(ctx, &registrationInput)
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return
 	}
 
-	users[username] = Login{
-		HashedPassword: result,
+	if !verificationPendingMessage.Res.Ok {
+		http.Error(w, verificationPendingMessage.Res.Message, http.StatusConflict)
+		return
 	}
 
-	fmt.Println("Session registered successfully")
+	var final_result dataObj
+	final_result.Type = "result"
+	final_result.Data = make(map[string]interface{})
+	final_result.Data["serverResponse"] = "Please enter the code sent to your email"
+	final_result.Data["verificationToken"] = verificationPendingMessage.VerificationToken
 
-	token := genToken(32)
-	csrfToken := genToken(32)
-	clientId := genToken(16)
+	jsonData, _ := json.Marshal(final_result)
 
-	current_user := users[username]
-	current_user.Token = token
-	current_user.CSRFTToken = csrfToken
-	current_user.ClientId = clientId
-	users[username] = current_user
+	w.Header().Set("Content-Type", "application/json")
 
-	sessions[token] = Session{
-		ClientId:   clientId,
-		Username:   username,
-		CSRFTToken: csrfToken,
+	if _, e := w.Write([]byte(jsonData)); e != nil {
+		err := http.StatusInternalServerError
+		http.Error(w, "Failed to respond to register", err)
 	}
+}
+
+func confirm_registration(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		// throw method not allowed error
+		err := http.StatusMethodNotAllowed
+		http.Error(w, "Invalid Method", err)
+		return
+	}
+	verificationToken := r.FormValue("verificationToken")
+	verificationCode := r.FormValue("verificationCode")
+
+	// Missing fields
+	if verificationToken == "" || verificationCode == "" {
+		err := http.StatusExpectationFailed
+		http.Error(w, "Missing fields", err)
+		return
+	}
+
+	ctx := context.Background()
+	email_verification_input := auth_grpc.EmailVerificationInput{
+		OriginIp:          "",
+		VerificationToken: verificationToken,
+		VerificationCode:  verificationCode,
+	}
+
+	userLoggedInMessage, err := auth_server_grpc.ConfirmRegistration(ctx, &email_verification_input)
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	if !userLoggedInMessage.Res.Ok {
+		http.Error(w, userLoggedInMessage.Res.Message, http.StatusConflict)
+		return
+	}
+
+	current_session := userLoggedInMessage.Session
+	csrf_token := GenerateCSRFToken(current_session.Token)
 
 	// seta o token no navegador
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
-		Value:    token,
-		Expires:  time.Now().Add(24 * time.Hour),
+		Value:    current_session.Token,
+		Expires:  current_session.GetExpires().AsTime(),
 		HttpOnly: true,
 		Path:     "/",
 		SameSite: http.SameSiteLaxMode,
@@ -172,8 +215,8 @@ func register(w http.ResponseWriter, r *http.Request) {
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "csrf_token",
-		Value:    csrfToken,
-		Expires:  time.Now().Add(24 * time.Hour),
+		Value:    csrf_token,
+		Expires:  current_session.GetExpires().AsTime(),
 		HttpOnly: false, // garante que só aquele site vai conseguir ler e enviar o token no header
 		Path:     "/",
 		SameSite: http.SameSiteLaxMode,
@@ -182,8 +225,8 @@ func register(w http.ResponseWriter, r *http.Request) {
 	var final_result dataObj
 	final_result.Type = "result"
 	final_result.Data = make(map[string]interface{})
-	final_result.Data["clientId"] = clientId
-	final_result.Data["serverResponse"] = "Session registered"
+	final_result.Data["clientId"] = current_session.UserId
+	final_result.Data["serverResponse"] = "User registered"
 
 	jsonData, _ := json.Marshal(final_result)
 
@@ -249,8 +292,10 @@ func validateUserSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//csrf := r.Header.Get("X-CSRF-Token")
-	user_session, ok := sessions[sessionCookie.Value]
+	auth_server_grpc.
+
+		//csrf := r.Header.Get("X-CSRF-Token")
+		user_session, ok := sessions[sessionCookie.Value]
 
 	if !ok {
 		http.Error(w, "Invalid session", http.StatusUnauthorized)
@@ -303,6 +348,14 @@ func corsMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
+	conn, err := grpc.NewClient("auth:8989", grpc.WithInsecure())
+	if err != nil {
+		panic("Couldn't stablish GRPC connection with game-server")
+	}
+	defer conn.Close()
+
+	auth_server_grpc = auth_grpc.NewAuthClient(conn)
+
 	// mux ~= router
 	mux := http.NewServeMux()
 	mux.HandleFunc("/login", login)

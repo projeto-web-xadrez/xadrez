@@ -1,11 +1,15 @@
 package main
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"errors"
 
@@ -19,6 +23,17 @@ type AuthError struct {
 
 func (r *AuthError) Error() string {
 	return fmt.Sprintf("\nstatus %d err %v\n", r.StatusCode, r.Err)
+}
+
+func GenerateCSRFToken(sessionToken string) string {
+	h := hmac.New(sha256.New, []byte(os.Getenv("CSRF_HASH_KEY")))
+	h.Write([]byte(sessionToken))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+func ValidateCSRFToken(csrfToken string, sessionToken string) bool {
+	expected := GenerateCSRFToken(sessionToken)
+	return hmac.Equal([]byte(csrfToken), []byte(expected))
 }
 
 func hashPass(password string) (string, error) {
