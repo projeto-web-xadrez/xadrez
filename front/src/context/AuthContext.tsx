@@ -10,6 +10,7 @@ type AuthContextType = {
     clientId: string | null;
     login: (username: string, password: string) => Promise<boolean>;
     register: (username: string, password: string) => Promise<boolean>;
+    checkValidToken: () => Promise<boolean>
     logout: () => void;
 };
 
@@ -27,7 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [isAuthenticated, setAuthenticated] = useState(() => {
         return !!(csrf && savedUser && savedId);
     });
-    
+
 
     // Carregar autenticação via cookie + localStorage ao iniciar
     useEffect(() => {
@@ -47,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body.append("username", username);
         body.append("password", password);
 
-        const res = await fetch("http://localhost:8085/login", {
+        const res = await fetch("http://localhost:80/loginapi/login", {
             method: "POST",
             credentials: "include",
             body
@@ -74,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body_obj.append("username", username)
         body_obj.append("password", password)
 
-        const response = await fetch("http://localhost:8085/register", {
+        const response = await fetch("http://localhost:80/loginapi/register", {
             method: "POST",
             headers: {
                 //"Content-Type": "Application/JSON"
@@ -110,8 +111,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         navigate("/login");
     }
 
+    async function checkValidToken() {
+        const response = await fetch("http://localhost:80/loginapi/validate-session", {
+            method: "POST",
+            headers: {
+                //"Content-Type": "Application/JSON"
+            },
+            credentials: 'include',
+        })
+        if (response.status !== 200) {
+            logout()
+            return false;
+        } else {
+            return true;
+        }
+    }
+
     return (
-        <AuthContext.Provider value={{ isAuthenticated, username, clientId, login, register, logout }}>
+        <AuthContext.Provider value={{ isAuthenticated, username, clientId, login, register, checkValidToken, logout }}>
             {children}
         </AuthContext.Provider>
     );

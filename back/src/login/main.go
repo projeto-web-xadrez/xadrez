@@ -22,8 +22,23 @@ type Login struct {
 	ClientId       string
 }
 
+type Session struct {
+	ClientId   string
+	Username   string
+	CSRFTToken string
+}
+
+type ValidateResponse struct {
+	Valid    bool   `json:"valid"`
+	Username string `json:"username"`
+	ClientId string `json:"clientId"`
+}
+
 // Estrutura básica antes de adicionar a db. user -> {Login}
 var users = map[string]Login{}
+
+// Estrutura basica para pegar userid e username pela session (tabela session)
+var sessions = map[string]Session{}
 
 func login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -45,13 +60,22 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 	// Cria o token
 	if result := compPass(password, hashedPass); result {
-		fmt.Println("User logged in successfully")
+		fmt.Println("Session logged in successfully")
 		token := genToken(32)
 		csrfToken := genToken(32)
+
+		// remove token anterior
+		delete(sessions, current_user.Token)
 
 		current_user.Token = token
 		current_user.CSRFTToken = csrfToken
 		users[username] = current_user
+
+		sessions[token] = Session{
+			ClientId:   current_user.ClientId,
+			Username:   username,
+			CSRFTToken: csrfToken,
+		}
 
 		// seta o token no navegador
 		http.SetCookie(w, &http.Cookie{
@@ -59,6 +83,8 @@ func login(w http.ResponseWriter, r *http.Request) {
 			Value:    token,
 			Expires:  time.Now().Add(24 * time.Hour),
 			HttpOnly: true,
+			Path:     "/",
+			SameSite: http.SameSiteLaxMode,
 		})
 
 		http.SetCookie(w, &http.Cookie{
@@ -66,6 +92,8 @@ func login(w http.ResponseWriter, r *http.Request) {
 			Value:    csrfToken,
 			Expires:  time.Now().Add(24 * time.Hour),
 			HttpOnly: false, // garante que só aquele site vai conseguir ler e enviar o token no header
+			Path:     "/",
+			SameSite: http.SameSiteLaxMode,
 		})
 
 		var result dataObj
@@ -99,7 +127,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	if _, ok := users[username]; ok {
 		err := http.StatusConflict
-		http.Error(w, "User already registered", err)
+		http.Error(w, "Session already registered", err)
 		return
 	}
 	password := r.FormValue("password")
@@ -114,7 +142,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 		HashedPassword: result,
 	}
 
-	fmt.Println("User registered successfully")
+	fmt.Println("Session registered successfully")
 
 	token := genToken(32)
 	csrfToken := genToken(32)
@@ -126,12 +154,20 @@ func register(w http.ResponseWriter, r *http.Request) {
 	current_user.ClientId = clientId
 	users[username] = current_user
 
+	sessions[token] = Session{
+		ClientId:   clientId,
+		Username:   username,
+		CSRFTToken: csrfToken,
+	}
+
 	// seta o token no navegador
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
 		Value:    token,
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	http.SetCookie(w, &http.Cookie{
@@ -139,13 +175,15 @@ func register(w http.ResponseWriter, r *http.Request) {
 		Value:    csrfToken,
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: false, // garante que só aquele site vai conseguir ler e enviar o token no header
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	var final_result dataObj
 	final_result.Type = "result"
 	final_result.Data = make(map[string]interface{})
 	final_result.Data["clientId"] = clientId
-	final_result.Data["serverResponse"] = "User registered"
+	final_result.Data["serverResponse"] = "Session registered"
 
 	jsonData, _ := json.Marshal(final_result)
 
@@ -158,19 +196,12 @@ func register(w http.ResponseWriter, r *http.Request) {
 }
 
 func logout(w http.ResponseWriter, r *http.Request) {
-	username := r.FormValue("username")
-	if user, ok := users[username]; ok {
-		// Se quisermos proteger a rota adicionamos essa parte:
-
-		if err := Authorize(r); err != nil {
-			fmt.Println(err.Error())
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
+	sessionCookie, err := r.Cookie("session_token")
+	if err == nil {
+		sessionToken := sessionCookie.Value
+		if _, ok := sessions[sessionToken]; ok {
+			delete(sessions, sessionToken)
 		}
-
-		user.CSRFTToken = ""
-		user.Token = ""
-		users[username] = user
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -178,6 +209,8 @@ func logout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Expires:  time.Now().Add(-time.Hour),
 		HttpOnly: true,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	http.SetCookie(w, &http.Cookie{
@@ -185,6 +218,8 @@ func logout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Expires:  time.Now().Add(-time.Hour),
 		HttpOnly: false,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
 	})
 	fmt.Println("Logout completed successfully")
 }
@@ -206,9 +241,41 @@ func protectedRoute(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("You accessed the protected route."))
 }
 
+func validateUserSession(w http.ResponseWriter, r *http.Request) {
+	sessionCookie, err := r.Cookie("session_token")
+
+	if err != nil {
+		http.Error(w, "Session token not present", http.StatusUnauthorized)
+		return
+	}
+
+	//csrf := r.Header.Get("X-CSRF-Token")
+	user_session, ok := sessions[sessionCookie.Value]
+
+	if !ok {
+		http.Error(w, "Invalid session", http.StatusUnauthorized)
+		return
+	}
+
+	/* if csrf == "" || user_session.CSRFTToken != csrf {
+		http.Error(w, "Invalid csrf", http.StatusUnauthorized)
+		return
+	} */
+
+	var response = ValidateResponse{
+		Valid:    true,
+		Username: user_session.Username,
+		ClientId: user_session.ClientId,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
+}
+
 var allowedOrigins = map[string]bool{
-	"http://localhost:3000": true,
-	"http://localhost:3001": true,
+	"http://localhost:80": true,
+	"http://localhost":    true,
+	"localhost":           true,
 }
 
 // Funcao de teste; retirado daqui: https://www.stackhawk.com/blog/golang-cors-guide-what-it-is-and-how-to-enable-it/#h-what-is-cors
@@ -241,6 +308,7 @@ func main() {
 	mux.HandleFunc("/login", login)
 	mux.HandleFunc("/register", register)
 	mux.HandleFunc("/logout", logout)
+	mux.HandleFunc("/validate-session", validateUserSession)
 	mux.HandleFunc("/protected", protectedRoute)
 
 	handler := corsMiddleware(mux)
