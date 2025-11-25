@@ -23,6 +23,25 @@ func NewUserRepo(dbPool *pgxpool.Pool) *UserRepo {
 	}
 }
 
+func (repo *UserRepo) UpdateUserPasswordByEmail(ctx context.Context, email string, newPassword string) (*models.User, error) {
+	if !utils.ValidatePassword(newPassword) {
+		return nil, errors.New("password is not in a valid format")
+	}
+
+	query := `UPDATE chess.user SET password_hash = $1 WHERE email = $2 RETURNING user_id, username, email, created_at, password_hash;`
+
+	user := models.User{}
+	row := repo.dbPool.QueryRow(ctx, query, newPassword, email)
+
+	//TODO: use pgx.CollectRows() (better syntax for retrieving a struct from db)
+	if err := row.Scan(&user.ID, &user.Username, &user.Email, &user.CreatedAt, &user.PasswordHash); err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+
+}
+
 func (repo *UserRepo) CreateUser(ctx context.Context, username string, email string, password string) (*models.User, error) {
 	email, err := utils.NormalizeEmail(email)
 	if err != nil {

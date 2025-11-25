@@ -3,100 +3,102 @@ option go_package = "./auth_grpc";
 
 import "google/protobuf/timestamp.proto";
 
-message ClientIdentification {
-    string ip = 1;
-    string user_agent = 2;
-}
-
-message UserData {
-    string user_id = 1;
-    string email = 2;
-    string username = 3;
-}
-
 message Result {
-  int32 code = 1;
-  string message = 2;
+  bool ok = 1;
+  int32 code = 2;
+  string message = 3;
 }
 
-message RegisterAccountRequestMessage {
-    ClientIdentification client_identification = 1;
+message Session {
+    string token = 1;
+    string user_id = 2;
+    string email = 3;
+    string username = 4;
+    google.protobuf.Timestamp issued = 5;
+    google.protobuf.Timestamp expires = 6;
+}
+
+message UserLoggedIn {
+    Result res = 1;
+    optional Session session = 2;
+}
+
+message LoginInput {
+    string origin_ip = 1;
+    string email = 2;
+    string password = 3;
+}
+
+message EmailVerificationInput {
+    string origin_ip = 1;
+    string verification_token = 2;
+    string verification_code = 3;
+}
+
+message EmailVerificationPending {
+    Result res = 1;
+    optional string verification_token = 2;
+    optional string email = 3;
+    optional string verification_type = 4;
+}
+
+message StartRegistrationInput {
+    string origin_ip = 1;
     string username = 2;
     string email = 3;
     string password = 4; 
 }
 
-message Token {
-    string session_token = 1;
-    string csrf_token = 2;
-    optional google.protobuf.Timestamp expiration = 3;
-    optional google.protobuf.Timestamp issued = 4;
-}
-
-message RegisterAccountResponseMessage {
-    Result res = 1;
-    optional Token token = 2;
-}
-
-message LoginRequestMessage {
-    ClientIdentification client_identification = 1;
+message StartPasswordChangeInput {
+    string origin_ip = 1;
     string email = 2;
-    string password = 3;
 }
 
-message LoginResponseMessage {
+message PasswordChangeRequest {
     Result res = 1;
-    optional Token token = 2;
-    optional UserData user = 3;
+    optional string password_change_token = 2;
+    optional string password_change_code = 3;
 }
 
-message CheckTokenRequestMessage {
-    Token token = 1;
+message PasswordChangeInput {
+    string origin_ip = 1;
+    string new_password = 2;
+    string password_change_token = 3;
+    string password_change_code = 4;
 }
 
-message CheckTokenResponseMessage {
-    bool valid = 1;
-    optional Token token = 2;
-    optional UserData user = 3;
+message StartEmailChangeInput {
+    string origin_ip = 1;
+    string token = 2;
 }
 
-message ConfirmEmailRequestMessage {
-    ClientIdentification client_identification = 1;
-    string email_confirmation_code = 2;
-    optional string data = 3; // Additional data for custom confirmations
-}
-
-message ConfirmEmailResponseMessage {
+message EmailChangeRequest {
     Result res = 1;
-    optional Token token = 2;
-    optional UserData user = 3;
+    optional string email_change_token = 2;
 }
 
-message ChangeEmailRequestMessage {
-    ClientIdentification client_identification = 1;
-    string new_email = 2;
-    Token token = 3;
-}
-
-message ChangeEmailResponseMessage {
-    Result res = 1;
-}
-
-message ChangePasswordRequestMessage {
-    ClientIdentification client_identification = 1;
-    string email = 2;
-    optional Token token = 3; // It's not mandatory for the user to be logged in
-}
-
-message ChangePasswordResponseMessage {
-    Result res = 1;
+message ChangeEmailInput {
+    string origin_ip = 1;
+    string email_change_token = 2;
+    string new_email = 3;
 }
 
 service Auth {
-    rpc RegisterAccount(RegisterAccountRequestMessage) returns (RegisterAccountResponseMessage) {}
-    rpc Login(LoginRequestMessage) returns (LoginResponseMessage) {}
-    rpc CheckToken(CheckTokenRequestMessage) returns (CheckTokenResponseMessage) {}
-    rpc ConfirmEmail(ConfirmEmailRequestMessage) returns (ConfirmEmailResponseMessage) {}
-    rpc ChangeEmail(ChangeEmailRequestMessage) returns (ChangeEmailResponseMessage) {}
-    rpc ChangePassword(ChangePasswordRequestMessage) returns (ChangePasswordResponseMessage) {}
+    // Authentication
+    rpc Login(LoginInput) returns (UserLoggedIn);
+    
+    // Registration flow
+    rpc StartRegistration(StartRegistrationInput) returns (EmailVerificationPending);
+    rpc ConfirmRegistration(EmailVerificationInput) returns (UserLoggedIn);
+    
+    // Password change flow
+    rpc StartPasswordChange(StartPasswordChangeInput) returns (EmailVerificationPending);
+    rpc PasswordChangeVerifyEmail(EmailVerificationInput) returns (PasswordChangeRequest);
+    rpc ChangePassword(PasswordChangeInput) returns (UserLoggedIn);
+
+    // Email change flow
+    rpc StartEmailChange(StartEmailChangeInput) returns (EmailVerificationPending);
+    rpc EmailChangeVerifyCurrentEmail(EmailVerificationInput) returns (EmailChangeRequest);
+    rpc ChangeEmail(ChangeEmailInput) returns (EmailVerificationPending);
+    rpc ConfirmEmailChange(EmailVerificationInput) returns (UserLoggedIn);
 }

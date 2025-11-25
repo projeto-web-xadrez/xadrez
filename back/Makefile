@@ -22,4 +22,4 @@ $(PROJECTS): proto
 auth: proto
 	@echo "Building $@"
 	@cd ${SRC_DIR} && go build -o ${OUT_PATH}/$@ $@;
-	cp -r ${SRC_DIR}/auth/email/templates ${OUT_PATH}
+	cp -r ${SRC_DIR}/auth/mailsender/templates ${OUT_PATH}
