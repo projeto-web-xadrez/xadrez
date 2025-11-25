@@ -1,6 +1,6 @@
 FROM golang:1.25-alpine
 
-RUN apk add --no-cache git gcompat bash make protoc protobuf-dev coreutils
+RUN apk add --no-cache git gcompat bash make protoc protobuf-dev coreutils dos2unix
 
 WORKDIR /app
 
@@ -32,6 +32,7 @@ COPY ./proto/ ./proto/
 COPY ./Makefile .
 
 RUN chmod +x /app/proto/generate.sh
+RUN dos2unix /app/proto/generate.sh
 
 # Generate protobuf code using the correct target
 RUN --mount=type=cache,target=/go/pkg/mod \
