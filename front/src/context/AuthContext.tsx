@@ -9,7 +9,8 @@ type AuthContextType = {
     username: string | null;
     clientId: string | null;
     login: (username: string, password: string) => Promise<boolean>;
-    register: (username: string, password: string) => Promise<boolean>;
+    register: (username: string, password: string, email: string) => Promise<boolean>;
+    confirm_registration: (validation_code: string) => Promise<boolean>;
     checkValidToken: () => Promise<boolean>
     logout: () => void;
 };
@@ -70,10 +71,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false;
     }
 
-    async function register(username: string, password: string) {
+    async function register(username: string, password: string, email: string) {
         const body_obj = new FormData()
         body_obj.append("username", username)
         body_obj.append("password", password)
+        body_obj.append("email", email)
 
         const response = await fetch("http://localhost:80/loginapi/register", {
             method: "POST",
@@ -88,11 +90,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const data = await response.json();
+        if(data.Type == "result") {
+            localStorage.setItem("verificationToken", data.verificationToken)
+        }
+        return true;
+    }
+
+     async function confirm_registration(validation_code: string) {
+        const body_obj = new FormData()
+
+
+        const verification_token = localStorage.getItem("verificationToken") as string || ""
+        body_obj.append("verificationCode", validation_code)
+        body_obj.append("verificationToken", verification_token)
+
+        const response = await fetch("http://localhost:80/loginapi/confirm-registration", {
+            method: "POST",
+            headers: {
+                //"Content-Type": "Application/JSON"
+            },
+            credentials: 'include',
+            body: body_obj
+        })
+        if (response.status !== 200) {
+            return false;
+        }
+
+        const data = await response.json();
 
         localStorage.setItem("clientId", data.data.clientId);
-        localStorage.setItem("username", username);
+        localStorage.setItem("username", data.data.username);
 
-        setUsername(username);
+        setUsername(data.data.username);
         setClientId(data.data.clientId);
         setAuthenticated(true);
 
@@ -128,7 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, username, clientId, login, register, checkValidToken, logout }}>
+        <AuthContext.Provider value={{ isAuthenticated, username, clientId, login, register, confirm_registration, checkValidToken, logout }}>
             {children}
         </AuthContext.Provider>
     );

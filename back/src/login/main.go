@@ -114,6 +114,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 }
 
 func register(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("a")
 	if r.Method != http.MethodPost {
 		// throw method not allowed error
 		err := http.StatusMethodNotAllowed
@@ -226,6 +227,7 @@ func confirm_registration(w http.ResponseWriter, r *http.Request) {
 	final_result.Type = "result"
 	final_result.Data = make(map[string]interface{})
 	final_result.Data["clientId"] = current_session.UserId
+	final_result.Data["username"] = current_session.Username
 	final_result.Data["serverResponse"] = "User registered"
 
 	jsonData, _ := json.Marshal(final_result)
@@ -292,29 +294,42 @@ func validateUserSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	auth_server_grpc.
+	csrf := r.Header.Get("X-CSRF-Token")
 
-		//csrf := r.Header.Get("X-CSRF-Token")
-		user_session, ok := sessions[sessionCookie.Value]
+	if csrf == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	ok := ValidateCSRFToken(csrf, sessionCookie.Value)
 
 	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	ctx := context.Background()
+	sessionValidationInput := auth_grpc.SessionValidationInput{
+		Token: sessionCookie.Value,
+	}
+	session, err := auth_server_grpc.ValidateSession(ctx, &sessionValidationInput)
+	if err != nil {
 		http.Error(w, "Invalid session", http.StatusUnauthorized)
 		return
 	}
 
-	/* if csrf == "" || user_session.CSRFTToken != csrf {
-		http.Error(w, "Invalid csrf", http.StatusUnauthorized)
+	if session == nil {
+		http.Error(w, "Invalid session", http.StatusUnauthorized)
 		return
-	} */
+	}
 
 	var response = ValidateResponse{
 		Valid:    true,
-		Username: user_session.Username,
-		ClientId: user_session.ClientId,
+		Username: session.Session.Username,
+		ClientId: session.Session.UserId,
 	}
 
 	json.NewEncoder(w).Encode(response)
-
 }
 
 var allowedOrigins = map[string]bool{
@@ -360,6 +375,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/login", login)
 	mux.HandleFunc("/register", register)
+	mux.HandleFunc("/confirm-registration", confirm_registration)
 	mux.HandleFunc("/logout", logout)
 	mux.HandleFunc("/validate-session", validateUserSession)
 	mux.HandleFunc("/protected", protectedRoute)

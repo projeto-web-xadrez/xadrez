@@ -28,6 +28,11 @@
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
+/* Faz o hidden funcionar corretamente */
+#register form[hidden] {
+    display: none !important;
+}
+
 /* Labels */
 #register label {
     margin-bottom: 5px;

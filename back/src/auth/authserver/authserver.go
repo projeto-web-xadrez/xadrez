@@ -275,3 +275,19 @@ func (server *AuthServer) ChangeEmail(context.Context, *auth_grpc.ChangeEmailInp
 func (server *AuthServer) ConfirmEmailChange(context.Context, *auth_grpc.EmailVerificationInput) (*auth_grpc.UserLoggedIn, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ConfirmEmailChange not implemented")
 }
+
+func (server *AuthServer) ValidateSession(ctx context.Context, sessionInput *auth_grpc.SessionValidationInput) (*auth_grpc.UserLoggedIn, error) {
+	session, err := server.authManager.GetSession(ctx, sessionInput.Token)
+	if err != nil {
+		return nil, err
+	}
+
+	if session == nil {
+		return nil, nil
+	}
+
+	return &auth_grpc.UserLoggedIn{
+		Res:     &RES_SUCCESSFUL,
+		Session: makeSession(session),
+	}, nil
+}
