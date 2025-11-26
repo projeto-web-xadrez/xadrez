@@ -41,6 +41,9 @@ services:
       - "8085:8085"
     networks:
       - internal
+    depends_on:
+      - api
+      - auth
     develop:
       watch:
         - action: rebuild
@@ -127,6 +130,10 @@ services:
             - ./front/.git/
         - action: rebuild
           path: ./front/package.json
+    depends_on:
+      - login
+      - gameserver
+      - api
 
 volumes:
   postgres_data:

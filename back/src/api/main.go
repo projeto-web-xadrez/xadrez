@@ -3,16 +3,20 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"proto-generated/auth_grpc"
 	"proto-generated/matchmaking_grpc"
 	"sync"
 	"time"
+	"utils"
 
 	"github.com/gorilla/websocket"
 	"google.golang.org/grpc"
 )
 
+var auth_server_grpc auth_grpc.AuthClient
 var matchmaking_grpc_conn matchmaking_grpc.MatchMakingClient
 
 var upgrader = websocket.Upgrader{
@@ -34,6 +38,7 @@ type ctxKey string
 var (
 	ctxKeyClientId = ctxKey("clientId")
 	ctxKeyUsername = ctxKey("username")
+	ctxKeyEmail    = ctxKey("email")
 )
 
 type dataObj struct {
@@ -214,32 +219,28 @@ func matchmaking() {
 
 }
 
-func ValidateWithLoginServer(r *http.Request) (*ValidateResponse, error) {
-	req, _ := http.NewRequest("POST", "http://login:8085/validate-session", nil)
-
-	// repassar cookies
-	for _, c := range r.Cookies() {
-		req.AddCookie(c)
-	}
-
-	// repassar header de csrf
-	//req.Header.Set("X-CSRF-Token", r.Header.Get("X-CSRF-Token"))
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+func ValidateWithLoginServer(r *http.Request) (*auth_grpc.UserLoggedIn, error) {
+	sessionCookie, err := r.Cookie("session_token")
 	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unauthorized")
+		return nil, errors.New("No session token")
 	}
 
-	var data ValidateResponse
-	json.NewDecoder(resp.Body).Decode(&data)
+	csrfToken := r.Header.Get("X-CSRF-Token")
+	if csrfToken == "" {
+		csrfToken = r.URL.Query().Get("csrfToken")
+	}
 
-	return &data, nil
+	if csrfToken == "" {
+		return nil, errors.New("No CSRF token")
+	}
+
+	if !utils.ValidateCSRFToken(csrfToken, sessionCookie.Value) {
+		return nil, errors.New("Invalid session/CSRF token pair")
+	}
+
+	return auth_server_grpc.ValidateSession(context.Background(), &auth_grpc.SessionValidationInput{
+		Token: sessionCookie.Value,
+	})
 }
 
 // autentica o usuario via http e depois permite que a conexao receba o upgrade para websocket
@@ -247,8 +248,9 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userData, err := ValidateWithLoginServer(r)
 
-		if err != nil {
+		if err != nil || !userData.Res.Ok {
 			fmt.Println("Client session was not valid")
+
 			http.SetCookie(w, &http.Cookie{
 				Name:     "session_token",
 				Value:    "",
@@ -258,21 +260,14 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 				SameSite: http.SameSiteLaxMode,
 			})
 
-			http.SetCookie(w, &http.Cookie{
-				Name:     "csrf_token",
-				Value:    "",
-				Expires:  time.Now().Add(-time.Hour),
-				HttpOnly: false,
-				Path:     "/",
-				SameSite: http.SameSiteLaxMode,
-			})
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, ctxKeyClientId, userData.ClientId)
-		ctx = context.WithValue(ctx, ctxKeyUsername, userData.Username)
+		ctx = context.WithValue(ctx, ctxKeyClientId, userData.Session.UserId)
+		ctx = context.WithValue(ctx, ctxKeyUsername, userData.Session.Username)
+		ctx = context.WithValue(ctx, ctxKeyEmail, userData.Session.Email)
 
 		next(w, r.WithContext(ctx))
 	}
@@ -319,13 +314,20 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	// Inicia conexão gRPC
-	conn, err := grpc.NewClient("gameserver:9191", grpc.WithInsecure())
+	mmConn, err := grpc.NewClient("gameserver:9191", grpc.WithInsecure())
 	if err != nil {
 		panic("Couldn't stablish GRPC connection with game-server")
 	}
-	defer conn.Close()
+	defer mmConn.Close()
 
-	matchmaking_grpc_conn = matchmaking_grpc.NewMatchMakingClient(conn)
+	authConn, err := grpc.NewClient("auth:8989", grpc.WithInsecure())
+	if err != nil {
+		panic("Couldn't stablish GRPC connection with auth-server")
+	}
+	defer authConn.Close()
+
+	matchmaking_grpc_conn = matchmaking_grpc.NewMatchMakingClient(mmConn)
+	auth_server_grpc = auth_grpc.NewAuthClient(authConn)
 
 	// WaitGroup apenas para o servidor WebSocket
 	var wg sync.WaitGroup

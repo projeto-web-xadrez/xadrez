@@ -20,33 +20,37 @@ export const AuthContext = createContext<AuthContextType>(null!);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const navigate = useNavigate();
     const savedUser = localStorage.getItem("username");
+    const savedEmail = localStorage.getItem("email");
     const savedId = localStorage.getItem("clientId");
-    const csrf = Cookies.get("csrf_token");
 
     const [username, setUsername] = useState<string | null>(savedUser);
+    const [email, setEmail] = useState<string | null>(savedEmail);
     const [clientId, setClientId] = useState<string | null>(savedId);
 
     const [isAuthenticated, setAuthenticated] = useState(() => {
+        const csrf = localStorage.getItem("csrf_token");
         return !!(csrf && savedUser && savedId);
     });
 
 
     // Carregar autenticação via cookie + localStorage ao iniciar
     useEffect(() => {
-        const csrf = Cookies.get("csrf_token");
+        const csrf = localStorage.getItem("csrf_token");
         const savedUser = localStorage.getItem("username");
         const savedId = localStorage.getItem("clientId");
+        const savedEmail = localStorage.getItem("email");
 
-        if (csrf && savedUser && savedId) {
+        if (csrf && savedUser && savedId && savedEmail) {
             setAuthenticated(true);
             setUsername(savedUser);
+            setEmail(savedEmail);
             setClientId(savedId);
         }
     }, []);
 
-    async function login(username: string, password: string) {
+    async function login(email: string, password: string) {
         const body = new FormData();
-        body.append("username", username);
+        body.append("email", email);
         body.append("password", password);
 
         const res = await fetch("http://localhost:80/loginapi/login", {
@@ -56,15 +60,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         if (res.status === 200) {
-            const data = await res.json();
-            localStorage.setItem("clientId", data.data.clientId);
-            localStorage.setItem("username", username);
-
-            setUsername(username);
-            setClientId(data.data.clientId);
+            const { data } = await res.json();
+            localStorage.setItem("clientId", data.clientId);
+            localStorage.setItem("username", data.username);
+            localStorage.setItem("email", data.email);
+            localStorage.setItem("csrf_token", data.csrfToken)
+            
+            setUsername(data.username);
+            setEmail(data.email);
+            setClientId(data.clientId);
             setAuthenticated(true);
 
-            navigate("/dashboard");
+            //navigate("/dashboard");
             return true;
         }
 
@@ -89,9 +96,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return false;
         }
 
-        const data = await response.json();
-        if(data.Type == "result") {
-            localStorage.setItem("verificationToken", data.verificationToken)
+        const json_res = await response.json();
+        if(json_res.type == "result") {
+            localStorage.setItem("verificationToken", json_res.data.verificationToken)
         }
         return true;
     }
@@ -112,30 +119,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             credentials: 'include',
             body: body_obj
         })
+
         if (response.status !== 200) {
             return false;
         }
 
-        const data = await response.json();
+        const { data } = await response.json();
 
-        localStorage.setItem("clientId", data.data.clientId);
-        localStorage.setItem("username", data.data.username);
+        localStorage.setItem("clientId", data.clientId);
+        localStorage.setItem("username", data.username);
+        localStorage.setItem("email", data.email);
+        localStorage.setItem("csrf_token", data.csrfToken)
 
-        setUsername(data.data.username);
-        setClientId(data.data.clientId);
+        setUsername(data.username);
+        setEmail(data.username);
+        setClientId(data.clientId);
         setAuthenticated(true);
 
-        navigate('/dashboard');
+        //navigate('/dashboard');
         return true;
     }
 
     function logout() {
         localStorage.removeItem("clientId");
         localStorage.removeItem("username");
-        Cookies.remove("csrf_token");
+        localStorage.removeItem("csrf_token");
 
         setAuthenticated(false);
         setUsername(null);
+        setEmail(null);
         setClientId(null);
         navigate("/login");
     }
@@ -145,6 +157,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             method: "POST",
             headers: {
                 //"Content-Type": "Application/JSON"
+                "X-CSRF-Token": localStorage.getItem("csrf_token") || "",
+
             },
             credentials: 'include',
         })
