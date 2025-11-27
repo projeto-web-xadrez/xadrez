@@ -1,13 +1,13 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from "react";
-import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 
 type AuthContextType = {
     isAuthenticated: boolean;
     username: string | null;
     clientId: string | null;
+    email: string | null;
     login: (username: string, password: string) => Promise<boolean>;
     register: (username: string, password: string, email: string) => Promise<boolean>;
     confirmRegistration: (validationCode: string) => Promise<boolean>;
@@ -170,7 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, username, clientId, login, register, confirmRegistration: confirmRegistration, checkValidToken, logout }}>
+        <AuthContext.Provider value={{ isAuthenticated, username, clientId, email, login, register, confirmRegistration: confirmRegistration, checkValidToken, logout }}>
             {children}
         </AuthContext.Provider>
     );
