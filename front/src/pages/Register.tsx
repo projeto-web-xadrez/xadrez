@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import '../styles/register-styles.css'
 import { useAuth } from '../context/AuthContext';
 import * as z from 'zod';
+import { Link } from 'react-router-dom';
 
 export default function Register() {
     const VerificationCodeSchema = z.string().length(6).regex(/^\d+$/);
@@ -219,11 +220,11 @@ export default function Register() {
                     Register
                 </button>
 
-                {!allFieldsTouched() && (
-                    <div className="helper-text">
-                        Please fill in all fields to register
-                    </div>
-                )}
+                <div className="login-link">
+                    <span>Already have an account?</span>
+                    <Link to="/login">Login here</Link>
+                </div>
+
             </form>
 
             {/* FORM DE CONFIRMAÇÃO */}
@@ -251,7 +252,6 @@ export default function Register() {
             </button>
         </form>
 
-            <p id="register-response"></p>
         </div>
     );
 }

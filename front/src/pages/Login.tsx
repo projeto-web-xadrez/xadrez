@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import '../styles/login-styles.css'
-
+import { Link } from "react-router-dom";
 
 export default function Login() {
     const { login } = useAuth();
@@ -34,7 +34,12 @@ export default function Login() {
                         onChange={(e) => setPassword(e.target.value)} />
                 </div>
 
-                <button id='submit-button'type="submit" disabled={!email || !password}>Enter</button>
+                <button id='submit-button' type="submit" disabled={!email || !password}>Enter</button>
+                
+                <div className="register-link">
+                    <span>Don't have an account?</span>
+                    <Link to="/register">Register here</Link>
+                </div>
             </form>
         </div>
     );
