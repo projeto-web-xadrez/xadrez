@@ -7,6 +7,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import RequireAuth from './components/RequireAuth'
 import { useAuth } from './context/AuthContext'
 import Navbar from './components/NavbarComponent'
+import Leaderboard from './pages/Leaderboard'
 
 function App() {
   const {isAuthenticated} = useAuth()
@@ -20,6 +21,7 @@ function App() {
                 ? <Navigate to="/dashboard" replace />
                 : <Navigate to="/login" replace />} />
         <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+        <Route path="/leaderboard" element={<Leaderboard/>}/>
         <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} />
         <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />} />
     </Routes>
