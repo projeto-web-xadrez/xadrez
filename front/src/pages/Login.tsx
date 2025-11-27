@@ -5,26 +5,26 @@ import '../styles/login-styles.css'
 
 export default function Login() {
     const { login } = useAuth();
-    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
 
-        if (!username || !password) return;
+        if (!email || !password) return;
 
-        const ok = await login(username, password);
+        const ok = await login(email, password);
         if (!ok) alert("Credenciais inválidas");
     }
 
     return (
         <div id='login'>
             <form onSubmit={handleSubmit}>
-                <div id='username-div'>
-                    <label>Username</label>
+                <div id='email-div'>
+                    <label>Email</label>
                     <input type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)} />
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)} />
                 </div>
 
                 <div id='password-div'>
@@ -34,7 +34,7 @@ export default function Login() {
                         onChange={(e) => setPassword(e.target.value)} />
                 </div>
 
-                <button type="submit">Enter</button>
+                <button id='submit-button'type="submit" disabled={!email || !password}>Enter</button>
             </form>
         </div>
     );
