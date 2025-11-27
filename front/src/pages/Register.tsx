@@ -37,6 +37,7 @@ export default function Register() {
     const [passwordConfirmation, setPasswordConfirmation] = useState<string>("");
 
     const [validationErrors, setValidationErrors] = useState<Map<string, string[]>>(new Map());
+    const [serverError, setServerError] = useState<string>("");
     const [isFormValid, setIsFormValid] = useState<boolean>(false);
     const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
 
@@ -45,9 +46,23 @@ export default function Register() {
         return requiredFields.every(field => touchedFields.has(field));
     };
 
+    const handleRegistrationError = (message: string) => {
+        setEmail("")
+        setUsername("")
+        setPassword("")
+        setPasswordConfirmation("")
+        setServerError(message)
+        setTouchedFields(new Set())
+    }
+
+    const handleConfirmRegistrationError = (message: string) => {
+        setVerifCode("")
+        setServerError(message)
+    }
+
     const handleFieldChange = (fieldName: string, value: string) => {
         setTouchedFields(prev => new Set(prev).add(fieldName));
-
+        setServerError("")
         switch (fieldName) {
             case 'username':
                 setUsername(value);
@@ -107,17 +122,24 @@ export default function Register() {
         if (!isFormValid)
             return;
 
-        const ok = await register(username, password, email)
+        setServerError("")
+        const [ok, message] = await register(username, password, email)
         setShouldConfirmCode(ok)
+
+        if(!ok) {
+            handleRegistrationError(message)
+        }
     };
 
     const handleConfirmation = async (e: React.MouseEvent<HTMLFormElement>) => {
         e.preventDefault()
         if (verifCode === "") return
 
-        const ok = await confirmRegistration(verifCode)
-        if (!ok)
-            alert('Invalid confirmation code')
+        setServerError("")
+        const [ok, message] = await confirmRegistration(verifCode)
+        if (!ok) {
+            handleConfirmRegistrationError(message)
+        }
     };
 
     const getFieldValidationClass = (fieldName: string): string => {
@@ -139,6 +161,7 @@ export default function Register() {
         <div id='register'>
             {/* FORM DE REGISTRO */}
             <form hidden={shouldConfirmCode} onSubmit={handleClick}>
+                <p id="server-error-msg">{serverError}</p>
                 <div id='username-div'>
                     <label htmlFor="username-field">Username</label>
                     <input
@@ -229,6 +252,7 @@ export default function Register() {
 
             {/* FORM DE CONFIRMAÇÃO */}
             <form hidden={!shouldConfirmCode} onSubmit={handleConfirmation}>
+                <p id="server-error-msg">{serverError}</p>
              <p className="verification-notice">
                 Verification code sent to {email}
             </p>
@@ -239,7 +263,7 @@ export default function Register() {
                     type="text"
                     id='verification-code-field'
                     value={verifCode}
-                    onChange={(e) => setVerifCode(e.target.value)}
+                    onChange={(e) => {setServerError(""); setVerifCode(e.target.value)}}
                 />
             </div>
 

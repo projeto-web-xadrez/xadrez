@@ -131,3 +131,8 @@
     color: #333;
     text-decoration: underline;
 }
+
+#server-error-msg {
+    text-align: center;
+    color: red;
+}

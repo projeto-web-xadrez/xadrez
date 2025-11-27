@@ -9,13 +9,14 @@ export default function Login() {
     const LoginInputSchema = z.object({
         email: z.email('Invalid email format').trim(),
         password: z.string()
-                    .min(8, 'Password must be at least 8 characters long')
+            .min(8, 'Password must be at least 8 characters long')
     });
 
     const { login } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [validationErrors, setValidationErrors] = useState<Map<string, string[]>>(new Map());
+    const [serverError, setServerError] = useState<string>("");
     const [isFormValid, setIsFormValid] = useState<boolean>(false);
     const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
 
@@ -24,17 +25,27 @@ export default function Login() {
         return requiredFields.every(field => touchedFields.has(field));
     };
 
+    const handleLoginError = (message: string) => {
+        setEmail("")
+        setPassword("")
+        setServerError(message)
+        setTouchedFields(new Set())
+    }
+
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
 
         if (!isFormValid)
             return;
 
-        const ok = await login(email, password);
-        if (!ok) alert("Credenciais inválidas");
+        const [ok, message] = await login(email, password);
+        if (!ok) {
+            handleLoginError(message)
+        }
     }
 
     const handleFieldChange = (fieldName: string, value: string) => {
+        setServerError("")
         setTouchedFields(prev => new Set(prev).add(fieldName));
         switch (fieldName) {
             case 'email':
@@ -81,7 +92,7 @@ export default function Login() {
         return touchedFields.has(fieldName);
     };
 
-     const getFieldValidationClass = (fieldName: string): string => {
+    const getFieldValidationClass = (fieldName: string): string => {
         if (!touchedFields.has(fieldName))
             return '';
 
@@ -95,6 +106,8 @@ export default function Login() {
     return (
         <div id='login'>
             <form onSubmit={handleSubmit}>
+                <p id="server-error-msg">{serverError}</p>
+
                 <div id='email-div'>
                     <label htmlFor="email-field">Email</label>
                     <input

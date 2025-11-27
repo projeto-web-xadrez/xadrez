@@ -8,9 +8,9 @@ type AuthContextType = {
     username: string | null;
     clientId: string | null;
     email: string | null;
-    login: (username: string, password: string) => Promise<boolean>;
-    register: (username: string, password: string, email: string) => Promise<boolean>;
-    confirmRegistration: (validationCode: string) => Promise<boolean>;
+    login: (username: string, password: string) => Promise<[boolean, string]>;
+    register: (username: string, password: string, email: string) => Promise<[boolean, string]>;
+    confirmRegistration: (validationCode: string) => Promise<[boolean, string]>;
     checkValidToken: () => Promise<boolean>
     logout: () => void;
 };
@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }, []);
 
-    async function login(email: string, password: string) {
+    async function login(email: string, password: string): Promise<[boolean, string]> {
         const body = new FormData();
         body.append("email", email);
         body.append("password", password);
@@ -72,13 +72,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setAuthenticated(true);
 
             //navigate("/dashboard");
-            return true;
+            return [true, ""];
         }
 
-        return false;
+        return [false, await res.text()];
     }
 
-    async function register(username: string, password: string, email: string) {
+    async function register(username: string, password: string, email: string): Promise<[boolean, string]>  {
         const body_obj = new FormData()
         body_obj.append("username", username)
         body_obj.append("password", password)
@@ -92,18 +92,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             credentials: 'include',
             body: body_obj
         })
+
         if (response.status !== 200) {
-            return false;
+            return [false, await response.text()];
         }
 
         const json_res = await response.json();
+
         if(json_res.type == "result") {
             localStorage.setItem("verificationToken", json_res.data.verificationToken)
         }
-        return true;
+        return [true, ""];
     }
 
-     async function confirmRegistration(validationCode: string) {
+     async function confirmRegistration(validationCode: string): Promise<[boolean, string]> {
         const body_obj = new FormData()
 
         const verification_token = localStorage.getItem("verificationToken") as string || ""
@@ -120,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
 
         if (response.status !== 200) {
-            return false;
+            return [false, await response.text()];
         }
 
         const { data } = await response.json();
@@ -136,7 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAuthenticated(true);
 
         //navigate('/dashboard');
-        return true;
+        return [true, ""];
     }
 
     function logout() {
