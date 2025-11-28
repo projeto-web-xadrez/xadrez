@@ -143,6 +143,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     function logout() {
         localStorage.removeItem("clientId");
+        localStorage.removeItem("email");
+        localStorage.removeItem("verificationToken");
         localStorage.removeItem("username");
         localStorage.removeItem("csrf_token");
 

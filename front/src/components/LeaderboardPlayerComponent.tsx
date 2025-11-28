@@ -15,7 +15,7 @@ export default function LbPlayer(props: PlayerProps) {
             <p className='player-country'>{props.country}</p>
             <p className='player-name'>{props.name}</p>
             <p className='player-rating'>{props.rating}</p>
-             <p className='player-fideId'>{props.fide_id}</p>
+            <p className='player-fideId'>{props.fide_id}</p>
         </div>
     )
 }
