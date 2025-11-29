@@ -51,6 +51,10 @@ func HandleNewClient(ws *websocket.Conn) {
 	var msg Message
 	err := ws.ReadJSON(&msg)
 	if err != nil || msg.Type != "init" {
+		if err != nil {
+			fmt.Printf("%v\n", err)
+		}
+
 		println("Mensagem inicial diferente de init ou erro identificado")
 		return
 	}
@@ -161,6 +165,7 @@ func HandleNewClient(ws *websocket.Conn) {
 		RoomID:     room.RoomID,
 		Color:      player.Color.String(),
 		OpponentID: opponent.ID,
+		GamePGN:    room.Game.String(),
 		GameFEN:    room.Game.FEN(),
 		LastMoveS1: room.LastMoveS1.String(),
 		LastMoveS2: room.LastMoveS2.String(),
@@ -274,7 +279,9 @@ func HandleNewClient(ws *websocket.Conn) {
 				opponentWin() // Not his turn, opponent must win
 				return
 			}
-			room.Game.ValidMoves()
+
+			//room.Game.ValidMoves() Not sure why this was here, I'm commenting it anyway
+
 			err = room.Game.PushNotationMove(moveMsg.MoveNotation, chess.AlgebraicNotation{}, nil)
 			if err != nil {
 				opponentWin() // Invalid move, opponent must win

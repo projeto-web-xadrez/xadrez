@@ -2,13 +2,13 @@ import React from 'react';
 import { Move } from 'chess.js'
 
 interface Props {
-    key: number,
     relativeX: number,
     relativeY: number,
     width: number,
     height: number,
     move: Move,
-    pieceStyle: string
+    pieceStyle: string,
+    onClick: (move: Move) => void;
 };
 
 function SquareMoveHighlightComponent(props: Props) {
@@ -27,7 +27,8 @@ function SquareMoveHighlightComponent(props: Props) {
         width: props.width,
         height: props.height,
         zIndex: 4,
-        position: 'absolute'
+        position: 'absolute',
+        cursor: 'pointer'
     }
 
     let promotionPiece: React.JSX.Element | null = null;
@@ -38,7 +39,7 @@ function SquareMoveHighlightComponent(props: Props) {
     }
 
     return (
-    <div key={props.key} data-square-from={props.move.from}>
+    <div onClick={() => {props.onClick(props.move)}} data-square-from={props.move.from}>
         {promotionPiece}
         <img src='transparent.png' style={styles} data-square={props.move.to} data-square-from={props.move.from} data-move={props.move.san} data-type='highlight'/>
     </div>

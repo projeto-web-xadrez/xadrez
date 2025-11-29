@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Chess, Move, type Square } from 'chess.js'
-import PieceComponent from './PieceComponent';
+import { PieceComponent } from './PieceComponent';
 import SquareMoveHighlightComponent from './SquareMoveHighlightComponent';
 import SquareLastMoveComponent from './SquareLastMoveComponent';
 import SquareCheckedKingComponent from './SquareCheckedKingComponent';
@@ -64,7 +64,7 @@ const regeneratePieces = (chess: Chess, perspective: string) => {
                     j : 7 - j;
 
             pieces.push(
-                <PieceComponent
+                <PieceComponent 
                     {...{
                         key: id++,
                         pieceStyle: DEFAULT_PIECE_STYLE,
@@ -72,6 +72,8 @@ const regeneratePieces = (chess: Chess, perspective: string) => {
                         relativeY: 50 * perspectiveRow,
                         width: 50,
                         height: 50,
+                        showGrabIcon: true,
+                        onClick: () => {},
                         ...square
                     }}
                 />
@@ -182,6 +184,7 @@ function Board({ sendMove, gameState, chessBoard }: BoardProps) {
                     height={50}
                     width={50}
                     pieceStyle={DEFAULT_PIECE_STYLE}
+                    onClick={() => {}}
                 />
             );
 

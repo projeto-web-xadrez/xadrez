@@ -15,6 +15,7 @@ type WelcomeContextMessage struct {
 	Color      string `json:"color"`
 	OpponentID string `json:"opponent_id"`
 	GameFEN    string `json:"game_fen"`
+	GamePGN    string `json:"game_pgn"`
 	LastMoveS1 string `json:"last_move_s1"`
 	LastMoveS2 string `json:"last_move_s2"`
 	GameStatus string `json:"game_status"`
