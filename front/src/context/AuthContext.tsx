@@ -1,16 +1,16 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from "react";
-import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 
 type AuthContextType = {
     isAuthenticated: boolean;
     username: string | null;
     clientId: string | null;
-    login: (username: string, password: string) => Promise<boolean>;
-    register: (username: string, password: string, email: string) => Promise<boolean>;
-    confirm_registration: (validation_code: string) => Promise<boolean>;
+    email: string | null;
+    login: (username: string, password: string) => Promise<[boolean, string]>;
+    register: (username: string, password: string, email: string) => Promise<[boolean, string]>;
+    confirmRegistration: (validationCode: string) => Promise<[boolean, string]>;
     checkValidToken: () => Promise<boolean>
     logout: () => void;
 };
@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }, []);
 
-    async function login(email: string, password: string) {
+    async function login(email: string, password: string): Promise<[boolean, string]> {
         const body = new FormData();
         body.append("email", email);
         body.append("password", password);
@@ -72,13 +72,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setAuthenticated(true);
 
             //navigate("/dashboard");
-            return true;
+            return [true, ""];
         }
 
-        return false;
+        return [false, await res.text()];
     }
 
-    async function register(username: string, password: string, email: string) {
+    async function register(username: string, password: string, email: string): Promise<[boolean, string]>  {
         const body_obj = new FormData()
         body_obj.append("username", username)
         body_obj.append("password", password)
@@ -92,23 +92,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             credentials: 'include',
             body: body_obj
         })
+
         if (response.status !== 200) {
-            return false;
+            return [false, await response.text()];
         }
 
         const json_res = await response.json();
+
         if(json_res.type == "result") {
             localStorage.setItem("verificationToken", json_res.data.verificationToken)
         }
-        return true;
+        return [true, ""];
     }
 
-     async function confirm_registration(validation_code: string) {
+     async function confirmRegistration(validationCode: string): Promise<[boolean, string]> {
         const body_obj = new FormData()
 
-
         const verification_token = localStorage.getItem("verificationToken") as string || ""
-        body_obj.append("verificationCode", validation_code)
+        body_obj.append("verificationCode", validationCode)
         body_obj.append("verificationToken", verification_token)
 
         const response = await fetch("http://localhost:80/loginapi/confirm-registration", {
@@ -121,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
 
         if (response.status !== 200) {
-            return false;
+            return [false, await response.text()];
         }
 
         const { data } = await response.json();
@@ -137,11 +138,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAuthenticated(true);
 
         //navigate('/dashboard');
-        return true;
+        return [true, ""];
     }
 
     function logout() {
         localStorage.removeItem("clientId");
+        localStorage.removeItem("email");
+        localStorage.removeItem("verificationToken");
         localStorage.removeItem("username");
         localStorage.removeItem("csrf_token");
 
@@ -171,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, username, clientId, login, register, confirm_registration, checkValidToken, logout }}>
+        <AuthContext.Provider value={{ isAuthenticated, username, clientId, email, login, register, confirmRegistration: confirmRegistration, checkValidToken, logout }}>
             {children}
         </AuthContext.Provider>
     );

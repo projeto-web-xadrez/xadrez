@@ -1,0 +1,82 @@
+/* -------------------------- */
+/* LEADERBOARD PLAYER ITEM    */
+/* -------------------------- */
+.player-component-div {
+    width: 100%;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+
+    padding: 12px 18px;
+    margin: 10px 0;
+
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    transition: 0.2s;
+    font-family: sans-serif;
+}
+
+.player-component-div:hover {
+    background: #222;
+    transform: translateY(-2px);
+}
+
+
+/* -------------------------- */
+/* RANK NUMBER                */
+/* -------------------------- */
+.rank-position {
+    font-size: 20px;
+    font-weight: bold;
+    color: #4ba3ff;
+    width: 40px;
+    text-align: right;
+}
+
+
+/* -------------------------- */
+/* COUNTRY FLAG               */
+/* -------------------------- */
+.player-component-div svg,
+.player-component-div img {
+    width: 30px !important;
+    height: 22px !important;
+    border-radius: 4px;
+    box-shadow: 0 0 4px rgba(0,0,0,0.4);
+}
+
+
+/* -------------------------- */
+/* PLAYER NAME                */
+/* -------------------------- */
+.player-name {
+    font-size: 16px;
+    color: #eee;
+    flex-grow: 1;  /* empurra rating e fide para direita */
+}
+
+
+/* -------------------------- */
+/* RATING                     */
+/* -------------------------- */
+.player-rating {
+    font-size: 16px;
+    font-weight: bold;
+    color: #ddd;
+    min-width: 60px;
+    text-align: center;
+}
+
+
+/* -------------------------- */
+/* FIDE ID                    */
+/* -------------------------- */
+.player-fideId {
+    font-size: 13px;
+    color: #888;
+    min-width: 90px;
+    text-align: right;
+}
