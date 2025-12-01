@@ -173,15 +173,14 @@ const GameDisplayComponent = forwardRef<GameDisplayHandle, GameDisplaySettings>(
             lastMoves: null
         } as GamePage;
 
-        const newPages = [initialPage, ...moves.map((move, index) => {
+        const newPages = [initialPage, ...moves.map((move) => {
             game.current.move(move);
             game.current.fen()
 
             return {
                 move,
                 fen: game.current.fen(),
-                lastMoves: index === 0 ? null
-                    : [move.from, move.to]
+                lastMoves: [move.from, move.to]
             }
         }) as GamePage[]];
 
