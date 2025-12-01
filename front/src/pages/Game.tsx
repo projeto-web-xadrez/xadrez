@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react';
-import DumbDisplayBoard, { type BoardState, type HighlightedPieceSquareType } from '../components/DumbDisplayBoardComponent';
-import { Chess, type Color, type Move, type Square } from 'chess.js';
-import SoundPlayerComponent, { type SoundPlayerHandle } from '../components/SoundPlayerComponent';
+import { type Color, type Move, type Square } from 'chess.js';
+import GameDisplayComponent, { type GameDisplayHandle } from '../components/GameDisplayComponent';
 
 const MessageType = {
   INIT: 'init',
@@ -81,34 +80,12 @@ class InitMessage extends AbstractBaseMessage {
     }
 }
 
-interface GamePage {
-    move: Move | null,
-    lastMoves : [Square, Square] | null
-    fen: string
-}
-
 export default function Game() {
+    const displayHandle = useRef<GameDisplayHandle>(null);
     const [connected, setConnected] = useState(false);
-    const game = useRef<Chess>(new Chess());
-    const [gameState, setGameState] = useState<BoardState>({
-        allowedMoves: 'none',
-        fen: new Chess().fen(),
-        highlightedSquare: null,
-        lastMove: null,
-        perspective: 'w'
-    });
-    const [highlightedSquare, setHighlightedSquare] = useState<HighlightedPieceSquareType | null>(null);
-
-    const soundPlayer = useRef<SoundPlayerHandle>(null);
     const client = useRef<WebSocket>(new WebSocket(`http://localhost:80/gameserver/ws?csrfToken=${localStorage.getItem('csrf_token')}`));
-    
-    const pages = useRef<GamePage[]>([{
-        move: null,
-        fen: new Chess().fen(),
-        lastMoves: null
-    }]);
-    const [currentPage, setCurrentPage] = useState<number>(0);
-    const color = useRef<Color>('w');
+    const [pgn, setPgn] = useState<string>('');
+    const [playingColor, setPlayingColor] = useState<Color>('w');
 
     client.current.onopen = () => {
         setConnected(true);
@@ -121,52 +98,6 @@ export default function Game() {
         console.error(`Disconnected. Reason: ${e.reason}, code = ${e.code}`);
     }
 
-    const updatePage = (index: number) => {
-        if(index < 0 || index >= pages.current.length)
-            return;
-        setCurrentPage(index);
-        setGameState(() => {
-            return {
-                allowedMoves: index === pages.current.length-1 ? color.current : 'none',
-                perspective: color.current,
-                fen: pages.current[index].fen,
-                highlightedSquare: index === pages.current.length-1 ? highlightedSquare : null,
-                lastMove: pages.current[index].lastMoves
-            }
-        });
-    }
-
-    const onWelcome = (msg: WelcomeMessage) => {
-        color.current = msg.color as Color;
-        const moveParser = new Chess();
-        moveParser.loadPgn(msg.game_pgn as string);
-        
-        const moves = moveParser.history({
-            verbose: true
-        });
-
-        game.current = new Chess();
-        const initialPage = {
-            move: null,
-            fen: game.current.fen(),
-            lastMoves: null
-        } as GamePage;
-
-        pages.current = [initialPage, ...moves.map((move, index) => {
-            game.current.move(move);
-            game.current.fen()
-            
-            return {
-                move,
-                fen: game.current.fen(),
-                lastMoves: index === 0 ? null
-                    : [move.from, move.to]
-            }
-        }) as GamePage[]];
-
-        updatePage(pages.current.length-1);
-    }
-
     client.current.onmessage = (e) => {
         const msg = JSON.parse(e.data) as IncomingMessage;
         console.log(`Received message ${msg.type}`);
@@ -174,17 +105,13 @@ export default function Game() {
         switch(msg.type) {
             case MessageType.WELCOME:
                 const welcome = JSON.parse(msg.data) as WelcomeMessage
-                onWelcome(welcome);
+                setPgn(welcome.game_pgn as string);
+                setPlayingColor(welcome.color as Color);
             break;
             case MessageType.PLAYER_MOVED:
                 const playerMoved = JSON.parse(msg.data) as PlayerMovedMessage;
-                const move = game.current.moves({verbose: true, square: playerMoved.move_s1})
-                    .find(x => x.san === playerMoved.move_notation);
-                if(!move) {
-                    alert('Received invalid notation');
-                    return;
-                }
-                pushMove(move);
+                if(displayHandle.current?.pushMove)
+                    displayHandle.current?.pushMove(playerMoved)
             break;
             case MessageType.GAME_STARTED:
                 alert('Game started');
@@ -195,62 +122,27 @@ export default function Game() {
         }
     }
 
-    const pushMove = (move: Move) => {
-        game.current.move(move);
-        pages.current.push({
-            move,
-            fen: game.current.fen(),
-            lastMoves: [move.from, move.to],
-        });
-        updatePage(pages.current.length-1);
-
-        const soundFile = move.isCapture() ? 'sounds/Capture.mp3' : 'sounds/Move.mp3';
-        soundPlayer.current?.playSound(soundFile);
-    }
-
     const onPlayerMove = (move: Move) => {
-        if(!connected || client === null || game.current.turn() !== color.current)
+        if(!connected || client === null)
             return;
-
-        pushMove(move);
         client.current.send(new PlayerMovedMessage(move).encode());
     };
 
     return (
         <>
-            <SoundPlayerComponent
-                minDelayBetweenSounds={50}
-                ref={soundPlayer}
-            />
-
-            <button onClick={() => {
-                updatePage(currentPage-1);
-            }}>
-                Prev
-            </button>
-            <button onClick={() => {
-                const nextState = currentPage + 1;
-                if (nextState < pages.current.length) {
-                    const move = pages.current[nextState].move as Move;
-                    const soundFile = move.isCapture() ? 'sounds/Capture.mp3' : 'sounds/Move.mp3';
-                    soundPlayer.current?.playSound(soundFile);
-
-                    updatePage(nextState);
-                }
-                
-            }}>
-                Next
-            </button>
-
-            <DumbDisplayBoard
+            <GameDisplayComponent
                 boardStyle={{
                     boardBackground: 'board_bg/maple.jpg',
                     pieceStyle: 'merida', //cburnett
                     pieceSize: 60
                 }}
+                type='playing'
+                pgn={pgn}
+                playerColor={playingColor}
+                perspective={playingColor}
+                onPageChanged={null}
                 onPlayerMove={onPlayerMove}
-                onPlayerHighlightSquare={setHighlightedSquare}
-                state={gameState}
+                ref={displayHandle}
             />
         </>
     );

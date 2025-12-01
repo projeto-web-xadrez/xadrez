@@ -6,7 +6,7 @@ import React from 'react';
 import SquareMoveHighlightComponent from './SquareMoveHighlightComponent';
 
 
-interface BoardStyle {
+export interface BoardStyle {
     pieceSize: number,
     pieceStyle: string,
     boardBackground: string
@@ -31,8 +31,8 @@ export interface BoardState {
 
 interface DumbDisplayBoardProps {
     boardStyle: BoardStyle,
-    onPlayerMove: (move: Move) => void;
-    onPlayerHighlightSquare: (highlightedSquare: HighlightedPieceSquareType | null) => void;
+    onPlayerMove: null | ((move: Move) => void);
+    onPlayerHighlightSquare: null | ((highlightedSquare: HighlightedPieceSquareType | null) => void);
     state: BoardState,
 }
 
@@ -87,6 +87,12 @@ const getMoveHighlightSquare = (move: Move): Square => {
 }
 
 const DumbDisplayBoard = (({ boardStyle, onPlayerMove, onPlayerHighlightSquare, state }: DumbDisplayBoardProps) => {
+    if(onPlayerMove === null)
+        onPlayerMove = () => {};
+
+    if(onPlayerHighlightSquare === null)
+        onPlayerHighlightSquare = () => {};
+
     const game = useMemo(() => new Chess(state.fen), [state.fen]);
 
     const pieces = useMemo(() => {
