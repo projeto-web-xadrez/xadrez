@@ -9,7 +9,8 @@ import SquareMoveHighlightComponent from './SquareMoveHighlightComponent';
 export interface BoardStyle {
     pieceSize: number,
     pieceStyle: string,
-    boardBackground: string
+    boardBackground: string,
+    shouldLabelSquares: boolean
 }
 
 declare type AllowMove = 'w' | 'b' | 'none' | 'both';
@@ -87,11 +88,11 @@ const getMoveHighlightSquare = (move: Move): Square => {
 }
 
 const DumbDisplayBoard = (({ boardStyle, onPlayerMove, onPlayerHighlightSquare, state }: DumbDisplayBoardProps) => {
-    if(onPlayerMove === null)
-        onPlayerMove = () => {};
+    if (onPlayerMove === null)
+        onPlayerMove = () => { };
 
-    if(onPlayerHighlightSquare === null)
-        onPlayerHighlightSquare = () => {};
+    if (onPlayerHighlightSquare === null)
+        onPlayerHighlightSquare = () => { };
 
     const game = useMemo(() => new Chess(state.fen), [state.fen]);
 
@@ -105,14 +106,14 @@ const DumbDisplayBoard = (({ boardStyle, onPlayerMove, onPlayerHighlightSquare, 
         })
     }, [state.fen]);
 
-    
+
     const [highlightedPieceSquare, setHighlightedPieceSquare] = useState<null | HighlightedPieceSquareType>(() => {
-        const highlightedPiece = state.highlightedSquare && pieces.find(p => 
+        const highlightedPiece = state.highlightedSquare && pieces.find(p =>
             p.color === state.highlightedSquare?.color
             && p.type === state.highlightedSquare?.type
             && p.square === state.highlightedSquare?.square
         );
-        if(!highlightedPiece)
+        if (!highlightedPiece)
             return null;
         let key = 0;
         const moves = game.moves({
@@ -126,14 +127,14 @@ const DumbDisplayBoard = (({ boardStyle, onPlayerMove, onPlayerHighlightSquare, 
         };
     });
 
-    useEffect(() => 
+    useEffect(() =>
         onPlayerHighlightSquare(highlightedPieceSquare)
-    , [highlightedPieceSquare]);
+        , [highlightedPieceSquare]);
 
 
     const onClickPiece = (square: Square, type: PieceSymbol, color: Color) => {
         setHighlightedPieceSquare(highlightedPieceSquare => {
-            if (color !== state.allowedMoves && state.allowedMoves != 'both') 
+            if (color !== state.allowedMoves && state.allowedMoves != 'both')
                 return null;
 
             if (highlightedPieceSquare
@@ -173,6 +174,30 @@ const DumbDisplayBoard = (({ boardStyle, onPlayerMove, onPlayerHighlightSquare, 
             onClickPiece(square, pieceAtSquare.type, pieceAtSquare.color);
         }
     }, [state.fen]);
+
+    const labels: {
+        x: number,
+        y: number,
+        text: string,
+    }[] = [];
+
+    for (const col of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']) {
+        let x = col.charCodeAt(0) - 'a'.charCodeAt(0);
+        //x += 0.09 * (state.perspective === 'w' ? 1 : -1);
+        labels.push({
+            x: state.perspective === 'w' ? x : (7 - x),
+            y: 7.7,
+            text: col
+        });
+    }
+    for (const row of ['1', '2', '3', '4', '5', '6', '7', '8']) {
+        const y = row.charCodeAt(0) - '1'.charCodeAt(0);
+        labels.push({
+            x: 7.85,
+            y: state.perspective === 'b' ? y : (7 - y),
+            text: row
+        });
+    }
 
     return <div>
         <img src={boardStyle.boardBackground}
@@ -230,6 +255,22 @@ const DumbDisplayBoard = (({ boardStyle, onPlayerMove, onPlayerHighlightSquare, 
             pieceStyle={boardStyle.pieceStyle}
             showGrabIcon={state.allowedMoves === 'both' || color === state.allowedMoves}
         />)}
+
+        {
+            boardStyle.shouldLabelSquares &&
+            <div style={{position: 'absolute'}}> {
+                labels.map(({ x, y, text }, index) =>
+                    <span key={index} style={{ 
+                        position: 'absolute', 
+                        transform: `translate(${x * boardStyle.pieceSize}px, ${y * boardStyle.pieceSize}px)`,
+                        fontSize: boardStyle.pieceSize * 0.27,
+                        color: '#2f363d',
+                    }}>
+                        {text}
+                    </span>
+                )}
+            </div>
+        }
 
     </div>
 });

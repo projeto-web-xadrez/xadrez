@@ -117,9 +117,11 @@ const GameDisplayComponent = forwardRef<GameDisplayHandle, GameDisplaySettings>(
             return;
 
         if (index >= currentPage) {
-            const move = pages[index].move as Move;
-            const soundFile = move.isCapture() ? 'sounds/Capture.mp3' : 'sounds/Move.mp3';
-            props.soundPlayer.current?.playSound(soundFile);
+            const move = pages[index].move;
+            if(move) {
+                const soundFile = move.isCapture() ? 'sounds/Capture.mp3' : 'sounds/Move.mp3';
+                props.soundPlayer.current?.playSound(soundFile);
+            }
         }
 
         setCurrentPage(index);

@@ -69,7 +69,7 @@ func safeRegisterMatchRequest(client clientObj) bool {
 
 	currentState, ok := usersMap[client.id]
 	if ok && currentState != "idle" {
-		fmt.Println("denied :: " + client.id + " ; he's either already in queue or state not idle")
+		fmt.Println("denied :: " + client.id + " ; he's either already in queue or state not idle, state = " + currentState)
 		return false
 	}
 

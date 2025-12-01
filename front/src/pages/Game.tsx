@@ -140,7 +140,8 @@ export default function Game({soundPlayer}: {soundPlayer: RefObject<SoundPlayerH
                 boardStyle={{
                     boardBackground: 'board_bg/maple.jpg',
                     pieceStyle: 'merida', //cburnett
-                    pieceSize: 60
+                    pieceSize: 50,
+                    shouldLabelSquares: true
                 }}
                 type='playing'
                 pgn={startSettings?.pgn || ''}
