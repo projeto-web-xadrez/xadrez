@@ -6,7 +6,7 @@
 .moves-container {
     position: relative;
     user-select: none;
-    background: gray;
+    background: #1e293b;
     outline: none;
 }
 
