@@ -1,0 +1,123 @@
+.root-container {
+    outline: none;
+    user-select: none;
+}
+
+.moves-container {
+    position: relative;
+    user-select: none;
+    background: gray;
+    outline: none;
+}
+
+.move-list {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.move-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.move-list::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+.move-list::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 6px;
+}
+
+.move-list::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+.move-list {
+    scrollbar-width: thin;
+    scrollbar-color: #334155 #0f172a;
+}
+
+.move-row {
+    display: flex;
+    outline: none;
+}
+
+.move-index {
+    width: 50px;
+    padding: 6px 0;
+    text-align: center;
+    background: #334155;
+    color: #e2e8f0;
+    font-weight: 600;
+    border-right: 1px solid #1e293b;
+}
+
+.move-cell {
+    width: 175px;
+    padding: 6px 8px;
+    background: #1f2937;
+    color: #f1f5f9;
+    transition: 0.15s;
+    border-right: 1px solid #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    user-select: none;
+}
+
+.hoverable {
+    cursor: pointer;
+}
+
+.hoverable:hover {
+    background: #273549;
+}
+
+.selected {
+    background: #3b82f6;
+    color: white;
+    font-weight: 700;
+}
+
+.moves-footer {
+    max-height: 41px;
+    display: flex;
+    gap: 6px;
+    padding: 6px;
+    background: #1f2937;
+    border-top: 1px solid #0f172a;
+    user-select: none;
+    align-items: center;
+}
+
+.footer-btn {
+    width: 32px;
+    height: 28px;
+    background: #334155;
+    color: #e2e8f0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.footer-btn.flip {
+    background: #475569;
+    color: #f1f5f9;
+}
+
+.footer-btn.resign {
+    padding: 0 10px;
+    background: #b91c1c;
+    color: white;
+    margin-left: auto;
+    width: auto;
+}
+
+div {
+    outline: none;
+    user-select: none;
+}

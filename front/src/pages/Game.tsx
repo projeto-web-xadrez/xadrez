@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type RefObject } from 'react';
 import { type Color, type Move, type Square } from 'chess.js';
 import GameDisplayComponent, { type GameDisplayHandle } from '../components/GameDisplayComponent';
+import type { SoundPlayerHandle } from '../components/SoundPlayerComponent';
 
 const MessageType = {
   INIT: 'init',
@@ -80,12 +81,14 @@ class InitMessage extends AbstractBaseMessage {
     }
 }
 
-export default function Game() {
+export default function Game({soundPlayer}: {soundPlayer: RefObject<SoundPlayerHandle | null>}) {
     const displayHandle = useRef<GameDisplayHandle>(null);
     const [connected, setConnected] = useState(false);
     const client = useRef<WebSocket>(new WebSocket(`http://localhost:80/gameserver/ws?csrfToken=${localStorage.getItem('csrf_token')}`));
-    const [pgn, setPgn] = useState<string>('');
-    const [playingColor, setPlayingColor] = useState<Color>('w');
+    const [startSettings, setStartSettings] = useState<{
+        playingColor: Color,
+        pgn: string
+    } | null>();
 
     client.current.onopen = () => {
         setConnected(true);
@@ -105,8 +108,11 @@ export default function Game() {
         switch(msg.type) {
             case MessageType.WELCOME:
                 const welcome = JSON.parse(msg.data) as WelcomeMessage
-                setPgn(welcome.game_pgn as string);
-                setPlayingColor(welcome.color as Color);
+                
+                setStartSettings({
+                    pgn: welcome.game_pgn as string,
+                    playingColor: welcome.color as Color
+                });
             break;
             case MessageType.PLAYER_MOVED:
                 const playerMoved = JSON.parse(msg.data) as PlayerMovedMessage;
@@ -134,14 +140,15 @@ export default function Game() {
                 boardStyle={{
                     boardBackground: 'board_bg/maple.jpg',
                     pieceStyle: 'merida', //cburnett
-                    pieceSize: 60
+                    pieceSize: 40
                 }}
                 type='playing'
-                pgn={pgn}
-                playerColor={playingColor}
-                perspective={playingColor}
+                pgn={startSettings?.pgn || ''}
+                playerColor={startSettings?.playingColor || 'w'}
+                perspective={startSettings?.playingColor || 'w'}
                 onPageChanged={null}
                 onPlayerMove={onPlayerMove}
+                soundPlayer={soundPlayer}
                 ref={displayHandle}
             />
         </>
