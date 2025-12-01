@@ -14,31 +14,31 @@ interface BoardStyle {
 
 declare type AllowMove = 'w' | 'b' | 'none' | 'both';
 
+export interface HighlightedPieceSquareType {
+    square: Square,
+    type: PieceSymbol,
+    color: Color,
+    moves: IdentifiedMove[]
+}
+
 export interface BoardState {
     fen: string,
     perspective: Color,
     allowedMoves: AllowMove,
     lastMove: [Square, Square] | null,
-    highlightSquare: Square | null
+    highlightedSquare: HighlightedPieceSquareType | null
 }
 
 interface DumbDisplayBoardProps {
     boardStyle: BoardStyle,
     onPlayerMove: (move: Move) => void;
-    onPlayerHighlightSquare: (square: Square | null) => void;
+    onPlayerHighlightSquare: (highlightedSquare: HighlightedPieceSquareType | null) => void;
     state: BoardState,
 }
 
 interface IdentifiedMove {
     key: number,
     move: Move,
-}
-
-interface HighlightedPieceSquareType {
-    square: Square,
-    type: PieceSymbol,
-    color: Color,
-    moves: IdentifiedMove[]
 }
 
 const getRelativePositionBySquare = (square: Square, perspective: Color, boardStyle: BoardStyle) => {
@@ -101,7 +101,11 @@ const DumbDisplayBoard = (({ boardStyle, onPlayerMove, onPlayerHighlightSquare, 
 
     
     const [highlightedPieceSquare, setHighlightedPieceSquare] = useState<null | HighlightedPieceSquareType>(() => {
-        const highlightedPiece = state.highlightSquare && pieces.find(p => p.square === state.highlightSquare);
+        const highlightedPiece = state.highlightedSquare && pieces.find(p => 
+            p.color === state.highlightedSquare?.color
+            && p.type === state.highlightedSquare?.type
+            && p.square === state.highlightedSquare?.square
+        );
         if(!highlightedPiece)
             return null;
         let key = 0;
@@ -117,7 +121,7 @@ const DumbDisplayBoard = (({ boardStyle, onPlayerMove, onPlayerHighlightSquare, 
     });
 
     useEffect(() => 
-        onPlayerHighlightSquare(highlightedPieceSquare?.square || null)
+        onPlayerHighlightSquare(highlightedPieceSquare)
     , [highlightedPieceSquare]);
 
 
@@ -162,7 +166,7 @@ const DumbDisplayBoard = (({ boardStyle, onPlayerMove, onPlayerHighlightSquare, 
             setHighlightedPieceSquare(null);
             onClickPiece(square, pieceAtSquare.type, pieceAtSquare.color);
         }
-    }, []);
+    }, [state.fen]);
 
     return <div>
         <img src={boardStyle.boardBackground}

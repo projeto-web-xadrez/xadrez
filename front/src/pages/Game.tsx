@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import DumbDisplayBoard, { type BoardState } from '../components/DumbDisplayBoardComponent';
+import DumbDisplayBoard, { type BoardState, type HighlightedPieceSquareType } from '../components/DumbDisplayBoardComponent';
 import { Chess, type Color, type Move, type Square } from 'chess.js';
 import SoundPlayerComponent, { type SoundPlayerHandle } from '../components/SoundPlayerComponent';
 
@@ -93,10 +93,11 @@ export default function Game() {
     const [gameState, setGameState] = useState<BoardState>({
         allowedMoves: 'none',
         fen: new Chess().fen(),
-        highlightSquare: null,
+        highlightedSquare: null,
         lastMove: null,
         perspective: 'w'
     });
+    const [highlightedSquare, setHighlightedSquare] = useState<HighlightedPieceSquareType | null>(null);
 
     const soundPlayer = useRef<SoundPlayerHandle>(null);
     const client = useRef<WebSocket>(new WebSocket(`http://localhost:80/gameserver/ws?csrfToken=${localStorage.getItem('csrf_token')}`));
@@ -129,7 +130,7 @@ export default function Game() {
                 allowedMoves: index === pages.current.length-1 ? color.current : 'none',
                 perspective: color.current,
                 fen: pages.current[index].fen,
-                highlightSquare: null,
+                highlightedSquare: index === pages.current.length-1 ? highlightedSquare : null,
                 lastMove: pages.current[index].lastMoves
             }
         });
@@ -208,7 +209,7 @@ export default function Game() {
     }
 
     const onPlayerMove = (move: Move) => {
-        if(!connected || client === null)
+        if(!connected || client === null || game.current.turn() !== color.current)
             return;
 
         pushMove(move);
@@ -248,7 +249,7 @@ export default function Game() {
                     pieceSize: 60
                 }}
                 onPlayerMove={onPlayerMove}
-                onPlayerHighlightSquare={() => {}}
+                onPlayerHighlightSquare={setHighlightedSquare}
                 state={gameState}
             />
         </>
