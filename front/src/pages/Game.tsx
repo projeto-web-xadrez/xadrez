@@ -1,8 +1,9 @@
-import { useRef, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { type Color, type Move, type Square } from 'chess.js';
 import GameDisplayComponent, { type GameDisplayHandle } from '../components/gameboard/GameDisplayComponent';
 import type { SoundPlayerHandle } from '../components/SoundPlayerComponent';
-import { useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const MessageType = {
   INIT: 'init',
@@ -84,7 +85,34 @@ class InitMessage extends AbstractBaseMessage {
 
 export default function Game({soundPlayer}: {soundPlayer: RefObject<SoundPlayerHandle | null>}) {
     const { gameId } = useParams();
-    if(!gameId) return null;
+    const navigate = useNavigate();
+    const { isAuthenticated } = useAuth();
+
+    if(!gameId || !isAuthenticated) {
+        navigate('/');
+        return null;
+    }
+
+    const location = useLocation();
+    
+    // If this flag is true, we are sure this is a live game, so we don't need to
+    // request the API to check it. However, if it isn't, it could still be a live game
+    // (cause the user may have refreshed the page or retyped the URL)
+    useEffect(() => {
+        if(location?.state?.liveGame)
+            alert('Live game')
+    }, []);
+
+    // TODO: if liveGame, connect to websocket directly
+    // otherwise, request the API (with a HTTP request) for game information
+    // the API should return whether it is a live game, the players, etc...
+    // So, in the act of making the rooom, we should also store it in the database.
+    // And we should also write this API route that gets the game info from DB
+    
+    // TODO: add GameEndedComponent when game finishes
+    // TODO: only allow user to move when received a GameStarted or a welcome with game_status == 'started'
+    // TODO: abstract this WebSocket away
+    // TODO: make a checked king highlight in the DumbDisplayBoard
 
     const displayHandle = useRef<GameDisplayHandle>(null);
     const [connected, setConnected] = useState(false);

@@ -7,7 +7,7 @@ export default function Dashboard() {
   const { isAuthenticated } = useAuth();
   const { sendMessage, subscribe, unsubscribe } = useWebsocket()
   const navigate = useNavigate();
-  
+
   if (!isAuthenticated)
     return null;
 
@@ -15,8 +15,11 @@ export default function Dashboard() {
     subscribe("matchFound", (data) => {
       const room = data['roomId'] as string;
       unsubscribe("matchFound"); // evita múltiplas execuções
-      console.log('found');
-      navigate(`/game/${room}`);
+      navigate(`/game/${room}`, {
+        state: {
+          liveGame: true
+        }
+      });
     });
 
     const ok = sendMessage("requestMatch", { id: playerId });
