@@ -34,14 +34,14 @@ function SquareMoveHighlightComponent(props: Props) {
     let promotionPiece: React.JSX.Element | null = null;
     if(props.move.isPromotion()) {
         const pieceColorType: string = `${props.move.color}${props.move?.promotion?.toUpperCase()}`;
-        const imageSrc = `pieces/${props.pieceStyle}/${pieceColorType}.svg`
+        const imageSrc = `/pieces/${props.pieceStyle}/${pieceColorType}.svg`
         promotionPiece = <img src={imageSrc} style={stylesPiece} data-square={props.move.to} data-square-from={props.move.from} data-move={props.move.san} data-type='highlight' />
     }
 
     return (
     <div onClick={() => {props.onClick(props.move)}} data-square-from={props.move.from}>
         {promotionPiece}
-        <img src='transparent.png' style={styles} data-square={props.move.to} data-square-from={props.move.from} data-move={props.move.san} data-type='highlight'/>
+        <img src='/transparent.png' style={styles} data-square={props.move.to} data-square-from={props.move.from} data-move={props.move.san} data-type='highlight'/>
     </div>
     );
 }

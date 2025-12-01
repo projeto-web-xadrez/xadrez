@@ -26,7 +26,7 @@ export function PieceComponent(props: PieceComponentProps) {
         styles.cursor = 'grab';
 
     const pieceColorType: string = `${props.color}${props.type.toUpperCase()}`;
-    const imageSrc = `pieces/${props.pieceStyle}/${pieceColorType}.svg`
+    const imageSrc = `/pieces/${props.pieceStyle}/${pieceColorType}.svg`
 
     return (
         <img onClick={() => props.onClick(props.square, props.type, props.color)} src={imageSrc} style={styles} data-square={props.square} data-piece={props.type} data-color={props.color} data-type='piece' draggable='false' />

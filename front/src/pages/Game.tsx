@@ -1,7 +1,8 @@
 import { useRef, useState, type RefObject } from 'react';
 import { type Color, type Move, type Square } from 'chess.js';
-import GameDisplayComponent, { type GameDisplayHandle } from '../components/GameDisplayComponent';
+import GameDisplayComponent, { type GameDisplayHandle } from '../components/gameboard/GameDisplayComponent';
 import type { SoundPlayerHandle } from '../components/SoundPlayerComponent';
+import { useParams } from 'react-router-dom';
 
 const MessageType = {
   INIT: 'init',
@@ -82,6 +83,9 @@ class InitMessage extends AbstractBaseMessage {
 }
 
 export default function Game({soundPlayer}: {soundPlayer: RefObject<SoundPlayerHandle | null>}) {
+    const { gameId } = useParams();
+    if(!gameId) return null;
+
     const displayHandle = useRef<GameDisplayHandle>(null);
     const [connected, setConnected] = useState(false);
     const client = useRef<WebSocket>(new WebSocket(`http://localhost:80/gameserver/ws?csrfToken=${localStorage.getItem('csrf_token')}`));
@@ -138,7 +142,7 @@ export default function Game({soundPlayer}: {soundPlayer: RefObject<SoundPlayerH
         <>
             <GameDisplayComponent
                 boardStyle={{
-                    boardBackground: 'board_bg/maple.jpg',
+                    boardBackground: '/board_bg/maple.jpg',
                     pieceStyle: 'merida', //cburnett
                     pieceSize: 50,
                     shouldLabelSquares: true

@@ -87,6 +87,7 @@ const getMoveHighlightSquare = (move: Move): Square => {
     return newSquare;
 }
 
+// TODO: Add checked king highlight
 const DumbDisplayBoard = (({ boardStyle, onPlayerMove, onPlayerHighlightSquare, state }: DumbDisplayBoardProps) => {
     if (onPlayerMove === null)
         onPlayerMove = () => { };

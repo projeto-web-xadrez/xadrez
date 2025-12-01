@@ -12,7 +12,6 @@ function Navbar() {
             <div className="nav-links">
                 <Link to="/">Home</Link>
                 <Link to="/leaderboard">Leaderboard</Link>
-                <Link to="/game">Game</Link> {/*TODO: Remover da navbar e adicionar a roomId na query */}
                 {isAuthenticated ? (
                     <>
                         <Link to="/dashboard">Dashboard</Link>

@@ -1,11 +1,11 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type RefObject } from 'react';
 import DumbDisplayBoard, { type BoardState, type BoardStyle, type HighlightedPieceSquareType } from './DumbDisplayBoardComponent';
 import { Chess, Move, type Color, type Square } from 'chess.js';
-import { type SoundPlayerHandle } from './SoundPlayerComponent';
+import { type SoundPlayerHandle } from '../SoundPlayerComponent';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faArrowRight, faFlag, faRotate } from '@fortawesome/free-solid-svg-icons';
 
-import '../styles/GameDisplay.css';
+import '../../styles/GameDisplay.css';
 
 declare type DisplayType = 'playing' | 'spectating';
 
@@ -119,7 +119,7 @@ const GameDisplayComponent = forwardRef<GameDisplayHandle, GameDisplaySettings>(
         if (index >= currentPage) {
             const move = pages[index].move;
             if(move) {
-                const soundFile = move.isCapture() ? 'sounds/Capture.mp3' : 'sounds/Move.mp3';
+                const soundFile = move.isCapture() ? '/sounds/Capture.mp3' : '/sounds/Move.mp3';
                 props.soundPlayer.current?.playSound(soundFile);
             }
         }
