@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import DumbDisplayBoard, { type DumbDisplayBoardHandle } from '../components/DumbDisplayBoardComponent';
+import DumbDisplayBoard, { type BoardState } from '../components/DumbDisplayBoardComponent';
 import { Chess, type Color, type Move, type Square } from 'chess.js';
 import SoundPlayerComponent, { type SoundPlayerHandle } from '../components/SoundPlayerComponent';
 
@@ -90,7 +90,14 @@ interface GamePage {
 export default function Game() {
     const [connected, setConnected] = useState(false);
     const game = useRef<Chess>(new Chess());
-    const board = useRef<DumbDisplayBoardHandle>(null);
+    const [gameState, setGameState] = useState<BoardState>({
+        allowedMoves: 'none',
+        fen: new Chess().fen(),
+        highlightSquare: null,
+        lastMove: null,
+        perspective: 'w'
+    });
+
     const soundPlayer = useRef<SoundPlayerHandle>(null);
     const client = useRef<WebSocket>(new WebSocket(`http://localhost:80/gameserver/ws?csrfToken=${localStorage.getItem('csrf_token')}`));
     
@@ -117,8 +124,15 @@ export default function Game() {
         if(index < 0 || index >= pages.current.length)
             return;
         setCurrentPage(index);
-        board.current?.setFen(pages.current[index].fen, color.current, index === pages.current.length-1 ? color.current : '');
-        board.current?.setLastMove(pages.current[index].lastMoves);
+        setGameState(() => {
+            return {
+                allowedMoves: index === pages.current.length-1 ? color.current : 'none',
+                perspective: color.current,
+                fen: pages.current[index].fen,
+                highlightSquare: null,
+                lastMove: pages.current[index].lastMoves
+            }
+        });
     }
 
     const onWelcome = (msg: WelcomeMessage) => {
@@ -201,7 +215,6 @@ export default function Game() {
         client.current.send(new PlayerMovedMessage(move).encode());
     };
 
-
     return (
         <>
             <SoundPlayerComponent
@@ -235,7 +248,8 @@ export default function Game() {
                     pieceSize: 60
                 }}
                 onPlayerMove={onPlayerMove}
-                ref={board}
+                onPlayerHighlightSquare={() => {}}
+                state={gameState}
             />
         </>
     );

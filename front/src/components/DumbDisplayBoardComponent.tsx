@@ -1,7 +1,7 @@
 
 import { Chess, Move, type Color, type PieceSymbol, type Square } from 'chess.js';
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
-import { PieceComponent, type PieceComponentProps } from './PieceComponent';
+import { useEffect, useMemo, useState } from 'react'
+import { PieceComponent } from './PieceComponent';
 import React from 'react';
 import SquareMoveHighlightComponent from './SquareMoveHighlightComponent';
 
@@ -12,29 +12,26 @@ interface BoardStyle {
     boardBackground: string
 }
 
+declare type AllowMove = 'w' | 'b' | 'none' | 'both';
+
+export interface BoardState {
+    fen: string,
+    perspective: Color,
+    allowedMoves: AllowMove,
+    lastMove: [Square, Square] | null,
+    highlightSquare: Square | null
+}
+
 interface DumbDisplayBoardProps {
     boardStyle: BoardStyle,
     onPlayerMove: (move: Move) => void;
-}
-
-export interface DumbDisplayBoardHandle {
-    setFen: (fen: string, perspective: Color, allowMovesColor: string) => void;
-    setLastMove: (squares: [Square, Square] | null) => void;
-    setBoardStyle: (boardStyle: BoardStyle) => void;
+    onPlayerHighlightSquare: (square: Square | null) => void;
+    state: BoardState,
 }
 
 interface IdentifiedMove {
     key: number,
     move: Move,
-}
-
-interface IdentifiedPieceComponentProps {
-    key: number,
-    square: Square,
-    type: PieceSymbol,
-    color: Color,
-    onClick: (square: Square, type: PieceSymbol, color: Color) => void,
-    showGrabIcon: boolean,
 }
 
 interface HighlightedPieceSquareType {
@@ -44,7 +41,7 @@ interface HighlightedPieceSquareType {
     moves: IdentifiedMove[]
 }
 
-const getRelativePositionBySquare = (square: Square, perspective: string, boardStyle: BoardStyle) => {
+const getRelativePositionBySquare = (square: Square, perspective: Color, boardStyle: BoardStyle) => {
     let column = square.charCodeAt(0) - ('a'.charCodeAt(0));
     let row = 7 - (square.charCodeAt(1) - ('1'.charCodeAt(0)));
 
@@ -59,33 +56,74 @@ const getRelativePositionBySquare = (square: Square, perspective: string, boardS
     }
 }
 
-const generateHighlightedSquareStyles = (square: Square, perspective: string, color: string, boardStyle: BoardStyle) => {
+const generateHighlightedSquareStyles = (square: Square, perspective: Color, bgColor: string, boardStyle: BoardStyle) => {
     const { relativeX, relativeY } = getRelativePositionBySquare(square, perspective, boardStyle)
     return {
         transform: `translate(${relativeX}px, ${relativeY}px)`,
         width: boardStyle.pieceSize,
         height: boardStyle.pieceSize,
         position: 'absolute',
-        background: color,
+        background: bgColor,
     } as React.CSSProperties;
 }
 
-const DumbDisplayBoard = forwardRef<DumbDisplayBoardHandle, DumbDisplayBoardProps>((props, ref) => {
-    const [boardStyle, setBoardStyle] = useState<BoardStyle>(props.boardStyle);
+const getMoveHighlightSquare = (move: Move): Square => {
+    if (!move.isPromotion())
+        return move.to;
+
+    const piece = move.promotion as 'q' | 'b' | 'n' | 'r';
+    const offset = {
+        'q': 0,
+        'b': 1,
+        'n': 2,
+        'r': 3
+    }[piece];
+
+    const row = (move.to.charCodeAt(1) - '0'.charCodeAt(0))
+        + (move.color === 'b' ? offset : -offset);
+
+    const newSquare = move.to[0] + row as Square;
+    return newSquare;
+}
+
+const DumbDisplayBoard = (({ boardStyle, onPlayerMove, onPlayerHighlightSquare, state }: DumbDisplayBoardProps) => {
+    const game = useMemo(() => new Chess(state.fen), [state.fen]);
+
+    const pieces = useMemo(() => {
+        let key = 0;
+        return game.board().flat().filter(p => p !== null).map(p => {
+            return {
+                key: key++,
+                ...p
+            };
+        })
+    }, [state.fen]);
+
     
-    const [pieces, setPieces] = useState<IdentifiedPieceComponentProps[]>([]);
-    const [highlightedPieceSquare, setHighlightedPieceSquare] = useState<null | HighlightedPieceSquareType>();
-    const [perspective, setPerspective] = useState<string>('');
-    const [lastMove, setLastMove] = useState<[Square, Square] | null>(null);
-    const playerColor = useRef<string>('');
-    const gameState = useRef<Chess | null>(null);
+    const [highlightedPieceSquare, setHighlightedPieceSquare] = useState<null | HighlightedPieceSquareType>(() => {
+        const highlightedPiece = state.highlightSquare && pieces.find(p => p.square === state.highlightSquare);
+        if(!highlightedPiece)
+            return null;
+        let key = 0;
+        const moves = game.moves({
+            verbose: true,
+            square: highlightedPiece.square
+        }).map(move => { return { move, key: key++ } }) || [];
 
-    const onClickPiece = (square: Square, type: PieceSymbol, color: Color) =>
+        return {
+            ...highlightedPiece,
+            moves,
+        };
+    });
+
+    useEffect(() => 
+        onPlayerHighlightSquare(highlightedPieceSquare?.square || null)
+    , [highlightedPieceSquare]);
+
+
+    const onClickPiece = (square: Square, type: PieceSymbol, color: Color) => {
         setHighlightedPieceSquare(highlightedPieceSquare => {
-            if (gameState === null)
-                return null;
-
-            if (color !== playerColor.current)
+            if (color !== state.allowedMoves && state.allowedMoves != 'both') 
                 return null;
 
             if (highlightedPieceSquare
@@ -95,7 +133,7 @@ const DumbDisplayBoard = forwardRef<DumbDisplayBoardHandle, DumbDisplayBoardProp
                 return null;
 
             let key = 0;
-            const moves = gameState.current?.moves({
+            const moves = game.moves({
                 verbose: true,
                 square
             }).map(move => { return { move, key: key++ } }) || [];
@@ -103,78 +141,28 @@ const DumbDisplayBoard = forwardRef<DumbDisplayBoardHandle, DumbDisplayBoardProp
             return {
                 color,
                 square,
-                type: type,
+                type,
                 moves,
             };
         });
-
-    useImperativeHandle(ref, () => ({
-        setBoardStyle,
-        setFen: (fen: string, perspective: string, allowMovesColor: string) => {
-            playerColor.current = allowMovesColor;
-            setPerspective(perspective);
-            gameState.current = new Chess(fen);
-
-            const pieces = [];
-
-            const squares = gameState.current.board();
-            let id = 1;
-            for (let i = 0; i < 8; i++) {
-                for (let j = 0; j < 8; j++) {
-                    const square = squares[i][j];
-
-                    if (square === null) continue;
-
-
-                    pieces.push(
-                        {
-                            key: id++,
-                            onClick: onClickPiece,
-                            showGrabIcon: playerColor.current === square.color,
-                            ...square
-                        }
-                    );
-                }
-            }
-            setPieces(pieces);
-
-            if (highlightedPieceSquare) {
-                const square = highlightedPieceSquare.square;
-
-                const pieceAtSquare = gameState.current.get(square);
-                if (!pieceAtSquare
-                    || pieceAtSquare.color !== highlightedPieceSquare.color
-                    || pieceAtSquare.type !== highlightedPieceSquare.type)
-                    setHighlightedPieceSquare(null); // If the square has changed, set highlight to null
-                else {
-                    // We need to regenerate the highlighted moves because they may have changed
-                    setHighlightedPieceSquare(null);
-                    onClickPiece(square, pieceAtSquare.type, pieceAtSquare.color);
-                }
-
-            }
-        },
-        setLastMove,
-    }))
-
-    const getMoveHighlightSquare = (move: Move): Square => {
-        if (!move.isPromotion())
-            return move.to;
-
-        const piece = move.promotion as 'q' | 'b' | 'n' | 'r';
-        const offset = {
-            'q': 0,
-            'b': 1,
-            'n': 2,
-            'r': 3
-        }[piece];
-
-        const row = (move.to.charCodeAt(1) - '0'.charCodeAt(0))
-            + (move.color === 'b' ? offset : -offset);
-
-        const newSquare = move.to[0] + row as Square;
-        return newSquare;
     }
+
+    useEffect(() => {
+        if (!highlightedPieceSquare)
+            return;
+        const square = highlightedPieceSquare.square;
+
+        const pieceAtSquare = game.get(square);
+        if (!pieceAtSquare
+            || pieceAtSquare.color !== highlightedPieceSquare.color
+            || pieceAtSquare.type !== highlightedPieceSquare.type)
+            setHighlightedPieceSquare(null); // If the square has changed, set highlight to null
+        else {
+            // We need to regenerate the highlighted moves because they may have changed
+            setHighlightedPieceSquare(null);
+            onClickPiece(square, pieceAtSquare.type, pieceAtSquare.color);
+        }
+    }, []);
 
     return <div>
         <img src={boardStyle.boardBackground}
@@ -188,10 +176,10 @@ const DumbDisplayBoard = forwardRef<DumbDisplayBoardHandle, DumbDisplayBoardProp
             onClick={() => setHighlightedPieceSquare(null)}
         />
         {
-            lastMove  ?
+            state.lastMove?.length === 2 ?
                 <>
-                    <div style={generateHighlightedSquareStyles(lastMove[0], perspective, 'rgba(155,199,0,.41)', boardStyle)}></div>
-                    <div style={generateHighlightedSquareStyles(lastMove[1], perspective, 'rgba(155,199,0,.41)', boardStyle)}></div>
+                    <div style={generateHighlightedSquareStyles(state.lastMove[0], state.perspective, 'rgba(155,199,0,.41)', boardStyle)}></div>
+                    <div style={generateHighlightedSquareStyles(state.lastMove[1], state.perspective, 'rgba(155,199,0,.41)', boardStyle)}></div>
                 </> : <></>
         }
 
@@ -199,7 +187,7 @@ const DumbDisplayBoard = forwardRef<DumbDisplayBoardHandle, DumbDisplayBoardProp
             highlightedPieceSquare ?
                 <>
                     <div style={
-                        generateHighlightedSquareStyles(highlightedPieceSquare.square, perspective, 'rgba(0, 217, 50, 0.7)', boardStyle)
+                        generateHighlightedSquareStyles(highlightedPieceSquare.square, state.perspective, 'rgba(0, 217, 50, 0.7)', boardStyle)
                     } />
 
                     {highlightedPieceSquare.moves.map(({ move, key }) => <SquareMoveHighlightComponent
@@ -210,27 +198,27 @@ const DumbDisplayBoard = forwardRef<DumbDisplayBoardHandle, DumbDisplayBoardProp
                         pieceStyle={boardStyle.pieceStyle}
                         onClick={(move) => {
                             setHighlightedPieceSquare(null);
-                            props.onPlayerMove(move);
+                            onPlayerMove(move);
                         }}
                         {
-                        ...getRelativePositionBySquare(getMoveHighlightSquare(move), perspective, boardStyle)
+                        ...getRelativePositionBySquare(getMoveHighlightSquare(move), state.perspective, boardStyle)
                         }
                     />
                     )}
                 </> : <></>
         }
 
-        {pieces.map(({ key, color, square, type, onClick, showGrabIcon }) => <PieceComponent
+        {pieces.map(({ key, color, square, type }) => <PieceComponent
             key={key}
             color={color}
             square={square}
             type={type}
-            onClick={onClick}
+            onClick={onClickPiece}
             height={boardStyle.pieceSize}
             width={boardStyle.pieceSize}
-            {...getRelativePositionBySquare(square, perspective, boardStyle)}
+            {...getRelativePositionBySquare(square, state.perspective, boardStyle)}
             pieceStyle={boardStyle.pieceStyle}
-            showGrabIcon={showGrabIcon}
+            showGrabIcon={state.allowedMoves === 'both' || color === state.allowedMoves}
         />)}
 
     </div>
