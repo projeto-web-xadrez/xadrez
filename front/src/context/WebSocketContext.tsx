@@ -34,7 +34,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }, 15 * 1000);
 
         if (isAuthenticated) {
-            ws.current = new WebSocket(`ws://localhost:80/api/ws?csrfToken=${localStorage.getItem('csrf_token')}`);
+            ws.current = new WebSocket(`/api/ws?csrfToken=${localStorage.getItem('csrf_token')}`);
 
             ws.current.onopen = () => setConnected(true);
             ws.current.onerror = (err) => {

@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body.append("email", email);
         body.append("password", password);
 
-        const res = await fetch("http://localhost:80/loginapi/login", {
+        const res = await fetch("/loginapi/login", {
             method: "POST",
             credentials: "include",
             body
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body_obj.append("password", password)
         body_obj.append("email", email)
 
-        const response = await fetch("http://localhost:80/loginapi/register", {
+        const response = await fetch("/loginapi/register", {
             method: "POST",
             headers: {
                 //"Content-Type": "Application/JSON"
@@ -112,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body_obj.append("verificationCode", validationCode)
         body_obj.append("verificationToken", verification_token)
 
-        const response = await fetch("http://localhost:80/loginapi/confirm-registration", {
+        const response = await fetch("/loginapi/confirm-registration", {
             method: "POST",
             headers: {
                 //"Content-Type": "Application/JSON"
@@ -156,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     async function checkValidToken() {
-        const response = await fetch("http://localhost:80/loginapi/validate-session", {
+        const response = await fetch("/loginapi/validate-session", {
             method: "POST",
             headers: {
                 //"Content-Type": "Application/JSON"

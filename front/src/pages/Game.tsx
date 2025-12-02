@@ -116,7 +116,7 @@ export default function Game({soundPlayer}: {soundPlayer: RefObject<SoundPlayerH
 
     const displayHandle = useRef<GameDisplayHandle>(null);
     const [connected, setConnected] = useState(false);
-    const client = useRef<WebSocket>(new WebSocket(`http://localhost:80/gameserver/ws?csrfToken=${localStorage.getItem('csrf_token')}`));
+    const client = useRef<WebSocket>(new WebSocket(`/gameserver/ws?csrfToken=${localStorage.getItem('csrf_token')}`));
     const [startSettings, setStartSettings] = useState<{
         playingColor: Color,
         pgn: string
