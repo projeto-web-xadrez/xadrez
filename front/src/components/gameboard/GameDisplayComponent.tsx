@@ -16,8 +16,10 @@ interface GameDisplaySettings {
     playerColor: Color | null,
     boardStyle: BoardStyle,
     soundPlayer: RefObject<SoundPlayerHandle | null>,
-    onPlayerMove: null | ((move: Move) => void),
-    onPageChanged: null | ((page: number) => void),
+    onPlayerMove?:(move: Move) => void,
+    onPlayerSwitchPerspective?: (perspective: Color) => void,
+    onPlayerResign?:() => void,
+    onPageChanged?: (page: number) => void,
 };
 
 interface GamePage {
@@ -191,12 +193,12 @@ const GameDisplayComponent = forwardRef<GameDisplayHandle, GameDisplaySettings>(
     const prevPage = () => updatePage(currentPage - 1, true);
     const nextPage = () => updatePage(currentPage + 1, true);
 
-    const switchPerspective = () => setGameState(state => {
-        return {
-            ...state,
-            perspective: state.perspective === 'w' ? 'b' : 'w'
-        }
-    });
+    const switchPerspective = () => {
+        const newPerspective = (gameState.perspective === 'w' ? 'b' : 'w') as Color;
+        if(props.onPlayerSwitchPerspective)
+            props.onPlayerSwitchPerspective(newPerspective);
+        setGameState(state => ({...state,perspective: newPerspective}));
+    }
 
     const onKeyDown: React.KeyboardEventHandler = (e) => {
         if (e.key === 'ArrowLeft') {
@@ -258,6 +260,7 @@ const GameDisplayComponent = forwardRef<GameDisplayHandle, GameDisplaySettings>(
                 tabIndex={-1}
                 className='moves-container'
                 style={{
+                    marginLeft: '5px',
                     transform: `translateX(${props.boardStyle.pieceSize * 8}px)`,
                     width: '400px',
                     height: `${props.boardStyle.pieceSize * 8}px`,
@@ -313,10 +316,17 @@ const GameDisplayComponent = forwardRef<GameDisplayHandle, GameDisplaySettings>(
                         <FontAwesomeIcon icon={faRotate} />
                     </button>
 
-                    <button tabIndex={-1} className='footer-btn resign'>
+                    {
+                    props.type === 'playing' && <button tabIndex={-1} className='footer-btn resign'
+                        onClick={() => {
+                            if(props.onPlayerResign)
+                                props.onPlayerResign();
+                        }}
+                    >
                         <FontAwesomeIcon icon={faFlag} style={{ paddingRight: '4px' }} />
                         Resign
                     </button>
+                    }
                 </div>
             </div>
         </div>

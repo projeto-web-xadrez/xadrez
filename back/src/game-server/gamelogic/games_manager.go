@@ -361,6 +361,10 @@ func HandleNewClient(ws *websocket.Conn, session *auth_grpc.Session) {
 			return
 		}
 		switch msg.Type {
+		case "resign":
+			opponentWin()
+			time.Sleep(2 * time.Second)
+			return
 		case "player_moved":
 			var moveMsg PlayerMovedMessage
 			err = json.Unmarshal([]byte(msg.Data), &moveMsg)
@@ -475,7 +479,7 @@ func CreateNewRoom(playerID1 uuid.UUID, playerID2 uuid.UUID) (*Room, error) {
 		return nil, err
 	}
 
-	user2, err := userRepo.GetUserByID(ctx, playerID1, false)
+	user2, err := userRepo.GetUserByID(ctx, playerID2, false)
 	if err != nil {
 		return nil, err
 	}

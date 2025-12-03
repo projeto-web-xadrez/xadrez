@@ -6,11 +6,12 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const MessageType = {
-  INIT: 'init',
-  PLAYER_MOVED: 'player_moved',
-  WELCOME: 'welcome',
-  GAME_STARTED: 'game_started',
-  GAME_ENDED: 'game_ended'
+    INIT: 'init',
+    PLAYER_MOVED: 'player_moved',
+    WELCOME: 'welcome',
+    GAME_STARTED: 'game_started',
+    GAME_ENDED: 'game_ended',
+    RESIGN: 'resign'
 } as const;
 
 interface IncomingMessage {
@@ -28,8 +29,8 @@ abstract class AbstractBaseMessage {
     encode() {
         return JSON.stringify({
             type: this.type,
-            data: JSON.stringify(this, (key: string, val: string) =>{
-                if(key === 'type') return undefined;
+            data: JSON.stringify(this, (key: string, val: string) => {
+                if (key === 'type') return undefined;
                 return val;
             })
         });
@@ -40,12 +41,12 @@ class PlayerMovedMessage extends AbstractBaseMessage {
     move_s1: Square;
     move_s2: Square;
     move_notation: string;
-    
+
     constructor(move: Move) {
         super(MessageType.PLAYER_MOVED);
         this.move_s1 = move.from;
         this.move_s2 = move.to;
-        this.move_notation = move.san; 
+        this.move_notation = move.san;
     }
 }
 
@@ -85,18 +86,40 @@ class InitMessage extends AbstractBaseMessage {
     }
 }
 
-export default function Game({soundPlayer}: {soundPlayer: RefObject<SoundPlayerHandle | null>}) {
+class ResignMessage extends AbstractBaseMessage {
+    constructor() {
+        super(MessageType.RESIGN)
+    }
+}
+
+const UsernameDisplay = ({username}: {username: string | undefined}) => 
+    <span
+        style={{
+            color: '#333',
+            fontWeight: "600",
+            fontSize: "1rem",
+            textAlign: 'left',
+            marginLeft: '2px',
+            marginTop: '0px',
+            marginBottom: '0px',
+            userSelect: "none",
+        }}
+    >
+        {username || ''}
+    </span>
+
+export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlayerHandle | null> }) {
     const { gameId: paramGameId } = useParams();
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
 
-    if(!paramGameId || !isAuthenticated) {
+    if (!paramGameId || !isAuthenticated) {
         navigate('/');
         return null;
     }
 
     const gameId = useRef<string>(paramGameId);
-    
+
     // If this flag is true, we are sure this is a live game, so we don't need to
     // request the API to check it. However, if it isn't, it could still be a live game
     // (cause the user may have refreshed the page or retyped the URL)
@@ -113,7 +136,7 @@ export default function Game({soundPlayer}: {soundPlayer: RefObject<SoundPlayerH
     // the API should return whether it is a live game, the players, etc...
     // So, in the act of making the rooom, we should also store it in the database.
     // And we should also write this API route that gets the game info from DB
-    
+
     // TODO: add GameEndedComponent when game finishes
     // TODO: only allow user to move when received a GameStarted or a welcome with game_status == 'started'
     // TODO: abstract this WebSocket away
@@ -124,12 +147,17 @@ export default function Game({soundPlayer}: {soundPlayer: RefObject<SoundPlayerH
     const client = useRef<WebSocket>(new WebSocket(`/gameserver/ws?csrfToken=${localStorage.getItem('csrf_token')}`));
     const [startSettings, setStartSettings] = useState<{
         playingColor: null | Color,
-        pgn: string
+        pgn: string,
+        playerWhiteUsername: string,
+        playerWhiteId: string,
+        playerBlackUsername: string,
+        playerBlackId: string,
     } | null>();
+    const [perspective, setPerspective] = useState<Color>('w');
 
     client.current.onopen = () => {
         setConnected(true);
-    
+
         const msg = new InitMessage(gameId.current).encode();
         client.current.send(msg);
     }
@@ -142,60 +170,84 @@ export default function Game({soundPlayer}: {soundPlayer: RefObject<SoundPlayerH
         const msg = JSON.parse(e.data) as IncomingMessage;
         console.log(`Received message ${msg.type}`);
 
-        switch(msg.type) {
+        switch (msg.type) {
             case MessageType.WELCOME:
                 const welcome = JSON.parse(msg.data) as WelcomeMessage
-                
-                if(welcome.room_id !== gameId.current) {
+
+                if (welcome.room_id !== gameId.current) {
                     alert('You have an ongoing game!');
                     gameId.current = welcome.room_id as string;
-                    
+                    welcome.player1_id
+
                     // Update the URL without reloading the page
                     history.replaceState({}, '', `/game/${welcome.room_id}`);
                 }
+                const playing = ['w', 'b'].includes(welcome.color as string);
+                if(playing)
+                    setPerspective(welcome.color as Color)
+                console.log(welcome)
                 setStartSettings({
                     pgn: welcome.game_pgn as string,
-                    playingColor: (['w', 'b'].includes(welcome.color as string) ? (welcome.color as Color) : null)
+                    playingColor: playing ? (welcome.color as Color) : null,
+                    playerWhiteId: welcome.player1_id as string,
+                    playerWhiteUsername: welcome.player1_username as string,
+                    playerBlackId: welcome.player2_id as string,
+                    playerBlackUsername: welcome.player2_username as string,
                 });
-            break;
+                break;
             case MessageType.PLAYER_MOVED:
                 const playerMoved = JSON.parse(msg.data) as PlayerMovedMessage;
-                if(displayHandle.current?.pushMove)
+                if (displayHandle.current?.pushMove)
                     displayHandle.current?.pushMove(playerMoved)
-            break;
+                break;
             case MessageType.GAME_STARTED:
                 alert('Game started');
                 break;
             case MessageType.GAME_ENDED:
-
-            break;
+                alert('Game ended')
+                console.log(JSON.parse(msg.data) as GameEndedMessage)
+                break;
         }
     }
 
     const onPlayerMove = (move: Move) => {
-        if(!connected || client === null)
+        if (!connected || client === null)
             return;
         client.current.send(new PlayerMovedMessage(move).encode());
     };
 
     return (
-        <>
+
+        <div style={{
+            width: '50%',
+            margin: '50px auto',
+            padding: '0'
+        }}>
+
+            
+            <UsernameDisplay username={perspective === 'b' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername}/>
             <GameDisplayComponent
                 boardStyle={{
                     boardBackground: '/board_bg/maple.jpg',
                     pieceStyle: 'merida', //cburnett
-                    pieceSize: 50,
+                    pieceSize: 55,
                     shouldLabelSquares: true
                 }}
                 type={startSettings?.playingColor === null ? 'spectating' : 'playing'}
                 pgn={startSettings?.pgn || ''}
                 playerColor={startSettings?.playingColor || 'w'}
-                perspective={startSettings?.playingColor || 'w'}
-                onPageChanged={null}
+                perspective={perspective}
                 onPlayerMove={onPlayerMove}
+                onPlayerSwitchPerspective={(p) => setPerspective(p)}
+                onPlayerResign={() => {
+                    if(startSettings?.playingColor !== null && client?.current?.send)
+                        client.current.send(new ResignMessage().encode());
+                }}
                 soundPlayer={soundPlayer}
                 ref={displayHandle}
             />
-        </>
+            <UsernameDisplay username={perspective === 'w' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername}/>
+
+        </div>
     );
 }
