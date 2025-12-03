@@ -2,21 +2,31 @@ package main
 
 import (
 	"context"
+	"database/repositories"
 	"fmt"
 	"game-server/gamelogic"
 	"net"
 	"net/http"
 	"os"
+	"proto-generated/auth_grpc"
 	"proto-generated/matchmaking_grpc"
+	"time"
+	"utils"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 )
 
 const DEFAULT_GRPC_ADDRESS = "0.0.0.0:9191"
+const DEFAULT_AUTH_GRPC_ADDRESS = "auth:8989"
 const DEFAULT_WS_PLAYER_ADDRESS = "0.0.0.0:8082"
 const DEFAULT_WS_PLAYER_PATH = "/ws"
+
+var authGrpc auth_grpc.AuthClient
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024 * 8,                                   // Incoming messages are capped at 8 KB
@@ -29,7 +39,22 @@ type MatchMakingServer struct {
 }
 
 func (s *MatchMakingServer) RequestRoom(ctx context.Context, req *matchmaking_grpc.RequestRoomMessage) (*matchmaking_grpc.RoomResponse, error) {
-	room, err := gamelogic.CreateNewRoom(req.PlayerId_1, req.PlayerId_2)
+	id1, err := uuid.Parse(req.PlayerId_1)
+	if err != nil {
+		return &matchmaking_grpc.RoomResponse{
+			RoomId:   "",
+			ErrorMsg: proto.String("PlayerId_1 must be an UUID"),
+		}, nil
+	}
+	id2, err := uuid.Parse(req.PlayerId_2)
+	if err != nil {
+		return &matchmaking_grpc.RoomResponse{
+			RoomId:   "",
+			ErrorMsg: proto.String("PlayerId_2 must be an UUID"),
+		}, nil
+	}
+
+	room, err := gamelogic.CreateNewRoom(id1, id2)
 	if err != nil {
 		error_msg := err.Error()
 		return &matchmaking_grpc.RoomResponse{
@@ -39,17 +64,60 @@ func (s *MatchMakingServer) RequestRoom(ctx context.Context, req *matchmaking_gr
 	}
 
 	return &matchmaking_grpc.RoomResponse{
-		RoomId: room.RoomID,
+		RoomId: room.RoomID.String(),
 	}, nil
 }
 
 func handlePlayerConnection(w http.ResponseWriter, r *http.Request) {
+	sessionToken, err := r.Cookie("session_token")
+	csrfToken := r.URL.Query().Get("csrfToken")
+
+	if err != nil || csrfToken == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if !utils.ValidateCSRFToken(csrfToken, sessionToken.Value) {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "session_token",
+			Value:    "",
+			Expires:  time.Now().Add(-time.Hour),
+			HttpOnly: true,
+			Path:     "/",
+			SameSite: http.SameSiteLaxMode,
+		})
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	res, err := authGrpc.ValidateSession(context.Background(), &auth_grpc.SessionValidationInput{
+		Token: sessionToken.Value,
+	})
+
+	if err != nil || !res.Res.Ok {
+		http.Error(w, "Internal Error", http.StatusInternalServerError)
+		return
+	}
+
+	if res.Session == nil {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "session_token",
+			Value:    "",
+			Expires:  time.Now().Add(-time.Hour),
+			HttpOnly: true,
+			Path:     "/",
+			SameSite: http.SameSiteLaxMode,
+		})
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
 	}
 
-	gamelogic.HandleNewClient(ws)
+	gamelogic.HandleNewClient(ws, res.Session)
 }
 
 func main() {
@@ -58,10 +126,18 @@ func main() {
 		print("Couldn't load .env file, using default values.\n")
 	}
 
+	postgresUrl := os.Getenv("POSTGRES_URL")
+	authGrpcAddress := os.Getenv("AUTH_GRPC_ADDRESS")
 	grpcAddress := os.Getenv("GRPC_ADDRESS")
 	WSPlayerAddress := os.Getenv("WS_PLAYER_ADDRESS")
 	WSPlayerPath := os.Getenv("WS_PLAYER_PATH")
 
+	if authGrpcAddress == "" {
+		authGrpcAddress = DEFAULT_AUTH_GRPC_ADDRESS
+	}
+	if postgresUrl == "" {
+		panic("Postgres URL env var not set")
+	}
 	if grpcAddress == "" {
 		grpcAddress = DEFAULT_GRPC_ADDRESS
 	}
@@ -70,8 +146,25 @@ func main() {
 	}
 	if WSPlayerPath == "" {
 		WSPlayerPath = DEFAULT_WS_PLAYER_PATH
-
 	}
+
+	dbPool, err := pgxpool.New(context.Background(), postgresUrl)
+	if err != nil {
+		panic(err)
+	}
+	if err = dbPool.Ping(context.TODO()); err != nil {
+		panic(err)
+	}
+
+	authConn, err := grpc.NewClient(authGrpcAddress, grpc.WithInsecure())
+	if err != nil {
+		panic("Couldn't stablish GRPC connection with auth-server")
+	}
+
+	authGrpc = auth_grpc.NewAuthClient(authConn)
+
+	userRepo := repositories.NewUserRepo(dbPool)
+	gamelogic.SetUserRepo(userRepo)
 
 	go func() {
 		grpcListener, err := net.Listen("tcp", grpcAddress)

@@ -1,10 +1,13 @@
 package gamelogic
 
 import (
+	"context"
+	"database/repositories"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
+	"proto-generated/auth_grpc"
 	"sync"
 	"time"
 
@@ -13,10 +16,16 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var rooms map[string]*Room = make(map[string]*Room)
+var userRepo *repositories.UserRepo
+
+func SetUserRepo(repo *repositories.UserRepo) {
+	userRepo = repo
+}
+
+var rooms map[uuid.UUID]*Room = make(map[uuid.UUID]*Room)
 var roomsMutex sync.RWMutex = sync.RWMutex{}
 
-var players map[string]*Player = make(map[string]*Player)
+var players map[uuid.UUID]*Player = make(map[uuid.UUID]*Player)
 var playersMutex sync.RWMutex = sync.RWMutex{}
 
 func convertSquare(squareStr string) *chess.Square {
@@ -33,20 +42,25 @@ func convertSquare(squareStr string) *chess.Square {
 	return &square
 }
 
-func getRoom(roomID string) *Room {
+func getRoom(roomID uuid.UUID) *Room {
 	roomsMutex.Lock()
 	defer roomsMutex.Unlock()
 	return rooms[roomID]
 }
 
-func getPlayer(playerID string) *Player {
+func getPlayer(playerID uuid.UUID) *Player {
 	playersMutex.Lock()
 	defer playersMutex.Unlock()
 	return players[playerID]
 }
 
-func HandleNewClient(ws *websocket.Conn) {
-	defer ws.Close()
+func HandleNewClient(ws *websocket.Conn, session *auth_grpc.Session) {
+	shouldCloseWS := true
+	defer func() {
+		if shouldCloseWS {
+			ws.Close()
+		}
+	}()
 
 	var msg Message
 	err := ws.ReadJSON(&msg)
@@ -65,9 +79,28 @@ func HandleNewClient(ws *websocket.Conn) {
 		return
 	}
 
-	player := getPlayer(initMsg.PlayerID)
+	playerId := uuid.MustParse(session.UserId)
+	player := getPlayer(playerId)
 	if player == nil {
-		return
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		user, err := userRepo.GetUserByID(ctx, playerId, false)
+		if err != nil {
+			return
+		}
+
+		trashChannel := make(chan Message, 100)
+
+		player = &Player{
+			ID:        playerId,
+			Connected: false,
+			Room:      nil,
+			Mutex:     sync.RWMutex{},
+			Color:     chess.NoColor,
+			WSSend:    &trashChannel,
+			User:      user,
+			Type:      "spectator",
+		}
 	}
 
 	player.Mutex.Lock()
@@ -79,13 +112,30 @@ func HandleNewClient(ws *websocket.Conn) {
 		Data: "redundantConnection",
 	}
 
-	room := player.Room
-	if room == nil {
-		// TODO: enviar mensagem "você não está em nenhuma sala"
-		println("Sala nao existe")
-		ws.Close()
-		player.Connection = nil
-		return
+	playingRoom := player.Room
+	if playingRoom == nil {
+		player.Color = chess.NoColor
+		player.Type = "spectator"
+
+		roomId, err := uuid.Parse(initMsg.RoomID)
+		if err != nil {
+			ws.Close()
+			player.Connection = nil
+			player.Mutex.Unlock()
+			return
+		}
+
+		roomsMutex.Lock()
+		room, ok := rooms[roomId]
+		roomsMutex.Unlock()
+
+		if !ok {
+			ws.Close()
+			player.Connection = nil
+			player.Mutex.Unlock()
+			return
+		}
+		playingRoom = room
 	}
 
 	player.Connected = true
@@ -120,14 +170,25 @@ func HandleNewClient(ws *websocket.Conn) {
 
 	player.Mutex.Unlock()
 
+	spectating := false
+	roomPlayers := playingRoom.Players
 	var opponent *Player
-	if room.Players[0].ID == player.ID {
-		opponent = room.Players[1]
+	if playingRoom.Players[0].ID == player.ID {
+		opponent = playingRoom.Players[1]
+	} else if playingRoom.Players[1].ID == player.ID {
+		opponent = playingRoom.Players[0]
 	} else {
-		opponent = room.Players[0]
+		spectating = true
+		playingRoom.Mutex.Lock()
+		playingRoom.Spectators[playerId] = player
+		playingRoom.Mutex.Unlock()
 	}
 
 	defer func() {
+		if spectating {
+			return
+		}
+
 		player.Mutex.Lock()
 		player.Connected = false
 		WSSend <- Message{
@@ -137,12 +198,21 @@ func HandleNewClient(ws *websocket.Conn) {
 		player.Connection = nil
 		player.Mutex.Unlock()
 
-		room.Mutex.Lock()
-		if room.Status == GameEnded {
+		playingRoom.Mutex.Lock()
+		if playingRoom.Status == GameEnded {
 			time.Sleep(2 * time.Second)
 			*opponent.WSSend <- Message{
 				Type: "quit",
-				Data: "",
+				Data: "GameEnded",
+			}
+
+			for _, spec := range playingRoom.Spectators {
+				if spec != nil && spec.WSSend != nil {
+					(*spec.WSSend) <- Message{
+						Type: "quit",
+						Data: "GameEnded",
+					}
+				}
 			}
 
 			time.Sleep(1 * time.Second)
@@ -153,27 +223,30 @@ func HandleNewClient(ws *websocket.Conn) {
 			playersMutex.Unlock()
 
 			roomsMutex.Lock()
-			delete(rooms, room.RoomID)
+			delete(rooms, playingRoom.RoomID)
 			roomsMutex.Unlock()
 		}
-		room.Mutex.Unlock()
+		playingRoom.Mutex.Unlock()
 	}()
 
-	room.Mutex.Lock()
+	playingRoom.Mutex.Lock()
 
 	welcomeMessage := WelcomeContextMessage{
-		RoomID:     room.RoomID,
-		Color:      player.Color.String(),
-		OpponentID: opponent.ID,
-		GamePGN:    room.Game.String(),
-		GameFEN:    room.Game.FEN(),
-		LastMoveS1: room.LastMoveS1.String(),
-		LastMoveS2: room.LastMoveS2.String(),
-		GameStatus: room.Status.String(),
-		Winner:     room.Winner,
+		RoomID:          playingRoom.RoomID.String(),
+		Color:           player.Color.String(),
+		Player1ID:       roomPlayers[0].ID.String(),
+		Player1Username: roomPlayers[0].User.Username,
+		Player2ID:       roomPlayers[1].ID.String(),
+		Player2Username: roomPlayers[1].User.Username,
+		GamePGN:         playingRoom.Game.String(),
+		GameFEN:         playingRoom.Game.FEN(),
+		LastMoveS1:      playingRoom.LastMoveS1.String(),
+		LastMoveS2:      playingRoom.LastMoveS2.String(),
+		GameStatus:      playingRoom.Status.String(),
+		Winner:          playingRoom.Winner,
 	}
 
-	room.Mutex.Unlock()
+	playingRoom.Mutex.Unlock()
 
 	jsonData, _ := json.Marshal(welcomeMessage)
 	WSSend <- Message{
@@ -181,19 +254,40 @@ func HandleNewClient(ws *websocket.Conn) {
 		Data: string(jsonData),
 	}
 
-	room.Mutex.Lock()
-	if room.Status == GameEnded {
-		room.Mutex.Unlock()
+	playingRoom.Mutex.Lock()
+	if playingRoom.Status == GameEnded {
+		playingRoom.Mutex.Unlock()
+
+		if spectating {
+			player.Mutex.Lock()
+			player.Connected = false
+			if player.WSSend != nil {
+				player.Mutex.Unlock()
+				(*player.WSSend) <- Message{
+					Type: "quit",
+					Data: "GameEnded",
+				}
+			} else {
+				player.Mutex.Unlock()
+			}
+		}
+
 		return
 	}
 
-	if room.Status == WaitingPlayers {
+	if spectating {
+		shouldCloseWS = false // Connection will be kept up for receiving moves
+		playingRoom.Mutex.Unlock()
+		return
+	}
+
+	if playingRoom.Status == WaitingPlayers {
 		opponent.Mutex.RLock()
 		both_connected := !opponent.LastConnection.IsZero()
 		opponent.Mutex.RUnlock()
 
 		if both_connected {
-			room.Status = GameStarted
+			playingRoom.Status = GameStarted
 			*opponent.WSSend <- Message{
 				Type: "game_started",
 				Data: "",
@@ -203,29 +297,37 @@ func HandleNewClient(ws *websocket.Conn) {
 				Type: "game_started",
 				Data: "",
 			}
+
+			for _, spec := range playingRoom.Spectators {
+				if spec != nil && spec.WSSend != nil {
+					(*spec.WSSend) <- Message{
+						Type: "game_started",
+						Data: "",
+					}
+				}
+			}
 		}
 	}
 
 	var whitePlayer, blackPlayer *Player
-	if room.Players[0].Color == chess.White {
-		whitePlayer = room.Players[0]
-		blackPlayer = room.Players[1]
+	if playingRoom.Players[0].Color == chess.White {
+		whitePlayer = playingRoom.Players[0]
+		blackPlayer = playingRoom.Players[1]
 	} else {
-		whitePlayer = room.Players[1]
-		blackPlayer = room.Players[0]
+		whitePlayer = playingRoom.Players[1]
+		blackPlayer = playingRoom.Players[0]
 	}
 
-	room.Mutex.Unlock()
+	playingRoom.Mutex.Unlock()
 
 	opponentWin := func() {
-		room.Mutex.Lock()
-		room.Status = GameEnded
-		room.Winner = opponent.ID
+		playingRoom.Mutex.Lock()
+		playingRoom.Status = GameEnded
+		playingRoom.Winner = opponent.ID.String()
 
 		gameEndMessage := GameEndedMessage{
-			Winner: room.Winner,
+			Winner: playingRoom.Winner,
 		}
-		room.Mutex.Unlock()
 
 		jsonData, _ := json.Marshal(gameEndMessage)
 		msg = Message{
@@ -234,7 +336,16 @@ func HandleNewClient(ws *websocket.Conn) {
 		}
 		*opponent.WSSend <- msg
 		WSSend <- msg
+		for _, spec := range playingRoom.Spectators {
+			if spec != nil && spec.WSSend != nil {
+				(*spec.WSSend) <- Message{
+					Type: "game_ended",
+					Data: string(jsonData),
+				}
+			}
+		}
 
+		playingRoom.Mutex.Unlock()
 		// Wait 2 seconds so the message can reach the player
 		time.Sleep(2 * time.Second)
 	}
@@ -253,8 +364,8 @@ func HandleNewClient(ws *websocket.Conn) {
 		case "player_moved":
 			var moveMsg PlayerMovedMessage
 			err = json.Unmarshal([]byte(msg.Data), &moveMsg)
-			if err != nil || room.Status != GameStarted {
-				if room.Status != GameEnded {
+			if err != nil || playingRoom.Status != GameStarted {
+				if playingRoom.Status != GameEnded {
 					opponentWin() // Malformed message, opponent must win
 				}
 				return
@@ -273,41 +384,41 @@ func HandleNewClient(ws *websocket.Conn) {
 				return
 			}
 
-			room.Mutex.Lock()
+			playingRoom.Mutex.Lock()
 
-			if room.Game.CurrentPosition().Turn() != player.Color {
+			if playingRoom.Game.CurrentPosition().Turn() != player.Color {
 				opponentWin() // Not his turn, opponent must win
 				return
 			}
 
 			//room.Game.ValidMoves() Not sure why this was here, I'm commenting it anyway
 
-			err = room.Game.PushNotationMove(moveMsg.MoveNotation, chess.AlgebraicNotation{}, nil)
+			err = playingRoom.Game.PushNotationMove(moveMsg.MoveNotation, chess.AlgebraicNotation{}, nil)
 			if err != nil {
 				opponentWin() // Invalid move, opponent must win
 				return
 			}
 
-			room.LastMoveS1 = *s1
-			room.LastMoveS2 = *s2
+			playingRoom.LastMoveS1 = *s1
+			playingRoom.LastMoveS2 = *s2
 
-			outcome := room.Game.Outcome()
+			outcome := playingRoom.Game.Outcome()
 			if outcome != chess.NoOutcome {
 				switch outcome {
 				case chess.Draw:
-					room.Winner = "draw"
+					playingRoom.Winner = "draw"
 				case chess.BlackWon:
-					room.Winner = blackPlayer.ID
+					playingRoom.Winner = blackPlayer.ID.String()
 				case chess.WhiteWon:
-					room.Winner = whitePlayer.ID
+					playingRoom.Winner = whitePlayer.ID.String()
 				case chess.UnknownOutcome:
-					fmt.Println(room.Game)
-					fmt.Println(room.Game.FEN())
+					fmt.Println(playingRoom.Game)
+					fmt.Println(playingRoom.Game.FEN())
 					panic("We got an unknown outcome")
 				}
 
 				gameEndMessage := GameEndedMessage{
-					Winner: room.Winner,
+					Winner: playingRoom.Winner,
 				}
 				jsonData, _ := json.Marshal(gameEndMessage)
 				winMsg := Message{
@@ -318,21 +429,34 @@ func HandleNewClient(ws *websocket.Conn) {
 				*opponent.WSSend <- msg
 				*opponent.WSSend <- winMsg
 				WSSend <- winMsg
-				room.Status = GameEnded
 
-				room.Mutex.Unlock()
+				for _, spec := range playingRoom.Spectators {
+					if spec != nil && spec.WSSend != nil {
+						(*spec.WSSend) <- msg
+						(*spec.WSSend) <- winMsg
+					}
+				}
+
+				playingRoom.Status = GameEnded
+
+				playingRoom.Mutex.Unlock()
 				// Wait 2 seconds so the message can reach the player
 				time.Sleep(2 * time.Second)
 				return
 			}
 
-			room.Mutex.Unlock()
 			*opponent.WSSend <- msg
+			for _, spec := range playingRoom.Spectators {
+				if spec != nil && spec.WSSend != nil {
+					(*spec.WSSend) <- msg
+				}
+			}
+			playingRoom.Mutex.Unlock()
 		}
 	}
 }
 
-func CreateNewRoom(playerID1 string, playerID2 string) (*Room, error) {
+func CreateNewRoom(playerID1 uuid.UUID, playerID2 uuid.UUID) (*Room, error) {
 	p1 := getPlayer(playerID1)
 	p2 := getPlayer(playerID2)
 
@@ -344,12 +468,25 @@ func CreateNewRoom(playerID1 string, playerID2 string) (*Room, error) {
 		return nil, errors.New("Player 2 is already in a room")
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	user1, err := userRepo.GetUserByID(ctx, playerID1, false)
+	if err != nil {
+		return nil, err
+	}
+
+	user2, err := userRepo.GetUserByID(ctx, playerID1, false)
+	if err != nil {
+		return nil, err
+	}
+
 	room := &Room{
-		Mutex:   sync.RWMutex{},
-		RoomID:  uuid.New().String(),
-		Players: [2]*Player{},
-		Status:  WaitingPlayers,
-		Game:    chess.NewGame(),
+		Mutex:      sync.RWMutex{},
+		RoomID:     uuid.New(),
+		Players:    [2]*Player{},
+		Status:     WaitingPlayers,
+		Game:       chess.NewGame(),
+		Spectators: make(map[uuid.UUID]*Player),
 	}
 	room.Mutex.Lock()
 
@@ -366,6 +503,28 @@ func CreateNewRoom(playerID1 string, playerID2 string) (*Room, error) {
 		p2Color = chess.White
 	}
 
+	if p1 != nil {
+		p1.Mutex.Lock()
+		if p1.WSSend != nil {
+			(*p1.WSSend) <- Message{
+				Type: "quit",
+				Data: "NewGameStarted: " + room.RoomID.String(),
+			}
+		}
+		p1.Mutex.Unlock()
+	}
+
+	if p2 != nil {
+		p2.Mutex.Lock()
+		if p2.WSSend != nil {
+			(*p2.WSSend) <- Message{
+				Type: "quit",
+				Data: "NewGameStarted: " + room.RoomID.String(),
+			}
+		}
+		p2.Mutex.Unlock()
+	}
+
 	trash_channel := make(chan Message, 100)
 	p1 = &Player{
 		ID:        playerID1,
@@ -374,7 +533,10 @@ func CreateNewRoom(playerID1 string, playerID2 string) (*Room, error) {
 		Mutex:     sync.RWMutex{},
 		Color:     p1Color,
 		WSSend:    &trash_channel,
+		User:      user1,
+		Type:      "player",
 	}
+
 	p2 = &Player{
 		ID:        playerID2,
 		Connected: false,
@@ -382,6 +544,8 @@ func CreateNewRoom(playerID1 string, playerID2 string) (*Room, error) {
 		Mutex:     sync.RWMutex{},
 		Color:     p2Color,
 		WSSend:    &trash_channel,
+		User:      user2,
+		Type:      "player",
 	}
 
 	room.Players[0] = p1

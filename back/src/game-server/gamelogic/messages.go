@@ -6,20 +6,22 @@ type Message struct {
 }
 
 type InitMessage struct {
-	PlayerID string `json:"player_id"`
-	RoomID   string `json:"room_id"`
+	RoomID string `json:"room_id"`
 }
 
 type WelcomeContextMessage struct {
-	RoomID     string `json:"room_id"`
-	Color      string `json:"color"`
-	OpponentID string `json:"opponent_id"`
-	GameFEN    string `json:"game_fen"`
-	GamePGN    string `json:"game_pgn"`
-	LastMoveS1 string `json:"last_move_s1"`
-	LastMoveS2 string `json:"last_move_s2"`
-	GameStatus string `json:"game_status"`
-	Winner     string `json:"winner_id"`
+	RoomID          string `json:"room_id"`
+	Color           string `json:"color"`
+	Player1ID       string `json:"player1_id"`
+	Player1Username string `json:"player1_username"`
+	Player2ID       string `json:"player2_id"`
+	Player2Username string `json:"player2_username"`
+	GameFEN         string `json:"game_fen"`
+	GamePGN         string `json:"game_pgn"`
+	LastMoveS1      string `json:"last_move_s1"`
+	LastMoveS2      string `json:"last_move_s2"`
+	GameStatus      string `json:"game_status"`
+	Winner          string `json:"winner_id"`
 }
 
 type GameStartedMessage struct{}

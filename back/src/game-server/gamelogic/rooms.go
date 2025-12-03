@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/corentings/chess/v2"
+	"github.com/google/uuid"
 )
 
 type RoomStatus uint8
@@ -27,7 +28,7 @@ func (status RoomStatus) String() string {
 }
 
 type Room struct {
-	RoomID     string
+	RoomID     uuid.UUID
 	Players    [2]*Player
 	Status     RoomStatus
 	Game       *chess.Game
@@ -35,4 +36,5 @@ type Room struct {
 	LastMoveS1 chess.Square
 	LastMoveS2 chess.Square
 	Winner     string
+	Spectators map[uuid.UUID]*Player
 }

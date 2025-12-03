@@ -160,7 +160,7 @@ func (server *AuthServer) ConfirmRegistration(ctx context.Context, req *auth_grp
 func (server *AuthServer) StartPasswordChange(ctx context.Context, req *auth_grpc.StartPasswordChangeInput) (*auth_grpc.EmailVerificationPending, error) {
 	startTime := time.Now()
 
-	user, err := server.userRepo.GetUserByEmail(ctx, req.Email)
+	user, err := server.userRepo.GetUserByEmail(ctx, req.Email, true)
 
 	if err != nil || user == nil {
 		elapsedTime := time.Since(startTime)

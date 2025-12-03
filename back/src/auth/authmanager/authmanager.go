@@ -104,7 +104,7 @@ func (am *AuthManager) generateSessionFromUser(ctx context.Context, ip string, u
 func (am *AuthManager) Login(ctx context.Context, ip string, email string, password string) (*models.User, *Session, error) {
 	startTime := time.Now()
 
-	user, err := am.userRepo.GetUserByEmail(ctx, email)
+	user, err := am.userRepo.GetUserByEmail(ctx, email, true)
 	if err != nil {
 		elapsedTime := time.Since(startTime)
 		if elapsedTime < am.config.MinLoginTime {
@@ -139,6 +139,7 @@ func (am *AuthManager) Login(ctx context.Context, ip string, email string, passw
 		return nil, nil, err
 	}
 
+	user.PasswordHash = ""
 	return user, session, nil
 }
 
@@ -155,7 +156,7 @@ func (am *AuthManager) Register(ctx context.Context, ip string, email string, us
 	}
 	hashedPassword := string(hashedBytes)
 
-	user, err := am.userRepo.CreateUser(ctx, username, email, hashedPassword)
+	user, err := am.userRepo.CreateUser(ctx, username, email, hashedPassword, true)
 
 	var conflictErr *database.ConflictError
 	if errors.As(err, &conflictErr) {
@@ -182,9 +183,12 @@ func (am *AuthManager) Register(ctx context.Context, ip string, email string, us
 		if elapsedTime < am.config.MinLoginTime {
 			time.Sleep(am.config.MinLoginTime - elapsedTime)
 		}
+
+		user.PasswordHash = ""
 		return user, nil, err
 	}
 
+	user.PasswordHash = ""
 	return user, session, nil
 }
 
@@ -201,7 +205,7 @@ func (am *AuthManager) ChangePassword(ctx context.Context, ip string, email stri
 	}
 	hashedPassword := string(hashedBytes)
 
-	user, err := am.userRepo.UpdateUserPasswordByEmail(ctx, email, hashedPassword)
+	user, err := am.userRepo.UpdateUserPasswordByEmail(ctx, email, hashedPassword, true)
 
 	if err != nil {
 		elapsedTime := time.Since(startTime)
@@ -217,9 +221,11 @@ func (am *AuthManager) ChangePassword(ctx context.Context, ip string, email stri
 		if elapsedTime < am.config.MinLoginTime {
 			time.Sleep(am.config.MinLoginTime - elapsedTime)
 		}
+		user.PasswordHash = ""
 		return user, nil, err
 	}
 
+	user.PasswordHash = ""
 	return user, session, nil
 }
 

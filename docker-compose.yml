@@ -79,6 +79,11 @@ services:
     ports:
       - "8082:8082"
       - "9191:9191" #TODO: remove this port
+    env_file:
+      - ./back/.env
+    depends_on:
+      - postgres
+      - auth
     networks:
       - internal
     develop:

@@ -53,6 +53,10 @@ class WelcomeMessage extends AbstractBaseMessage {
     room_id?: string;
     color?: Color;
     opponent_id?: string;
+    player1_id?: string;
+    player1_username?: string;
+    player2_id?: string;
+    player2_username?: string;
     game_fen?: string;
     game_pgn?: string;
     last_move_s1?: string;
@@ -74,12 +78,10 @@ class GameEndedMessage extends AbstractBaseMessage {
 
 class InitMessage extends AbstractBaseMessage {
     room_id: string;
-    player_id: string;
 
-    constructor(roomId: string, playerId: string) {
+    constructor(roomId: string) {
         super(MessageType.INIT);
         this.room_id = roomId;
-        this.player_id = playerId;
     }
 }
 
@@ -99,8 +101,8 @@ export default function Game({soundPlayer}: {soundPlayer: RefObject<SoundPlayerH
     // request the API to check it. However, if it isn't, it could still be a live game
     // (cause the user may have refreshed the page or retyped the URL)
     useEffect(() => {
-        if(location?.state?.liveGame)
-            alert('Live game')
+        /*if(location?.state?.liveGame)
+            alert('Live game')*/
     }, []);
 
     // TODO: if liveGame, connect to websocket directly
@@ -125,7 +127,7 @@ export default function Game({soundPlayer}: {soundPlayer: RefObject<SoundPlayerH
     client.current.onopen = () => {
         setConnected(true);
     
-        const msg = new InitMessage('TODO: MOVER ROOM ID PARA A QUERY E VALIDAR NO GAMESERVER', /*TODO: REMOVER UUID DAQUI (pode ser inferido pelo session token no server-side)*/localStorage.getItem('clientId') as string).encode();
+        const msg = new InitMessage(gameId).encode();
         client.current.send(msg);
     }
     client.current.onclose = (e) => {

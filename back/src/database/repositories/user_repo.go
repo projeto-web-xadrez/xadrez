@@ -23,7 +23,7 @@ func NewUserRepo(dbPool *pgxpool.Pool) *UserRepo {
 	}
 }
 
-func (repo *UserRepo) UpdateUserPasswordByEmail(ctx context.Context, email string, newPassword string) (*models.User, error) {
+func (repo *UserRepo) UpdateUserPasswordByEmail(ctx context.Context, email string, newPassword string, includeCredentials bool) (*models.User, error) {
 	if !utils.ValidatePassword(newPassword) {
 		return nil, errors.New("password is not in a valid format")
 	}
@@ -38,11 +38,13 @@ func (repo *UserRepo) UpdateUserPasswordByEmail(ctx context.Context, email strin
 		return nil, err
 	}
 
+	if !includeCredentials {
+		user.PasswordHash = ""
+	}
 	return &user, nil
-
 }
 
-func (repo *UserRepo) CreateUser(ctx context.Context, username string, email string, password string) (*models.User, error) {
+func (repo *UserRepo) CreateUser(ctx context.Context, username string, email string, password string, includeCredentials bool) (*models.User, error) {
 	email, err := utils.NormalizeEmail(email)
 	if err != nil {
 		return nil, errors.New("email is not in a valid format")
@@ -70,6 +72,9 @@ func (repo *UserRepo) CreateUser(ctx context.Context, username string, email str
 		return nil, err
 	}
 
+	if !includeCredentials {
+		user.PasswordHash = ""
+	}
 	return &user, nil
 }
 
@@ -89,7 +94,7 @@ func (repo *UserRepo) CheckUsernameOrEmailExistence(ctx context.Context, usernam
 	return usernameExists, emailExists, nil
 }
 
-func (repo *UserRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*models.User, error) {
+func (repo *UserRepo) GetUserByID(ctx context.Context, userID uuid.UUID, includeCredentials bool) (*models.User, error) {
 	query := `SELECT user_id, username, email, created_at, password_hash FROM chess.user WHERE user_id=$1;`
 
 	rows, err := repo.dbPool.Query(ctx, query, userID)
@@ -106,11 +111,15 @@ func (repo *UserRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*model
 		}
 		return nil, err
 	}
+
+	if !includeCredentials {
+		user.PasswordHash = ""
+	}
 	return &user, nil
 }
 
-func (repo *UserRepo) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
-	query := `SELECT user_id, username, email, created_at, password_hash FROM chess.user WHERE email=$1;`
+func (repo *UserRepo) GetUserByEmail(ctx context.Context, email string, includeCredentials bool) (*models.User, error) {
+	query := `SELECT user_id, username, email, created_at, password_hash FROM chess.user WHERE email = $1`
 
 	rows, err := repo.dbPool.Query(ctx, query, email)
 
@@ -126,10 +135,14 @@ func (repo *UserRepo) GetUserByEmail(ctx context.Context, email string) (*models
 		}
 		return nil, err
 	}
+
+	if !includeCredentials {
+		user.PasswordHash = ""
+	}
 	return &user, nil
 }
 
-func (repo *UserRepo) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
+func (repo *UserRepo) GetUserByUsername(ctx context.Context, username string, includeCredentials bool) (*models.User, error) {
 	query := `SELECT user_id, username, email, created_at, password_hash FROM chess.user WHERE username=$1;`
 
 	rows, err := repo.dbPool.Query(ctx, query, username)
@@ -146,5 +159,9 @@ func (repo *UserRepo) GetUserByUsername(ctx context.Context, username string) (*
 		}
 		return nil, err
 	}
+	if !includeCredentials {
+		user.PasswordHash = ""
+	}
+
 	return &user, nil
 }
