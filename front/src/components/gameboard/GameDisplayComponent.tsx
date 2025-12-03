@@ -229,7 +229,12 @@ const GameDisplayComponent = forwardRef<GameDisplayHandle, GameDisplaySettings>(
 
     if (!props.pgn)
         return (
-            <div>
+            <div style={{
+                padding: '0',
+                margin: '0',
+                width: 8 * props.boardStyle.pieceSize,
+                height: 8 * props.boardStyle.pieceSize,
+            }}>
                 <DumbDisplayBoard
                     boardStyle={props.boardStyle}
                     onPlayerHighlightSquare={null}
@@ -245,8 +250,15 @@ const GameDisplayComponent = forwardRef<GameDisplayHandle, GameDisplaySettings>(
             </div>
         );
 
+        const spaceBetweenBoardAndMoveList = 5;
+
     return (
-        <div ref={divRef} onKeyDown={onKeyDown} tabIndex={-1} className='root-container'>
+        <div ref={divRef} onKeyDown={onKeyDown} tabIndex={-1} className='root-container' style={{
+                padding: '0',
+                margin: '0',
+                width: 8 * props.boardStyle.pieceSize + spaceBetweenBoardAndMoveList + 400,
+                height: 8 * props.boardStyle.pieceSize,
+            }}>
             <div>
                 <DumbDisplayBoard
                     boardStyle={props.boardStyle}
@@ -260,7 +272,7 @@ const GameDisplayComponent = forwardRef<GameDisplayHandle, GameDisplaySettings>(
                 tabIndex={-1}
                 className='moves-container'
                 style={{
-                    marginLeft: '5px',
+                    marginLeft: `${spaceBetweenBoardAndMoveList}px`,
                     transform: `translateX(${props.boardStyle.pieceSize * 8}px)`,
                     width: '400px',
                     height: `${props.boardStyle.pieceSize * 8}px`,

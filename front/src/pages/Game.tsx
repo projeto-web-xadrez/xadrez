@@ -92,7 +92,7 @@ class ResignMessage extends AbstractBaseMessage {
     }
 }
 
-const UsernameDisplay = ({username}: {username: string | undefined}) => 
+const UsernameDisplay = ({ username }: { username: string | undefined }) =>
     <span
         style={{
             color: '#333',
@@ -183,7 +183,7 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
                     history.replaceState({}, '', `/game/${welcome.room_id}`);
                 }
                 const playing = ['w', 'b'].includes(welcome.color as string);
-                if(playing)
+                if (playing)
                     setPerspective(welcome.color as Color)
                 console.log(welcome)
                 setStartSettings({
@@ -217,37 +217,43 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
     };
 
     return (
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                width: '100%',
+                marginTop: '50px',
+            }}>
 
-        <div style={{
-            width: '50%',
-            margin: '50px auto',
-            padding: '0'
-        }}>
+                <div style={{
+                    display: 'inline-flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start'
+                }}>
+                    <UsernameDisplay username={perspective === 'b' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername} />
 
-            
-            <UsernameDisplay username={perspective === 'b' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername}/>
-            <GameDisplayComponent
-                boardStyle={{
-                    boardBackground: '/board_bg/maple.jpg',
-                    pieceStyle: 'merida', //cburnett
-                    pieceSize: 55,
-                    shouldLabelSquares: true
-                }}
-                type={startSettings?.playingColor === null ? 'spectating' : 'playing'}
-                pgn={startSettings?.pgn || ''}
-                playerColor={startSettings?.playingColor || 'w'}
-                perspective={perspective}
-                onPlayerMove={onPlayerMove}
-                onPlayerSwitchPerspective={(p) => setPerspective(p)}
-                onPlayerResign={() => {
-                    if(startSettings?.playingColor !== null && client?.current?.send)
-                        client.current.send(new ResignMessage().encode());
-                }}
-                soundPlayer={soundPlayer}
-                ref={displayHandle}
-            />
-            <UsernameDisplay username={perspective === 'w' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername}/>
-
-        </div>
+                    <GameDisplayComponent
+                        boardStyle={{
+                            boardBackground: '/board_bg/maple.jpg',
+                            pieceStyle: 'merida', //cburnett
+                            pieceSize: 55,
+                            shouldLabelSquares: true
+                        }}
+                        type={startSettings?.playingColor === null ? 'spectating' : 'playing'}
+                        pgn={startSettings?.pgn || ''}
+                        playerColor={startSettings?.playingColor || 'w'}
+                        perspective={perspective}
+                        onPlayerMove={onPlayerMove}
+                        onPlayerSwitchPerspective={(p) => setPerspective(p)}
+                        onPlayerResign={() => {
+                            if (startSettings?.playingColor !== null && client?.current?.send)
+                                client.current.send(new ResignMessage().encode());
+                        }}
+                        soundPlayer={soundPlayer}
+                        ref={displayHandle}
+                    />
+                    
+                    <UsernameDisplay username={perspective === 'w' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername} />
+                </div>
+            </div>
     );
 }

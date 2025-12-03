@@ -200,7 +200,13 @@ const DumbDisplayBoard = (({ boardStyle, onPlayerMove, onPlayerHighlightSquare, 
         });
     }
 
-    return <div>
+    return <div style={{
+                width: 8 * boardStyle.pieceSize,
+                height: 8 * boardStyle.pieceSize,
+                position: 'absolute',
+                margin: '0 0',
+                padding: '0 0'
+            }}>
         <img src={boardStyle.boardBackground}
             style={{
                 width: 8 * boardStyle.pieceSize,
