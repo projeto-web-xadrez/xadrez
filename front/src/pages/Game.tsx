@@ -86,24 +86,27 @@ class InitMessage extends AbstractBaseMessage {
 }
 
 export default function Game({soundPlayer}: {soundPlayer: RefObject<SoundPlayerHandle | null>}) {
-    const { gameId } = useParams();
+    const { gameId: paramGameId } = useParams();
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
 
-    if(!gameId || !isAuthenticated) {
+    if(!paramGameId || !isAuthenticated) {
         navigate('/');
         return null;
     }
 
-    const location = useLocation();
+    const gameId = useRef<string>(paramGameId);
     
     // If this flag is true, we are sure this is a live game, so we don't need to
     // request the API to check it. However, if it isn't, it could still be a live game
     // (cause the user may have refreshed the page or retyped the URL)
+    /*
+    const location = useLocation();
     useEffect(() => {
-        /*if(location?.state?.liveGame)
-            alert('Live game')*/
-    }, []);
+        if(location?.state?.liveGame)
+            alert('Live game') // Connect to websocket
+        else // Connect to API, then connect to websocket if necessary
+    }, []);*/
 
     // TODO: if liveGame, connect to websocket directly
     // otherwise, request the API (with a HTTP request) for game information
@@ -120,14 +123,14 @@ export default function Game({soundPlayer}: {soundPlayer: RefObject<SoundPlayerH
     const [connected, setConnected] = useState(false);
     const client = useRef<WebSocket>(new WebSocket(`/gameserver/ws?csrfToken=${localStorage.getItem('csrf_token')}`));
     const [startSettings, setStartSettings] = useState<{
-        playingColor: Color,
+        playingColor: null | Color,
         pgn: string
     } | null>();
 
     client.current.onopen = () => {
         setConnected(true);
     
-        const msg = new InitMessage(gameId).encode();
+        const msg = new InitMessage(gameId.current).encode();
         client.current.send(msg);
     }
     client.current.onclose = (e) => {
@@ -143,9 +146,16 @@ export default function Game({soundPlayer}: {soundPlayer: RefObject<SoundPlayerH
             case MessageType.WELCOME:
                 const welcome = JSON.parse(msg.data) as WelcomeMessage
                 
+                if(welcome.room_id !== gameId.current) {
+                    alert('You have an ongoing game!');
+                    gameId.current = welcome.room_id as string;
+                    
+                    // Update the URL without reloading the page
+                    history.replaceState({}, '', `/game/${welcome.room_id}`);
+                }
                 setStartSettings({
                     pgn: welcome.game_pgn as string,
-                    playingColor: welcome.color as Color
+                    playingColor: (['w', 'b'].includes(welcome.color as string) ? (welcome.color as Color) : null)
                 });
             break;
             case MessageType.PLAYER_MOVED:
@@ -177,7 +187,7 @@ export default function Game({soundPlayer}: {soundPlayer: RefObject<SoundPlayerH
                     pieceSize: 50,
                     shouldLabelSquares: true
                 }}
-                type='playing'
+                type={startSettings?.playingColor === null ? 'spectating' : 'playing'}
                 pgn={startSettings?.pgn || ''}
                 playerColor={startSettings?.playingColor || 'w'}
                 perspective={startSettings?.playingColor || 'w'}
