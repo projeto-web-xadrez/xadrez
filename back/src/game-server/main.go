@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/repositories"
 	"fmt"
-	"game-server/gamelogic"
+	"game-server/game"
 	"net"
 	"net/http"
 	"os"
@@ -27,6 +27,7 @@ const DEFAULT_WS_PLAYER_ADDRESS = "0.0.0.0:8082"
 const DEFAULT_WS_PLAYER_PATH = "/ws"
 
 var authGrpc auth_grpc.AuthClient
+var gm *game.GameManager
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024 * 8,                                   // Incoming messages are capped at 8 KB
@@ -54,7 +55,7 @@ func (s *MatchMakingServer) RequestRoom(ctx context.Context, req *matchmaking_gr
 		}, nil
 	}
 
-	room, err := gamelogic.CreateNewRoom(id1, id2)
+	game, err := gm.CreateNewGame(id1, id2)
 	if err != nil {
 		error_msg := err.Error()
 		return &matchmaking_grpc.RoomResponse{
@@ -64,7 +65,7 @@ func (s *MatchMakingServer) RequestRoom(ctx context.Context, req *matchmaking_gr
 	}
 
 	return &matchmaking_grpc.RoomResponse{
-		RoomId: room.RoomID.String(),
+		RoomId: game.ID.String(),
 	}, nil
 }
 
@@ -99,7 +100,7 @@ func handlePlayerConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if res.Session == nil {
+	if res.Session == nil || res.Session.UserId == "" {
 		http.SetCookie(w, &http.Cookie{
 			Name:     "session_token",
 			Value:    "",
@@ -112,12 +113,19 @@ func handlePlayerConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	p := gm.GetOrMakePlayer(uuid.MustParse(res.Session.UserId), res.Session.Username)
 	ws, err := upgrader.Upgrade(w, r, nil)
+
 	if err != nil {
 		return
 	}
 
-	gamelogic.HandleNewClient(ws, res.Session)
+	ws.SetCloseHandler(func(code int, text string) error {
+		p.OnWsClosed(ws)
+		return nil
+	})
+
+	p.UpdateConnection(ws)
 }
 
 func main() {
@@ -164,7 +172,7 @@ func main() {
 	authGrpc = auth_grpc.NewAuthClient(authConn)
 
 	userRepo := repositories.NewUserRepo(dbPool)
-	gamelogic.SetUserRepo(userRepo)
+	gm = game.NewGameManager(userRepo)
 
 	go func() {
 		grpcListener, err := net.Listen("tcp", grpcAddress)
