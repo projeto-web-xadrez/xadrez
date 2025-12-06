@@ -1,13 +1,16 @@
 package main
 
 import (
+	"api/routes"
 	"context"
+	"database/repositories"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"proto-generated/auth_grpc"
 	"proto-generated/matchmaking_grpc"
 	"sync"
@@ -15,6 +18,8 @@ import (
 	"utils"
 
 	"github.com/gorilla/websocket"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )
 
@@ -35,12 +40,10 @@ var upgrader = websocket.Upgrader{
 
 */
 
-type ctxKey string
-
 var (
-	ctxKeyClientId = ctxKey("clientId")
-	ctxKeyUsername = ctxKey("username")
-	ctxKeyEmail    = ctxKey("email")
+	ctxKeyClientId = "clientId"
+	ctxKeyUsername = "username"
+	ctxKeyEmail    = "email"
 )
 
 type dataObj struct {
@@ -350,6 +353,24 @@ func handleStreamMsgs(stream grpc.ServerStreamingClient[matchmaking_grpc.GameEnd
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		print("Couldn't load .env file, using default values.\n")
+	}
+
+	postgresUrl := os.Getenv("POSTGRES_URL")
+	if postgresUrl == "" {
+		panic("Postgres URL env var not set")
+	}
+	dbPool, err := pgxpool.New(context.Background(), postgresUrl)
+	if err != nil {
+		panic(err)
+	}
+	if err = dbPool.Ping(context.TODO()); err != nil {
+		panic(err)
+	}
+	routes.SavedRepo = repositories.NewSavedGame(dbPool)
+
 	// Inicia conexão gRPC
 	mmConn, err := grpc.NewClient("gameserver:9191", grpc.WithInsecure())
 	if err != nil {
@@ -383,6 +404,12 @@ func main() {
 
 	server_ws := http.NewServeMux()
 	server_ws.HandleFunc("/ws", authMiddleware(handleConnections))
+	server_ws.HandleFunc("/manage-game", authMiddleware(routes.ManageGame))
+	server_ws.HandleFunc("/manage-game/{id}", authMiddleware(routes.ManageGame))
+	/* server_ws.HandleFunc("/fetch-game", authMiddleware(handleConnections))
+	server_ws.HandleFunc("/fetch-all-games", authMiddleware(handleConnections))
+	server_ws.HandleFunc("/edit-game", authMiddleware(handleConnections))
+	server_ws.HandleFunc("/delete-game", authMiddleware(handleConnections)) */
 
 	// Goroutine do WebSocket server
 	go func() {

@@ -13,8 +13,8 @@ type SavedGameRepo struct {
 	dbPool *pgxpool.Pool
 }
 
-func NewSavedGame(dbPool *pgxpool.Pool) *UserRepo {
-	return &UserRepo{
+func NewSavedGame(dbPool *pgxpool.Pool) *SavedGameRepo {
+	return &SavedGameRepo{
 		dbPool: dbPool,
 	}
 }
