@@ -11,6 +11,17 @@ message RoomResponse {
     optional string error_msg = 2;
 }
 
+message StartStreamingMessage {
+    
+}
+
+message GameEndedEventMsg {
+    string pl1 = 1;
+    string pl2 = 2;
+}
+
+
 service MatchMaking {
     rpc RequestRoom(RequestRoomMessage) returns (RoomResponse) {}
+    rpc StartStreamMsg(StartStreamingMessage) returns (stream GameEndedEventMsg);
 }
