@@ -125,6 +125,94 @@ func (x *RoomResponse) GetErrorMsg() string {
 	return ""
 }
 
+type StartStreamingMessage struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StartStreamingMessage) Reset() {
+	*x = StartStreamingMessage{}
+	mi := &file_matchmaking_grpc_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartStreamingMessage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartStreamingMessage) ProtoMessage() {}
+
+func (x *StartStreamingMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_matchmaking_grpc_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartStreamingMessage.ProtoReflect.Descriptor instead.
+func (*StartStreamingMessage) Descriptor() ([]byte, []int) {
+	return file_matchmaking_grpc_proto_rawDescGZIP(), []int{2}
+}
+
+type GameEndedEventMsg struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pl1           string                 `protobuf:"bytes,1,opt,name=pl1,proto3" json:"pl1,omitempty"`
+	Pl2           string                 `protobuf:"bytes,2,opt,name=pl2,proto3" json:"pl2,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GameEndedEventMsg) Reset() {
+	*x = GameEndedEventMsg{}
+	mi := &file_matchmaking_grpc_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GameEndedEventMsg) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GameEndedEventMsg) ProtoMessage() {}
+
+func (x *GameEndedEventMsg) ProtoReflect() protoreflect.Message {
+	mi := &file_matchmaking_grpc_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GameEndedEventMsg.ProtoReflect.Descriptor instead.
+func (*GameEndedEventMsg) Descriptor() ([]byte, []int) {
+	return file_matchmaking_grpc_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *GameEndedEventMsg) GetPl1() string {
+	if x != nil {
+		return x.Pl1
+	}
+	return ""
+}
+
+func (x *GameEndedEventMsg) GetPl2() string {
+	if x != nil {
+		return x.Pl2
+	}
+	return ""
+}
+
 var File_matchmaking_grpc_proto protoreflect.FileDescriptor
 
 const file_matchmaking_grpc_proto_rawDesc = "" +
@@ -137,9 +225,14 @@ const file_matchmaking_grpc_proto_rawDesc = "" +
 	"\aroom_id\x18\x01 \x01(\tR\x06roomId\x12 \n" +
 	"\terror_msg\x18\x02 \x01(\tH\x00R\berrorMsg\x88\x01\x01B\f\n" +
 	"\n" +
-	"_error_msg2B\n" +
+	"_error_msg\"\x17\n" +
+	"\x15StartStreamingMessage\"7\n" +
+	"\x11GameEndedEventMsg\x12\x10\n" +
+	"\x03pl1\x18\x01 \x01(\tR\x03pl1\x12\x10\n" +
+	"\x03pl2\x18\x02 \x01(\tR\x03pl22\x82\x01\n" +
 	"\vMatchMaking\x123\n" +
-	"\vRequestRoom\x12\x13.RequestRoomMessage\x1a\r.RoomResponse\"\x00B\x14Z\x12./matchmaking_grpcb\x06proto3"
+	"\vRequestRoom\x12\x13.RequestRoomMessage\x1a\r.RoomResponse\"\x00\x12>\n" +
+	"\x0eStartStreamMsg\x12\x16.StartStreamingMessage\x1a\x12.GameEndedEventMsg0\x01B\x14Z\x12./matchmaking_grpcb\x06proto3"
 
 var (
 	file_matchmaking_grpc_proto_rawDescOnce sync.Once
@@ -153,16 +246,20 @@ func file_matchmaking_grpc_proto_rawDescGZIP() []byte {
 	return file_matchmaking_grpc_proto_rawDescData
 }
 
-var file_matchmaking_grpc_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_matchmaking_grpc_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_matchmaking_grpc_proto_goTypes = []any{
-	(*RequestRoomMessage)(nil), // 0: RequestRoomMessage
-	(*RoomResponse)(nil),       // 1: RoomResponse
+	(*RequestRoomMessage)(nil),    // 0: RequestRoomMessage
+	(*RoomResponse)(nil),          // 1: RoomResponse
+	(*StartStreamingMessage)(nil), // 2: StartStreamingMessage
+	(*GameEndedEventMsg)(nil),     // 3: GameEndedEventMsg
 }
 var file_matchmaking_grpc_proto_depIdxs = []int32{
 	0, // 0: MatchMaking.RequestRoom:input_type -> RequestRoomMessage
-	1, // 1: MatchMaking.RequestRoom:output_type -> RoomResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	2, // 1: MatchMaking.StartStreamMsg:input_type -> StartStreamingMessage
+	1, // 2: MatchMaking.RequestRoom:output_type -> RoomResponse
+	3, // 3: MatchMaking.StartStreamMsg:output_type -> GameEndedEventMsg
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -180,7 +277,7 @@ func file_matchmaking_grpc_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_matchmaking_grpc_proto_rawDesc), len(file_matchmaking_grpc_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

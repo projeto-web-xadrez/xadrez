@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MatchMaking_RequestRoom_FullMethodName = "/MatchMaking/RequestRoom"
+	MatchMaking_RequestRoom_FullMethodName    = "/MatchMaking/RequestRoom"
+	MatchMaking_StartStreamMsg_FullMethodName = "/MatchMaking/StartStreamMsg"
 )
 
 // MatchMakingClient is the client API for MatchMaking service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MatchMakingClient interface {
 	RequestRoom(ctx context.Context, in *RequestRoomMessage, opts ...grpc.CallOption) (*RoomResponse, error)
+	StartStreamMsg(ctx context.Context, in *StartStreamingMessage, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GameEndedEventMsg], error)
 }
 
 type matchMakingClient struct {
@@ -47,11 +49,31 @@ func (c *matchMakingClient) RequestRoom(ctx context.Context, in *RequestRoomMess
 	return out, nil
 }
 
+func (c *matchMakingClient) StartStreamMsg(ctx context.Context, in *StartStreamingMessage, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GameEndedEventMsg], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &MatchMaking_ServiceDesc.Streams[0], MatchMaking_StartStreamMsg_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[StartStreamingMessage, GameEndedEventMsg]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type MatchMaking_StartStreamMsgClient = grpc.ServerStreamingClient[GameEndedEventMsg]
+
 // MatchMakingServer is the server API for MatchMaking service.
 // All implementations must embed UnimplementedMatchMakingServer
 // for forward compatibility.
 type MatchMakingServer interface {
 	RequestRoom(context.Context, *RequestRoomMessage) (*RoomResponse, error)
+	StartStreamMsg(*StartStreamingMessage, grpc.ServerStreamingServer[GameEndedEventMsg]) error
 	mustEmbedUnimplementedMatchMakingServer()
 }
 
@@ -64,6 +86,9 @@ type UnimplementedMatchMakingServer struct{}
 
 func (UnimplementedMatchMakingServer) RequestRoom(context.Context, *RequestRoomMessage) (*RoomResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestRoom not implemented")
+}
+func (UnimplementedMatchMakingServer) StartStreamMsg(*StartStreamingMessage, grpc.ServerStreamingServer[GameEndedEventMsg]) error {
+	return status.Errorf(codes.Unimplemented, "method StartStreamMsg not implemented")
 }
 func (UnimplementedMatchMakingServer) mustEmbedUnimplementedMatchMakingServer() {}
 func (UnimplementedMatchMakingServer) testEmbeddedByValue()                     {}
@@ -104,6 +129,17 @@ func _MatchMaking_RequestRoom_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MatchMaking_StartStreamMsg_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StartStreamingMessage)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(MatchMakingServer).StartStreamMsg(m, &grpc.GenericServerStream[StartStreamingMessage, GameEndedEventMsg]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type MatchMaking_StartStreamMsgServer = grpc.ServerStreamingServer[GameEndedEventMsg]
+
 // MatchMaking_ServiceDesc is the grpc.ServiceDesc for MatchMaking service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -116,6 +152,12 @@ var MatchMaking_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _MatchMaking_RequestRoom_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StartStreamMsg",
+			Handler:       _MatchMaking_StartStreamMsg_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "matchmaking_grpc.proto",
 }
