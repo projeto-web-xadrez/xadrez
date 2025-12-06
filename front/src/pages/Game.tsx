@@ -4,6 +4,7 @@ import GameDisplayComponent, { type GameDisplayHandle } from '../components/game
 import type { SoundPlayerHandle } from '../components/SoundPlayerComponent';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import GameEndedComponent from '../components/GameEndedComponent';
 
 const MessageType = {
     INIT: 'init',
@@ -117,7 +118,8 @@ const UsernameDisplay = ({ username }: { username: string | undefined }) =>
 export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlayerHandle | null> }) {
     const { gameId: paramGameId } = useParams();
     const navigate = useNavigate();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, clientId } = useAuth();
+    const [winner, setWinner] = useState<string | null>(null)
 
     if (!paramGameId || !isAuthenticated) {
         navigate('/');
@@ -231,7 +233,8 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
                         break;
                     case MessageType.GAME_ENDED:
                         alert('Game ended')
-                        console.log(JSON.parse(msg.data) as GameEndedMessage)
+                        const message = JSON.parse(msg.data) as GameEndedMessage
+                        setWinner(message?.winner_id as string)
                         break;
                     case MessageType.PING:
                         client.current?.send(new MessagePing().encode())
@@ -249,6 +252,10 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
     };
 
     return (
+        <>
+        {
+            (!winner) ? (
+            
         <div style={{
             display: 'flex',
             justifyContent: 'center',
@@ -286,6 +293,13 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
 
                 <UsernameDisplay username={perspective === 'w' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername} />
             </div>
-        </div>
+        </div>)
+        :
+        (<GameEndedComponent playerId={clientId as string} winner={winner as string} />)   
+        }
+        
+        </>
+        
+        
     );
 }
