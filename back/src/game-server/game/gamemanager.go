@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/repositories"
 	"errors"
+	"proto-generated/matchmaking_grpc"
 	"sync"
 	"time"
 
@@ -11,18 +12,20 @@ import (
 )
 
 type GameManager struct {
-	players  map[uuid.UUID]*Player
-	games    map[uuid.UUID]*Game
-	mutex    sync.RWMutex
-	userRepo *repositories.UserRepo
+	players       map[uuid.UUID]*Player
+	games         map[uuid.UUID]*Game
+	mutex         sync.RWMutex
+	userRepo      *repositories.UserRepo
+	StreamChannel (chan matchmaking_grpc.GameEndedEventMsg)
 }
 
 func NewGameManager(userRepo *repositories.UserRepo) *GameManager {
 	return &GameManager{
-		players:  map[uuid.UUID]*Player{},
-		games:    map[uuid.UUID]*Game{},
-		mutex:    sync.RWMutex{},
-		userRepo: userRepo,
+		players:       map[uuid.UUID]*Player{},
+		games:         map[uuid.UUID]*Game{},
+		mutex:         sync.RWMutex{},
+		userRepo:      userRepo,
+		StreamChannel: make(chan matchmaking_grpc.GameEndedEventMsg, 100),
 	}
 }
 

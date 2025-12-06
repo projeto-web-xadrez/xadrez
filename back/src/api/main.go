@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"proto-generated/auth_grpc"
 	"proto-generated/matchmaking_grpc"
@@ -109,6 +111,13 @@ func safeGetUserState(c string) (string, bool) {
 func safeSetUserState(c string, state string) {
 	universalLock.Lock()
 	defer universalLock.Unlock()
+	_, ok := usersMap[c]
+
+	// evita que ele set para idle caso o usuario recarregue a pagina
+	if state == "idle" && ok {
+		return
+	}
+
 	usersMap[c] = state
 }
 
@@ -312,6 +321,34 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func handleStreamMsgs(stream grpc.ServerStreamingClient[matchmaking_grpc.GameEndedEventMsg]) {
+	for {
+		resp, err := stream.Recv()
+		if err == io.EOF {
+			log.Println("Server stream finished.")
+			break
+		}
+		if err != nil {
+			log.Fatalf("error receiving from stream: %v", err)
+		}
+
+		log.Printf("Received game_ended for: %s and %s", resp.Pl1, resp.Pl2)
+		universalLock.Lock()
+		_, ok := usersMap[resp.Pl1]
+		_, ok2 := usersMap[resp.Pl2]
+
+		if ok {
+			usersMap[resp.Pl1] = "idle"
+		}
+
+		if ok2 {
+			usersMap[resp.Pl2] = "idle"
+		}
+
+		universalLock.Unlock()
+	}
+}
+
 func main() {
 	// Inicia conexão gRPC
 	mmConn, err := grpc.NewClient("gameserver:9191", grpc.WithInsecure())
@@ -326,7 +363,18 @@ func main() {
 	}
 	defer authConn.Close()
 
+	time.Sleep(2 * time.Second)
+	ctxStream := context.Background()
 	matchmaking_grpc_conn = matchmaking_grpc.NewMatchMakingClient(mmConn)
+
+	stream, err := matchmaking_grpc_conn.StartStreamMsg(ctxStream, &matchmaking_grpc.StartStreamingMessage{})
+
+	if err != nil {
+		fmt.Println(err)
+		panic("grpc stream on gameserver failed to start")
+	}
+
+	go handleStreamMsgs(stream)
 	auth_server_grpc = auth_grpc.NewAuthClient(authConn)
 
 	// WaitGroup apenas para o servidor WebSocket

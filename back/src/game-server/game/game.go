@@ -3,6 +3,7 @@ package game
 import (
 	"encoding/json"
 	"fmt"
+	"proto-generated/matchmaking_grpc"
 	"sync"
 	"time"
 
@@ -248,6 +249,14 @@ func (g *Game) SendMove(player *Player, message PlayerMovedMessage) bool {
 				Type: "quit",
 				Data: "Game ended",
 			}
+
+			streamGameEndedMsg := matchmaking_grpc.GameEndedEventMsg{
+				Pl1: player.ID.String(),
+				Pl2: opponent.ID.String(),
+			}
+
+			player.gm.StreamChannel <- streamGameEndedMsg
+
 			player.SendMessage(gameEndedMessage)
 			opponent.SendMessage(gameEndedMessage)
 			for _, spec := range g.Spectators {
@@ -331,6 +340,14 @@ func (g *Game) Resign(player *Player) bool {
 			Type: "quit",
 			Data: "Game ended",
 		}
+
+		streamGameEndedMsg := matchmaking_grpc.GameEndedEventMsg{
+			Pl1: player.ID.String(),
+			Pl2: opponent.ID.String(),
+		}
+
+		player.gm.StreamChannel <- streamGameEndedMsg
+
 		player.SendMessage(gameEndedMessage)
 		opponent.SendMessage(gameEndedMessage)
 		for _, spec := range g.Spectators {

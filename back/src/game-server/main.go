@@ -69,6 +69,32 @@ func (s *MatchMakingServer) RequestRoom(ctx context.Context, req *matchmaking_gr
 	}, nil
 }
 
+func (s *MatchMakingServer) StartStreamMsg(reqMsg *matchmaking_grpc.StartStreamingMessage, stream matchmaking_grpc.MatchMaking_StartStreamMsgServer) error {
+	fmt.Println("API Server connected to stream. Ready to send game_ended events")
+	for {
+		select {
+		case <-stream.Context().Done():
+			fmt.Println("API Server disconnected from stream")
+			return nil
+
+		case message, ok := <-gm.StreamChannel:
+			if !ok {
+				fmt.Println("Stream channel was closed")
+				return nil
+			}
+
+			// Send the msg
+			if err := stream.Send(&message); err != nil {
+				fmt.Printf("Got error while sending stream msg: %v\n", err)
+				return err
+			}
+
+			fmt.Printf("Game Ended Notification sent: %v\n", message)
+		}
+	}
+
+}
+
 func handlePlayerConnection(w http.ResponseWriter, r *http.Request) {
 	sessionToken, err := r.Cookie("session_token")
 	csrfToken := r.URL.Query().Get("csrfToken")
@@ -177,6 +203,7 @@ func main() {
 	go func() {
 		grpcListener, err := net.Listen("tcp", grpcAddress)
 		if err != nil {
+			fmt.Println(err)
 			panic(err)
 		}
 
