@@ -55,9 +55,9 @@ func (repo *SavedGameRepo) GetGamesFromUser(ctx context.Context, userID uuid.UUI
 }
 
 func (repo *SavedGameRepo) UpdateGame(ctx context.Context, savedGame *models.SavedGame) error {
-	query := `UPDATE chess.saved_games SET name=$2, pgn=$3, last_fen=$4 WHERE game_id = $1 RETURNING *;`
+	query := `UPDATE chess.saved_games SET name=$3, pgn=$4, last_fen=$5 WHERE game_id = $1 and user_id = $2 RETURNING *;`
 
-	rows, err := repo.dbPool.Query(ctx, query, savedGame.ID, savedGame.Name, savedGame.PGN, savedGame.LastFEN)
+	rows, err := repo.dbPool.Query(ctx, query, savedGame.ID, savedGame.UserID, savedGame.Name, savedGame.PGN, savedGame.LastFEN)
 	if err != nil {
 		return err
 	}
