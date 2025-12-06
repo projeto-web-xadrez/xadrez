@@ -102,3 +102,14 @@ func (repo *SavedGameRepo) DeleteGame(ctx context.Context, gameID uuid.UUID) (bo
 
 	return (cmdTag.RowsAffected() > 0), nil
 }
+
+func (repo *SavedGameRepo) DeleteGameFromUser(ctx context.Context, gameID uuid.UUID, userID uuid.UUID) (bool, error) {
+	query := `DELETE FROM chess.saved_games WHERE game_id = $1 and user_id = $2;`
+
+	cmdTag, err := repo.dbPool.Exec(ctx, query, gameID, userID)
+	if err != nil {
+		return false, err
+	}
+
+	return (cmdTag.RowsAffected() > 0), nil
+}
