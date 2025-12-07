@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useWebsocket } from '../context/WebSocketContext';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type SetStateAction } from 'react';
 import axios, { type AxiosRequestConfig } from 'axios';
 import DumbDisplayBoard from '../components/gameboard/DumbDisplayBoardComponent';
 import '../styles/Games.css'
@@ -24,12 +24,13 @@ interface ChessGame {
 }
 
 interface GameCardProps {
-  games: ChessGame[];
-  onDelete: (gameId: string) => void;
+  games: SavedGame[];
+  onDelete: (game: SavedGame) => void;
   onUpdate: (gameId: string) => void;
+  clientId: string;
 }
 
-const GameList: React.FC<GameCardProps> = ({ games, onDelete, onUpdate }) => {
+const GameList: React.FC<GameCardProps> = ({ games, onDelete, onUpdate, clientId }) => {
   const navigate = useNavigate();
 
   return (
@@ -68,7 +69,7 @@ const GameList: React.FC<GameCardProps> = ({ games, onDelete, onUpdate }) => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      onDelete(game.game_id);
+                      onDelete(game);
                     }}
                     className="game-card-btn-delete"
                     title="Delete Game"
@@ -130,9 +131,18 @@ const GameList: React.FC<GameCardProps> = ({ games, onDelete, onUpdate }) => {
   );
 };
 
+async function onDelete(gameInstance: SavedGame, setDialogOpen: React.Dispatch<SetStateAction<Boolean>>, clientId: string) {
+    const gameId = gameInstance?.game_id
+    const ownerId = gameInstance?.user_id
+
+    clientId === ownerId
+    
+}
+
 
 export default function Games() {
-    const { isAuthenticated, csrf } = useAuth();
+    const { isAuthenticated, csrf, clientId } = useAuth();
+    const [dialogOpen, setDialogOpen] = useState<boolean>(false)
 
     const navigate = useNavigate();
     const [error, setError] = useState<null | string>();
@@ -153,8 +163,11 @@ export default function Games() {
 
     useEffect(() => {
         axios.get(`/api/manage-game`, axiosSettings)
-            .then(games => setGames(games.data as SavedGame[]))
-            .catch(e => setError(e))
+            .then((games: any) => {
+              setGames(games.data as SavedGame[])
+            }
+            )
+            .catch((e: any) => setError(e))
     }, []);
 
     return (
@@ -163,6 +176,7 @@ export default function Games() {
                 games={games}
                 onDelete={() => {}}
                 onUpdate={() => {}}
+                clientId={clientId as string}
             />
 
             <button onClick={() => {
@@ -175,6 +189,11 @@ export default function Games() {
                 axios.post(`/api/manage-game`,
                     data
                     , axiosSettings)
+                  .then((response: any) => {
+                      if(response.status == 200) {
+                        setGames(response.data as SavedGame[])
+                      }
+                  })
 
             }}>
                 Add game

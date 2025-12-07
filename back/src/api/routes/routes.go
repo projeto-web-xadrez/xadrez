@@ -59,11 +59,20 @@ func ManageGame(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		if _, e := w.Write([]byte("")); e != nil {
-			err := http.StatusInternalServerError
-			http.Error(w, "Failed to respond to create game request", err)
+		// retorna todos os jogos atualizados do usuario para atualizar no frontend
+
+		savedGames, err := SavedRepo.GetGamesFromUser(r.Context(), user_uuid, 100)
+		if err != nil {
+			http.Error(w, "Failed to fetch games", http.StatusInternalServerError)
+			break
 		}
 
+		jsonData, err := json.Marshal(savedGames)
+
+		if _, e := w.Write([]byte(jsonData)); e != nil {
+			err := http.StatusInternalServerError
+			http.Error(w, "Failed to respond to fetch games request", err)
+		}
 		break
 
 	case http.MethodGet:
