@@ -1,15 +1,14 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface GameEndedProps {
   playerId: string;
   winner: string;
-  setIsPlaying: React.Dispatch<React.SetStateAction<boolean>>;
-  setGameEnded: React.Dispatch<React.SetStateAction<boolean>>;
-  setWinner: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-const GameEndedComponent: React.FC<GameEndedProps> = ({ playerId, winner, setIsPlaying, setGameEnded, setWinner }) => {
+const GameEndedComponent: React.FC<GameEndedProps> = ({ playerId, winner }) => {
   const isWinner = playerId === winner;
+  const navigate = useNavigate()
 
   const containerStyle: React.CSSProperties = {
     position: 'fixed',
@@ -58,9 +57,10 @@ const GameEndedComponent: React.FC<GameEndedProps> = ({ playerId, winner, setIsP
           {isWinner ? 'Você venceu! 🏆' : 'Você perdeu 😢'}
         </p>
         <button style={buttonStyle} onClick={() => {
-          setIsPlaying(false)
+          navigate("/")
+          /* setIsPlaying(false)
           setGameEnded(false)
-          setWinner(null)
+          setWinner(null) */
         }}>
           Voltar para o menu
         </button>

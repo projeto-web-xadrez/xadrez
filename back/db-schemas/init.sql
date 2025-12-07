@@ -35,3 +35,13 @@ CREATE TABLE IF NOT EXISTS chess.game(
     started_at TIMESTAMPTZ NOT NULL,
     ended_at TIMESTAMPTZ NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS chess.saved_games(
+    game_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    name TEXT NOT NULL,
+    pgn TEXT NOT NULL,
+    last_fen TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES chess.user(user_id)
+);

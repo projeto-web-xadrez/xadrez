@@ -252,7 +252,7 @@ export default function Register() {
 
             {/* FORM DE CONFIRMAÇÃO */}
             <form hidden={!shouldConfirmCode} onSubmit={handleConfirmation}>
-                <p id="server-error-msg">{serverError}</p>
+                <p id="server-error-msg-confirm">{serverError}</p>
              <p className="verification-notice">
                 Verification code sent to {email}
             </p>

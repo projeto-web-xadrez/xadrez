@@ -1,11 +1,16 @@
 package main
 
 import (
+	"api/routes"
 	"context"
+	"database/repositories"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
+	"os"
 	"proto-generated/auth_grpc"
 	"proto-generated/matchmaking_grpc"
 	"sync"
@@ -13,6 +18,8 @@ import (
 	"utils"
 
 	"github.com/gorilla/websocket"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )
 
@@ -33,12 +40,10 @@ var upgrader = websocket.Upgrader{
 
 */
 
-type ctxKey string
-
 var (
-	ctxKeyClientId = ctxKey("clientId")
-	ctxKeyUsername = ctxKey("username")
-	ctxKeyEmail    = ctxKey("email")
+	ctxKeyClientId = "clientId"
+	ctxKeyUsername = "username"
+	ctxKeyEmail    = "email"
 )
 
 type dataObj struct {
@@ -69,7 +74,7 @@ func safeRegisterMatchRequest(client clientObj) bool {
 
 	currentState, ok := usersMap[client.id]
 	if ok && currentState != "idle" {
-		fmt.Println("denied :: " + client.id + " ; he's either already in queue or state not idle")
+		fmt.Println("denied :: " + client.id + " ; he's either already in queue or state not idle, state = " + currentState)
 		return false
 	}
 
@@ -109,6 +114,13 @@ func safeGetUserState(c string) (string, bool) {
 func safeSetUserState(c string, state string) {
 	universalLock.Lock()
 	defer universalLock.Unlock()
+	_, ok := usersMap[c]
+
+	// evita que ele set para idle caso o usuario recarregue a pagina
+	if state == "idle" && ok {
+		return
+	}
+
 	usersMap[c] = state
 }
 
@@ -312,7 +324,53 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func handleStreamMsgs(stream grpc.ServerStreamingClient[matchmaking_grpc.GameEndedEventMsg]) {
+	for {
+		resp, err := stream.Recv()
+		if err == io.EOF {
+			log.Println("Server stream finished.")
+			break
+		}
+		if err != nil {
+			log.Fatalf("error receiving from stream: %v", err)
+		}
+
+		log.Printf("Received game_ended for: %s and %s", resp.Pl1, resp.Pl2)
+		universalLock.Lock()
+		_, ok := usersMap[resp.Pl1]
+		_, ok2 := usersMap[resp.Pl2]
+
+		if ok {
+			usersMap[resp.Pl1] = "idle"
+		}
+
+		if ok2 {
+			usersMap[resp.Pl2] = "idle"
+		}
+
+		universalLock.Unlock()
+	}
+}
+
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		print("Couldn't load .env file, using default values.\n")
+	}
+
+	postgresUrl := os.Getenv("POSTGRES_URL")
+	if postgresUrl == "" {
+		panic("Postgres URL env var not set")
+	}
+	dbPool, err := pgxpool.New(context.Background(), postgresUrl)
+	if err != nil {
+		panic(err)
+	}
+	if err = dbPool.Ping(context.TODO()); err != nil {
+		panic(err)
+	}
+	routes.SavedRepo = repositories.NewSavedGame(dbPool)
+
 	// Inicia conexão gRPC
 	mmConn, err := grpc.NewClient("gameserver:9191", grpc.WithInsecure())
 	if err != nil {
@@ -326,7 +384,18 @@ func main() {
 	}
 	defer authConn.Close()
 
+	time.Sleep(2 * time.Second)
+	ctxStream := context.Background()
 	matchmaking_grpc_conn = matchmaking_grpc.NewMatchMakingClient(mmConn)
+
+	stream, err := matchmaking_grpc_conn.StartStreamMsg(ctxStream, &matchmaking_grpc.StartStreamingMessage{})
+
+	if err != nil {
+		fmt.Println(err)
+		panic("grpc stream on gameserver failed to start")
+	}
+
+	go handleStreamMsgs(stream)
 	auth_server_grpc = auth_grpc.NewAuthClient(authConn)
 
 	// WaitGroup apenas para o servidor WebSocket
@@ -335,6 +404,12 @@ func main() {
 
 	server_ws := http.NewServeMux()
 	server_ws.HandleFunc("/ws", authMiddleware(handleConnections))
+	server_ws.HandleFunc("/manage-game", authMiddleware(routes.ManageGame))
+	server_ws.HandleFunc("/manage-game/{id}", authMiddleware(routes.ManageGame))
+	/* server_ws.HandleFunc("/fetch-game", authMiddleware(handleConnections))
+	server_ws.HandleFunc("/fetch-all-games", authMiddleware(handleConnections))
+	server_ws.HandleFunc("/edit-game", authMiddleware(handleConnections))
+	server_ws.HandleFunc("/delete-game", authMiddleware(handleConnections)) */
 
 	// Goroutine do WebSocket server
 	go func() {

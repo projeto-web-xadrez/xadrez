@@ -8,6 +8,7 @@ type AuthContextType = {
     username: string | null;
     clientId: string | null;
     email: string | null;
+    csrf: string | null;
     login: (username: string, password: string) => Promise<[boolean, string]>;
     register: (username: string, password: string, email: string) => Promise<[boolean, string]>;
     confirmRegistration: (validationCode: string) => Promise<[boolean, string]>;
@@ -22,29 +23,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const savedUser = localStorage.getItem("username");
     const savedEmail = localStorage.getItem("email");
     const savedId = localStorage.getItem("clientId");
+    const savedCsrf = localStorage.getItem("csrf_token");
 
     const [username, setUsername] = useState<string | null>(savedUser);
     const [email, setEmail] = useState<string | null>(savedEmail);
     const [clientId, setClientId] = useState<string | null>(savedId);
+    const [csrf, setCsrf] = useState<string | null>(savedCsrf);
 
     const [isAuthenticated, setAuthenticated] = useState(() => {
-        const csrf = localStorage.getItem("csrf_token");
-        return !!(csrf && savedUser && savedId);
+        return !!(savedCsrf && savedUser && savedId);
     });
 
 
     // Carregar autenticação via cookie + localStorage ao iniciar
     useEffect(() => {
-        const csrf = localStorage.getItem("csrf_token");
+        const savedCsrf = localStorage.getItem("csrf_token");
         const savedUser = localStorage.getItem("username");
         const savedId = localStorage.getItem("clientId");
         const savedEmail = localStorage.getItem("email");
 
-        if (csrf && savedUser && savedId && savedEmail) {
+        if (savedCsrf && savedUser && savedId && savedEmail) {
             setAuthenticated(true);
             setUsername(savedUser);
             setEmail(savedEmail);
             setClientId(savedId);
+            setCsrf(savedCsrf);
         }
     }, []);
 
@@ -53,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body.append("email", email);
         body.append("password", password);
 
-        const res = await fetch("http://localhost:80/loginapi/login", {
+        const res = await fetch("/loginapi/login", {
             method: "POST",
             credentials: "include",
             body
@@ -69,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUsername(data.username);
             setEmail(data.email);
             setClientId(data.clientId);
+            setCsrf(data.csrfToken);
             setAuthenticated(true);
 
             //navigate("/dashboard");
@@ -84,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body_obj.append("password", password)
         body_obj.append("email", email)
 
-        const response = await fetch("http://localhost:80/loginapi/register", {
+        const response = await fetch("/loginapi/register", {
             method: "POST",
             headers: {
                 //"Content-Type": "Application/JSON"
@@ -112,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body_obj.append("verificationCode", validationCode)
         body_obj.append("verificationToken", verification_token)
 
-        const response = await fetch("http://localhost:80/loginapi/confirm-registration", {
+        const response = await fetch("/loginapi/confirm-registration", {
             method: "POST",
             headers: {
                 //"Content-Type": "Application/JSON"
@@ -135,6 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUsername(data.username);
         setEmail(data.username);
         setClientId(data.clientId);
+        setCsrf(data.csrfToken);
         setAuthenticated(true);
 
         //navigate('/dashboard');
@@ -152,11 +157,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUsername(null);
         setEmail(null);
         setClientId(null);
+        setCsrf(null);
         navigate("/login");
     }
 
     async function checkValidToken() {
-        const response = await fetch("http://localhost:80/loginapi/validate-session", {
+        const response = await fetch("/loginapi/validate-session", {
             method: "POST",
             headers: {
                 //"Content-Type": "Application/JSON"
@@ -174,7 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, username, clientId, email, login, register, confirmRegistration: confirmRegistration, checkValidToken, logout }}>
+        <AuthContext.Provider value={{ csrf, isAuthenticated, username, clientId, email, login, register, confirmRegistration, checkValidToken, logout }}>
             {children}
         </AuthContext.Provider>
     );
