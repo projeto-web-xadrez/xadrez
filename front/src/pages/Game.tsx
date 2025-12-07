@@ -102,7 +102,7 @@ class MessagePing extends AbstractBaseMessage {
 const UsernameDisplay = ({ username }: { username: string | undefined }) =>
     <span
         style={{
-            color: '#333',
+            color: '#fff',
             fontWeight: "600",
             fontSize: "1rem",
             textAlign: 'left',
@@ -260,7 +260,7 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
             display: 'flex',
             justifyContent: 'center',
             width: '100%',
-            marginTop: '50px',
+            marginTop: '5%',
         }}>
 
             <div style={{

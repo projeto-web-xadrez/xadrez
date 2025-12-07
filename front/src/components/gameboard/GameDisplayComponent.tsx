@@ -237,8 +237,6 @@ const GameDisplayComponent = forwardRef<GameDisplayHandle, GameDisplaySettings>(
             }}>
                 <DumbDisplayBoard
                     boardStyle={props.boardStyle}
-                    onPlayerHighlightSquare={null}
-                    onPlayerMove={null}
                     state={{
                         allowedMoves: 'none',
                         fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',

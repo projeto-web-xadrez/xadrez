@@ -13,8 +13,8 @@ import (
 )
 
 type GamePGNStruct struct {
-	pgnStr   string
-	gameName string
+	PGN  string `json:"pgn"`
+	Name string `json:"name"`
 }
 
 var SavedRepo *repositories.SavedGameRepo
@@ -41,18 +41,20 @@ func ManageGame(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// validacao do PGN
-		reader := strings.NewReader(GamePGNMsg.pgnStr)
+		reader := strings.NewReader(GamePGNMsg.PGN)
 		pgn, err := chess.PGN(reader)
 		if err != nil {
+			println("PGN: " + GamePGNMsg.PGN)
 			http.Error(w, "PGN is invalid", http.StatusInternalServerError)
 			break
 		}
 		newG := chess.NewGame(pgn)
 		last_fen := newG.FEN()
 
-		_, err = SavedRepo.CreateNewGame(r.Context(), user_uuid, GamePGNMsg.gameName, GamePGNMsg.pgnStr, last_fen)
+		_, err = SavedRepo.CreateNewGame(r.Context(), user_uuid, GamePGNMsg.Name, GamePGNMsg.PGN, last_fen)
 
 		if err != nil {
+			println(err)
 			http.Error(w, "Failed to create game", http.StatusInternalServerError)
 			break
 		}
@@ -95,6 +97,7 @@ func ManageGame(w http.ResponseWriter, r *http.Request) {
 
 		savedGames, err := SavedRepo.GetGame(r.Context(), game_id)
 		if err != nil {
+			println(err)
 			http.Error(w, "Failed to fetch games", http.StatusInternalServerError)
 			break
 		}
@@ -125,7 +128,7 @@ func ManageGame(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Internal Error", http.StatusInternalServerError)
 			break
 		}
-		reader := strings.NewReader(GamePGNMsg.pgnStr)
+		reader := strings.NewReader(GamePGNMsg.PGN)
 		pgn, err := chess.PGN(reader)
 		if err != nil {
 			http.Error(w, "PGN is invalid", http.StatusInternalServerError)
@@ -144,8 +147,8 @@ func ManageGame(w http.ResponseWriter, r *http.Request) {
 		gameModel := models.SavedGame{
 			ID:        gameId_uuid,
 			UserID:    user_uuid,
-			Name:      GamePGNMsg.gameName,
-			PGN:       GamePGNMsg.pgnStr,
+			Name:      GamePGNMsg.Name,
+			PGN:       GamePGNMsg.PGN,
 			LastFEN:   last_fen,
 			CreatedAt: time.Now(),
 		}

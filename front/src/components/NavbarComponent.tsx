@@ -15,7 +15,7 @@ function Navbar() {
                 {isAuthenticated ? (
                     <>
                         <Link to="/dashboard">Dashboard</Link>
-
+                        <Link to="/games">Games</Link>
                     </>
                 ) : (
                     <>

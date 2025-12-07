@@ -6,13 +6,17 @@
 .moves-container {
     position: relative;
     user-select: none;
-    background: #1e293b;
+    background: #1a1a1a;
     outline: none;
+    border: 1px solid #333;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
 }
 
 .move-list {
     overflow-y: auto;
     overflow-x: hidden;
+    max-height: 400px;
 }
 
 .move-list::-webkit-scrollbar {
@@ -20,21 +24,21 @@
 }
 
 .move-list::-webkit-scrollbar-track {
-    background: #0f172a;
+    background: #222;
 }
 
 .move-list::-webkit-scrollbar-thumb {
-    background: #334155;
+    background: #444;
     border-radius: 6px;
 }
 
 .move-list::-webkit-scrollbar-thumb:hover {
-    background: #475569;
+    background: #555;
 }
 
 .move-list {
     scrollbar-width: thin;
-    scrollbar-color: #334155 #0f172a;
+    scrollbar-color: #444 #222;
 }
 
 .move-row {
@@ -44,25 +48,30 @@
 
 .move-index {
     width: 50px;
-    padding: 6px 0;
+    padding: 10px 0;
     text-align: center;
-    background: #334155;
-    color: #e2e8f0;
-    font-weight: 600;
-    border-right: 1px solid #1e293b;
+    background: #333;
+    color: #fff;
+    font-weight: 700;
+    border-right: 1px solid #444;
+    font-size: 13px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    letter-spacing: 0.5px;
 }
 
 .move-cell {
     width: 175px;
-    padding: 6px 8px;
-    background: #1f2937;
-    color: #f1f5f9;
-    transition: 0.15s;
-    border-right: 1px solid #0f172a;
+    padding: 10px 12px;
+    background: #2a2a2a;
+    color: #ddd;
+    transition: all 0.2s ease;
+    border-right: 1px solid #333;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     user-select: none;
+    font-size: 13px;
+    font-weight: 500;
 }
 
 .hoverable {
@@ -70,54 +79,245 @@
 }
 
 .hoverable:hover {
-    background: #273549;
+    background: #333;
 }
 
 .selected {
-    background: #3b82f6;
-    color: white;
+    background: #1ae2b0;
+    color: #070606;
     font-weight: 700;
 }
 
 .moves-footer {
-    max-height: 41px;
+    height: 41px;
+    min-height: 42px;
     display: flex;
     gap: 6px;
-    padding: 6px;
-    background: #1f2937;
-    border-top: 1px solid #0f172a;
+    padding: 6px 6px;
+    background: #222;
+    border-top: 1px solid #333;
     user-select: none;
     align-items: center;
+    justify-content: flex-start;
+    box-sizing: border-box;
+    line-height: 1;
 }
 
 .footer-btn {
-    width: 32px;
-    height: 28px;
-    background: #334155;
-    color: #e2e8f0;
-    border: none;
+    min-width: 30px;
+    height: 30px;
+    background: #3a3a3a;
+    color: #ccc;
+    border: 1px solid #444;
     border-radius: 4px;
     cursor: pointer;
     outline: none;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.2s ease;
+    padding: 0;
+    box-sizing: border-box;
+    vertical-align: middle;
+    line-height: 1;
+    margin: 0;
+    margin-top: -3px;
+}
+
+.footer-btn:hover:not(:disabled) {
+    background: #444;
+    color: #fff;
+    transform: translateY(-1px);
+    border-color: #555;
+}
+
+.footer-btn:disabled {
+    background: #333;
+    color: #666;
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none;
 }
 
 .footer-btn.flip {
-    background: #475569;
-    color: #f1f5f9;
+    background: #2a2a2a;
+    color: #ccc;
+}
+
+.footer-btn.flip:hover {
+    background: #333;
+    color: #fff;
 }
 
 .footer-btn.resign {
-    padding: 0 10px;
-    background: #b91c1c;
+    padding: 0 12px;
+    background: #ff6b6b;
     color: white;
     margin-left: auto;
     width: auto;
+    min-width: auto;
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
 }
 
-div {
-    outline: none;
-    user-select: none;
+.footer-btn.resign:hover {
+    background: #ff4757;
+    border-color: rgba(255, 71, 87, 0.4);
+}
+
+.footer-btn svg,
+.footer-btn .fa-icon {
+    width: 14px;
+    height: 14px;
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0;
+    padding: 0;
+}
+
+.footer-btn.resign svg,
+.footer-btn.resign .fa-icon {
+    margin-right: 2px;
+}
+
+.empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: #888;
+    font-size: 14px;
+    background: #2a2a2a;
+}
+
+.empty-state-icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+    color: #555;
+}
+
+div:focus,
+div:focus-visible,
+div:focus-within {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.move-row:focus,
+.move-index:focus,
+.move-cell:focus,
+.moves-footer:focus,
+.footer-btn:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.footer-btn:focus,
+.footer-btn:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.footer-btn:active {
+    outline: none !important;
+}
+
+.move-row,
+.move-index,
+.move-cell:not(.hoverable) {
+    tabindex: -1;
+}
+
+.footer-btn {
+    tabindex: 0;
+}
+
+@media (max-width: 768px) {
+    .move-cell {
+        width: 150px;
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+    
+    .move-index {
+        width: 45px;
+        padding: 8px 0;
+        font-size: 12px;
+    }
+    
+    .footer-btn {
+        min-width: 28px;
+        height: 28px;
+    }
+    
+    .footer-btn.resign {
+        padding: 0 10px;
+        font-size: 12px;
+    }
+    
+    .moves-footer {
+        height: 40px;
+        padding: 5px 8px;
+    }
+    
+    .footer-btn svg,
+    .footer-btn .fa-icon {
+        width: 13px;
+        height: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .move-cell {
+        width: 130px;
+        padding: 6px 8px;
+    }
+    
+    .move-index {
+        width: 40px;
+        padding: 6px 0;
+        font-size: 11px;
+        letter-spacing: 0.3px;
+    }
+    
+    .move-list {
+        max-height: 300px;
+    }
+    
+    .moves-footer {
+        height: 38px;
+        padding: 4px 6px;
+    }
+    
+    .footer-btn {
+        min-width: 26px;
+        height: 26px;
+    }
+    
+    .footer-btn svg,
+    .footer-btn .fa-icon {
+        width: 12px;
+        height: 12px;
+    }
+    
+    .footer-btn.resign {
+        padding: 0 8px;
+        font-size: 11px;
+    }
+}
+
+.footer-btn * {
+    box-sizing: border-box;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+.fa-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }

@@ -32,8 +32,8 @@ export interface BoardState {
 
 interface DumbDisplayBoardProps {
     boardStyle: BoardStyle,
-    onPlayerMove: null | ((move: Move) => void);
-    onPlayerHighlightSquare: null | ((highlightedSquare: HighlightedPieceSquareType | null) => void);
+    onPlayerMove?: (move: Move) => void;
+    onPlayerHighlightSquare?:(highlightedSquare: HighlightedPieceSquareType | null) => void;
     state: BoardState,
 }
 
@@ -89,10 +89,10 @@ const getMoveHighlightSquare = (move: Move): Square => {
 
 // TODO: Add checked king highlight
 const DumbDisplayBoard = (({ boardStyle, onPlayerMove, onPlayerHighlightSquare, state }: DumbDisplayBoardProps) => {
-    if (onPlayerMove === null)
+    if (!onPlayerMove)
         onPlayerMove = () => { };
 
-    if (onPlayerHighlightSquare === null)
+    if (!onPlayerHighlightSquare)
         onPlayerHighlightSquare = () => { };
 
     const game = useMemo(() => new Chess(state.fen), [state.fen]);

@@ -7,10 +7,10 @@ import (
 )
 
 type SavedGame struct {
-	ID        uuid.UUID `db:"game_id"`
-	UserID    uuid.UUID `db:"user_id"`
-	Name      string    `db:"name"`
-	PGN       string    `db:"pgn"`
-	LastFEN   string    `db:"last_fen"`
+	ID        uuid.UUID `json:"game_id" db:"game_id"`
+	UserID    uuid.UUID `json:"user_id" db:"user_id"`
+	Name      string    `json:"name" db:"name"`
+	PGN       string    `json:"pgn" db:"pgn"`
+	LastFEN   string    `json:"last_fen" db:"last_fen"`
 	CreatedAt time.Time `db:"created_at"`
 }
