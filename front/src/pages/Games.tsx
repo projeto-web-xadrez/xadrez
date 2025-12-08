@@ -6,6 +6,7 @@ import axios, { type AxiosRequestConfig } from 'axios';
 import AddSavedGameModal from '../components/savedgames/AddSavedGameModal';
 import ConfirmDialog from '../components/DialogConfirmComponent';
 import EditSavedModal from '../components/savedgames/EditSavedGameModal';
+import ImportlLichessModal from '../components/savedgames/ImportLichessModal';
 import GameList from '../components/savedgames/SavedGamesList';
 
 import '../styles/Games.css'
@@ -18,11 +19,47 @@ interface SavedGame {
   last_fen: string,
 };
 
+async function handleLichessImport(username: string, maxGames: number, axiosSettings: AxiosRequestConfig) {
+  if (username == "") {
+    return [];
+  }
+
+  const res = await fetch(`https://lichess.org/api/games/user/${username}?max=${maxGames}&pgnInJson=true&lastFen=true`, {
+    headers: { "Accept": "application/x-ndjson" }
+  });
+  
+  if (res.status == 200) {
+    const text = await res.text();
+
+    const games = text
+      .trim()
+      .split("\n")
+      .map(line => JSON.parse(line));
+
+    games.forEach(async (game) => {
+      const game_name = game.id;
+      const game_pgn = game.pgn
+      try {
+        await axios.post(`/api/manage-game`, { PGN: game_pgn, Name: game_name }, axiosSettings);
+      } catch (err: any) {
+        console.log("failed to insert " + game_name)
+      }
+    })
+  } else {
+    const text = await res.text();
+    const error = JSON.parse(text)
+    throw new Error(error.error)
+  }
+
+
+}
+
 export default function Games() {
   const { isAuthenticated, csrf } = useAuth();
   const [isDelDialogOpen, setDelDialogOpen] = useState<boolean>(false)
   const [isEditModalOpen, setEditModalOpen] = useState<boolean>(false)
   const [isAddGameModalOpen, setAddGameModalOpen] = useState<boolean>(false)
+  const [isImportLichessModalOpen, setImportLichessModalOpen] = useState<boolean>(false)
 
   const [gameToHandle, setGameToHandle] = useState<SavedGame | null>(null)
   const [error, setError] = useState<string | null>(null);
@@ -59,20 +96,22 @@ export default function Games() {
         onDelete={(g) => { setGameToHandle(g); setDelDialogOpen(true); }}
         onUpdate={(g) => { setGameToHandle(g); setEditModalOpen(true); }}
         onAddGame={() => setAddGameModalOpen(true)}
+        onImportLichess={() => setImportLichessModalOpen(true)}
       />
 
       {isDelDialogOpen && (
         <ConfirmDialog
           cancelText='Cancel' confirmText='Delete' isOpen={true} message='Are you sure you want to delete this game?'
           title='Delete Game' type='danger'
-          onConfirm={async () => { 
+          onConfirm={async () => {
             if (!gameToHandle) return;
-              try {
-                const res = await axios.delete(`/api/manage-game/${gameToHandle.game_id}`, axiosSettings);
-                setGames(res.data);
-              } catch (err: any) {
-                setError(err.response?.data);
-              }}
+            try {
+              const res = await axios.delete(`/api/manage-game/${gameToHandle.game_id}`, axiosSettings);
+              setGames(res.data);
+            } catch (err: any) {
+              setError(err.response?.data);
+            }
+          }
           }
           onClose={() => setDelDialogOpen(false)}
         />
@@ -83,18 +122,18 @@ export default function Games() {
           game={gameToHandle}
           onConfirm={async (PGN, Name) => {
             if (!PGN || !Name) {
-                setError("PGN and Name can't be empty strings");
-                return;
+              setError("PGN and Name can't be empty strings");
+              return;
             }
             try {
-              const res = await axios.put(`/api/manage-game/${gameToHandle?.game_id}`, {PGN, Name}, axiosSettings);
+              const res = await axios.put(`/api/manage-game/${gameToHandle?.game_id}`, { PGN, Name }, axiosSettings);
               setGames(res.data);
               setEditModalOpen(false);
             } catch (err: any) {
               setError(err.response?.data);
             }
           }}
-          onCancel={() => {setEditModalOpen(false); setError(null)}}
+          onCancel={() => { setEditModalOpen(false); setError(null) }}
           error={error}
         />
       )}
@@ -103,11 +142,11 @@ export default function Games() {
         <AddSavedGameModal
           onConfirm={async (PGN, Name) => {
             if (!PGN || !Name) {
-                setError("PGN and Name can't be empty strings");
-                return;
+              setError("PGN and Name can't be empty strings");
+              return;
             }
             try {
-              const res = await axios.post(`/api/manage-game`, {PGN, Name}, axiosSettings);
+              const res = await axios.post(`/api/manage-game`, { PGN, Name }, axiosSettings);
               setGames(res.data);
               setAddGameModalOpen(false);
             } catch (err: any) {
@@ -115,7 +154,36 @@ export default function Games() {
               setError(err.response?.data);
             }
           }}
-          onCancel={() => {setAddGameModalOpen(false); setError(null)}}
+          onCancel={() => { setAddGameModalOpen(false); setError(null) }}
+          error={error}
+        />
+      )}
+
+
+      {isImportLichessModalOpen && (
+        <ImportlLichessModal
+          onConfirm={async (username, maxGames) => {
+            if (!username || !maxGames) {
+              setError("Lichess username can't be empty");
+              return;
+            }
+            try {
+              await handleLichessImport(username, maxGames, axiosSettings)
+              axios.get(`/api/manage-game`, axiosSettings)
+                .then((games: any) => {
+                  setGames(games.data as SavedGame[]);
+                  setImportLichessModalOpen(false);
+                })
+                .catch((e: any) => {
+                  setError(e.response?.data)
+                })
+                
+              
+            } catch (err: any) {
+              setError(err.message);
+            }
+          }}
+          onCancel={() => { setImportLichessModalOpen(false); setError(null) }}
           error={error}
         />
       )}

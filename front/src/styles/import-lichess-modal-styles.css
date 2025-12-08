@@ -1,0 +1,300 @@
+/* ImportLichessModal.css - Tema Escuro Minimalista */
+.import-lichess-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.import-lichess-modal-component-div {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  width: 500px;
+  max-width: 90vw;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.import-lichess-modal-title {
+  margin: 0;
+  padding: 20px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  border-bottom: 1px solid #333;
+  text-align: center;
+}
+
+.import-lichess-input-body {
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.saved-game-name,
+.import-lichess-maxGames {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.saved-game-name label,
+.import-lichess-maxGames label {
+  color: #ccc;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+/* Contêiner do slider e valor */
+.import-lichess-maxGames-input-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Estilo do slider */
+.import-lichess-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: #2a2a2a;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Track do slider */
+.import-lichess-slider::-webkit-slider-track {
+  height: 6px;
+  background: #2a2a2a;
+  border-radius: 3px;
+  border: none;
+}
+
+.import-lichess-slider::-moz-range-track {
+  height: 6px;
+  background: #2a2a2a;
+  border-radius: 3px;
+  border: none;
+}
+
+/* Thumb do slider */
+.import-lichess-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #1ae2b0;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #1a1a1a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.import-lichess-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(26, 226, 176, 0.3);
+}
+
+.import-lichess-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #1ae2b0;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #1a1a1a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.import-lichess-slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(26, 226, 176, 0.3);
+}
+
+/* Input de número para exibir o valor */
+.import-lichess-maxGames-value {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+  padding: 8px 12px;
+  width: 70px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.import-lichess-maxGames-value:focus {
+  border-color: #1ae2b0;
+  box-shadow: 0 0 0 2px rgba(26, 226, 176, 0.1);
+  outline: none;
+}
+
+/* Input de texto (username) */
+.import-lichess-input-body .pgn-input {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+  outline: none;
+  font-family: inherit;
+}
+
+.import-lichess-input-body .pgn-input:focus {
+  border-color: #1ae2b0;
+  box-shadow: 0 0 0 2px rgba(26, 226, 176, 0.1);
+}
+
+/* Input de número para max games (alternativa) */
+#maxgames-input {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+  outline: none;
+  font-family: inherit;
+  width: 100%;
+}
+
+#maxgames-input:focus {
+  border-color: #1ae2b0;
+  box-shadow: 0 0 0 2px rgba(26, 226, 176, 0.1);
+}
+
+/* Valor atual do slider (texto indicativo) */
+.import-lichess-slider-value {
+  color: #1ae2b0;
+  font-weight: 600;
+  font-size: 14px;
+  min-width: 40px;
+  text-align: center;
+}
+
+.import-lichess-footer {
+  padding: 20px;
+  border-top: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Mensagem de erro */
+.import-lichess-footer #server-error-msg {
+  color: #ff6b6b;
+  font-size: 14px;
+  margin: 0;
+  text-align: center;
+  font-weight: 500;
+  min-height: 20px;
+  transition: opacity 0.3s ease;
+}
+
+.import-lichess-footer #server-error-msg[hidden] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.import-lichess-footer #server-error-msg:not([hidden]) {
+  opacity: 1;
+  visibility: visible;
+}
+
+.import-lichess-footer-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.import-lichess-btn {
+  padding: 10px 24px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  min-width: 100px;
+  transition: all 0.2s ease;
+}
+
+.import-lichess-btn-cancel {
+  background: #2a2a2a;
+  color: #ccc;
+}
+
+.import-lichess-btn-cancel:hover {
+  background: #333;
+  color: #fff;
+}
+
+.import-lichess-btn-confirm {
+  background: #1ae2b0;
+  color: #000;
+  border-color: #1ae2b0;
+  font-weight: 600;
+}
+
+.import-lichess-btn-confirm:hover {
+  background: #17cca0;
+  transform: translateY(-1px);
+}
+
+.import-lichess-btn-confirm:active {
+  transform: translateY(0);
+}
+
+/* Responsivo */
+@media (max-width: 480px) {
+  .import-lichess-modal-backdrop {
+    padding: 16px;
+  }
+  
+  .import-lichess-modal-component-div {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .import-lichess-input-body {
+    padding: 20px 16px;
+    gap: 20px;
+  }
+  
+  .import-lichess-maxGames-input-container {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .import-lichess-slider {
+    width: 100%;
+  }
+  
+  .import-lichess-maxGames-value {
+    width: 100%;
+  }
+  
+  .import-lichess-footer-buttons {
+    flex-direction: column;
+  }
+  
+  .import-lichess-btn {
+    width: 100%;
+    padding: 12px;
+  }
+}

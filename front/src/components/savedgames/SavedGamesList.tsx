@@ -16,9 +16,10 @@ interface GameListProps {
   onDelete: (game: SavedGame) => void;
   onUpdate: (game: SavedGame) => void;
   onAddGame: () => void;
+  onImportLichess: () => void;
 }
 
-export default function GameList({ games, onDelete, onUpdate, onAddGame }: GameListProps) {
+export default function GameList({ games, onDelete, onUpdate, onAddGame, onImportLichess }: GameListProps) {
   return (
     <div className="game-card-container">
       <div className="game-card-header">
@@ -33,6 +34,14 @@ export default function GameList({ games, onDelete, onUpdate, onAddGame }: GameL
             title="Add New Game"
           >
             Add Game
+          </button>
+
+          <button
+            className="game-card-add-btn"
+            onClick={onImportLichess}
+            title="Import from Lichess"
+          >
+            Import from Lichess
           </button>
         </div>
       </div>
