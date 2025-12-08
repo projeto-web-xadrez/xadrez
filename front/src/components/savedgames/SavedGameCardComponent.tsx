@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import "../styles/saved-game-card-styles.css";
-import DumbDisplayBoard from "./gameboard/DumbDisplayBoardComponent";
+import "../../styles/saved-game-card-styles.css";
+import DumbDisplayBoard from "../gameboard/DumbDisplayBoardComponent";
 import { Trash2, Edit, Eye } from 'lucide-react';
 
 export interface SavedGameCardProps {

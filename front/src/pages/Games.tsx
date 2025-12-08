@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useWebsocket } from '../context/WebSocketContext';
-import { useEffect, useState, type SetStateAction } from 'react';
+import { useEffect, useState } from 'react';
 import axios, { type AxiosRequestConfig } from 'axios';
-import SavedGameCard from '../components/SavedGameCardComponent';
+
+import AddSavedGameModal from '../components/savedgames/AddSavedGameModal';
 import ConfirmDialog from '../components/DialogConfirmComponent';
+import EditSavedModal from '../components/savedgames/EditSavedGameModal';
+import GameList from '../components/savedgames/SavedGamesList';
 
 import '../styles/Games.css'
 
@@ -16,57 +18,17 @@ interface SavedGame {
   last_fen: string,
 };
 
-import React from 'react';
-
-interface GameListProps {
-  games: SavedGame[];
-  onDelete: (game: SavedGame) => void;
-  onUpdate: (game: SavedGame) => void;
-}
-
-const GameList = ({ games, onDelete, onUpdate }: GameListProps) => {
-  return (
-    <div className="game-card-container">
-      <div className="game-card-header">
-        <h2 className="game-card-title">Saved Games</h2>
-        <div className="game-card-count">
-          {games.length} {games.length === 1 ? 'Game' : 'Games'}
-        </div>
-      </div>
-
-      {games.length === 0 ? (
-        <div className="game-card-empty">
-          <div className="game-card-empty-icon">♔</div>
-          <p className="game-card-empty-text">No saved games yet</p>
-          <p className="game-card-empty-subtext">Add a new game to see it here</p>
-        </div>
-      ) : (
-        <div className="game-card-grid">
-          {games.map((game) => (
-            <div key={game.game_id} className="game-card-item">
-              <SavedGameCard
-                {...game}
-                onDelete={() => onDelete(game)}
-                onUpdate={() => onUpdate(game)}
-              />
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
 export default function Games() {
-  const { isAuthenticated, csrf, clientId } = useAuth();
+  const { isAuthenticated, csrf } = useAuth();
   const [isDelDialogOpen, setDelDialogOpen] = useState<boolean>(false)
   const [isEditModalOpen, setEditModalOpen] = useState<boolean>(false)
+  const [isAddGameModalOpen, setAddGameModalOpen] = useState<boolean>(false)
 
   const [gameToHandle, setGameToHandle] = useState<SavedGame | null>(null)
+  const [error, setError] = useState<string | null>(null);
+  const [games, setGames] = useState<SavedGame[]>([]);
 
   const navigate = useNavigate();
-  const [error, setError] = useState<null | string>();
-  const [games, setGames] = useState<SavedGame[]>([]);
 
   if (!isAuthenticated) {
     navigate('/login');
@@ -93,40 +55,70 @@ export default function Games() {
   return (
     <div className='main'>
       <GameList
-          games={games}
-          onDelete={(game) => {
-            setGameToHandle(game);
-            setDelDialogOpen(true);
-          }}
-
-          onUpdate={(game) => {
-            setGameToHandle(game);
-            setEditModalOpen(true);
-          }}
+        games={games}
+        onDelete={(g) => { setGameToHandle(g); setDelDialogOpen(true); }}
+        onUpdate={(g) => { setGameToHandle(g); setEditModalOpen(true); }}
+        onAddGame={() => setAddGameModalOpen(true)}
       />
 
-      {isDelDialogOpen && <ConfirmDialog
-        cancelText='Cancel'
-        confirmText='Delete'
-        isOpen={true}
-        message='Are you sure you want to delete this game?'
-        onClose={() => setDelDialogOpen(false)}
-        onConfirm={async () => {
-          if(gameToHandle == null) return;
-          await axios.delete(`/api/manage-game/${gameToHandle?.game_id}`, axiosSettings)
-            .then((response: any) => {
-                if(response.status == 200) {
-                  setGames(response.data as SavedGame[])
-                  console.log("deletado: " + gameToHandle?.game_id)
-                } 
-                
-              })
-            .catch(() => alert('Error deleting game'));
-          setDelDialogOpen(false);
-        }}
-        title='Delete Game'
-        type='danger'
-      />}
+      {isDelDialogOpen && (
+        <ConfirmDialog
+          cancelText='Cancel' confirmText='Delete' isOpen={true} message='Are you sure you want to delete this game?'
+          title='Delete Game' type='danger'
+          onConfirm={async () => { 
+            if (!gameToHandle) return;
+              try {
+                const res = await axios.delete(`/api/manage-game/${gameToHandle.game_id}`, axiosSettings);
+                setGames(res.data);
+              } catch (err: any) {
+                setError(err.response?.data);
+              }}
+          }
+          onClose={() => setDelDialogOpen(false)}
+        />
+      )}
+
+      {isEditModalOpen && (
+        <EditSavedModal
+          game={gameToHandle}
+          onConfirm={async (PGN, Name) => {
+            if (!PGN || !Name) {
+                setError("PGN and Name can't be empty strings");
+                return;
+            }
+            try {
+              const res = await axios.put(`/api/manage-game/${gameToHandle?.game_id}`, {PGN, Name}, axiosSettings);
+              setGames(res.data);
+              setEditModalOpen(false);
+            } catch (err: any) {
+              setError(err.response?.data);
+            }
+          }}
+          onCancel={() => {setEditModalOpen(false); setError(null)}}
+          error={error}
+        />
+      )}
+
+      {isAddGameModalOpen && (
+        <AddSavedGameModal
+          onConfirm={async (PGN, Name) => {
+            if (!PGN || !Name) {
+                setError("PGN and Name can't be empty strings");
+                return;
+            }
+            try {
+              const res = await axios.post(`/api/manage-game`, {PGN, Name}, axiosSettings);
+              setGames(res.data);
+              setAddGameModalOpen(false);
+            } catch (err: any) {
+              console.log("adkadkad")
+              setError(err.response?.data);
+            }
+          }}
+          onCancel={() => {setAddGameModalOpen(false); setError(null)}}
+          error={error}
+        />
+      )}
 
       <button onClick={() => {
 

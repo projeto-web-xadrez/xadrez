@@ -28,6 +28,12 @@ body {
   letter-spacing: -0.5px;
 }
 
+.game-card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .game-card-count {
   color: #aaa;
   font-size: 14px;
@@ -36,6 +42,32 @@ body {
   border-radius: 20px;
   border: 1px solid #444;
   font-weight: 500;
+}
+
+.game-card-add-btn {
+  padding: 10px 20px;
+  background-color: #1ae2b0;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.game-card-add-btn:hover {
+  background-color: #17cca0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(26, 226, 176, 0.2);
+}
+
+.game-card-add-btn:active {
+  transform: translateY(0);
 }
 
 .game-card-empty {
@@ -229,6 +261,22 @@ body {
     font-size: 24px;
   }
 
+  .game-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .game-card-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .game-card-add-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
   .game-card-grid {
     grid-template-columns: 1fr;
     gap: 20px;
@@ -269,5 +317,21 @@ body {
 
   .game-card-empty-subtext {
     font-size: 13px;
+  }
+  
+  .game-card-header-right {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .game-card-count {
+    text-align: center;
+    width: 100%;
+  }
+  
+  .game-card-add-btn {
+    width: 100%;
+    justify-content: center;
   }
 }

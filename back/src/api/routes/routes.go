@@ -168,9 +168,17 @@ func ManageGame(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		if _, e := w.Write([]byte("")); e != nil {
+		savedGames, err := SavedRepo.GetGamesFromUser(r.Context(), user_uuid, 100)
+		if err != nil {
+			http.Error(w, "Failed to delete games", http.StatusInternalServerError)
+			break
+		}
+
+		jsonData, err := json.Marshal(savedGames)
+
+		if _, e := w.Write([]byte(jsonData)); e != nil {
 			err := http.StatusInternalServerError
-			http.Error(w, "Failed to respond to edit game request", err)
+			http.Error(w, "Failed to respond to update games request", err)
 		}
 		break
 
