@@ -4,21 +4,26 @@ import (
 	"net/http"
 )
 
-type GamePGNStruct struct {
-	PGN  string `json:"pgn"`
-	Name string `json:"name"`
-}
-
-func ManageSavedGame(w http.ResponseWriter, r *http.Request) {
+func SavedGameRouter(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
-		manageSavedGamePost(w, r)
+		routeSavedGamePost(w, r)
 	case http.MethodGet:
-		manageSavedGameGet(w, r)
+		routeSavedGameGet(w, r)
 	case http.MethodPut:
-		manageSavedGamePut(w, r)
+		routeSavedGamePut(w, r)
 	case http.MethodDelete:
-		manageSavedGameDelete(w, r)
+		routeSavedGameDelete(w, r)
+	default:
+		err := http.StatusMethodNotAllowed
+		http.Error(w, "Invalid Method", err)
+	}
+}
+
+func UserStatsRouter(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		routeUserStatsGet(w, r)
 	default:
 		err := http.StatusMethodNotAllowed
 		http.Error(w, "Invalid Method", err)

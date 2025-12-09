@@ -36,7 +36,8 @@ func main() {
 	if err = dbPool.Ping(context.TODO()); err != nil {
 		panic(err)
 	}
-	routes.SavedRepo = repositories.NewSavedGameRepo(dbPool)
+	routes.SavedGamesRepo = repositories.NewSavedGameRepo(dbPool)
+	routes.UserRepo = repositories.NewUserRepo(dbPool)
 
 	// Inicia conexão gRPC
 	mmConn, err := grpc.NewClient("gameserver:9191", grpc.WithInsecure())
@@ -75,8 +76,9 @@ func main() {
 
 	server_ws := http.NewServeMux()
 	server_ws.HandleFunc("/ws", auth.AuthMiddleware(mm.HandleNewConnection))
-	server_ws.HandleFunc("/savedgame", auth.AuthMiddleware(routes.ManageSavedGame))
-	server_ws.HandleFunc("/savedgame/{id}", auth.AuthMiddleware(routes.ManageSavedGame))
+	server_ws.HandleFunc("/savedgame", auth.AuthMiddleware(routes.SavedGameRouter))
+	server_ws.HandleFunc("/savedgame/{id}", auth.AuthMiddleware(routes.SavedGameRouter))
+	server_ws.HandleFunc("/userstats/{id}", routes.UserStatsRouter)
 
 	// Goroutine do WebSocket server
 	go func() {

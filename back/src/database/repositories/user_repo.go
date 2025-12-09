@@ -23,6 +23,44 @@ func NewUserRepo(dbPool *pgxpool.Pool) *UserRepo {
 	}
 }
 
+func (repo *UserRepo) GetUserWithStats(ctx context.Context, userID uuid.UUID) (*models.User, error) {
+	query := `SELECT 
+			u.user_id, u.username, u.email, u.created_at,
+			s.wins, s.draws, s.losses, s.games_played, s.last_updated
+		FROM chess.user u
+		LEFT JOIN chess.user_stats s ON u.user_id = s.user_id
+		WHERE u.user_id = $1
+	`
+
+	rows, err := repo.dbPool.Query(ctx, query, userID)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	user := models.User{
+		Stats: &models.UserStats{},
+	}
+	err = repo.dbPool.QueryRow(ctx, query, userID).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.CreatedAt,
+		&user.Stats.Wins,
+		&user.Stats.Draws,
+		&user.Stats.Losses,
+		&user.Stats.GamesPlayed,
+		&user.Stats.LastUpdated,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
 func (repo *UserRepo) GetUserStats(ctx context.Context, userID uuid.UUID) (*models.UserStats, error) {
 	query := `SELECT * FROM chess.user_stats WHERE user_id=$1;`
 

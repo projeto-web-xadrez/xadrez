@@ -13,21 +13,21 @@ import (
 	"github.com/google/uuid"
 )
 
-var SavedRepo *repositories.SavedGameRepo
+var SavedGamesRepo *repositories.SavedGameRepo
 
 type gamePGNStruct struct {
 	PGN  string `json:"pgn"`
 	Name string `json:"name"`
 }
 
-func manageSavedGameGet(w http.ResponseWriter, r *http.Request) {
+func routeSavedGameGet(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	clientID := r.Context().Value("clientId").(uuid.UUID)
 
 	if id == "" {
 		// fetch-all-games
 
-		savedGames, err := SavedRepo.GetGamesFromUser(r.Context(), clientID, 100)
+		savedGames, err := SavedGamesRepo.GetGamesFromUser(r.Context(), clientID, 100)
 		if err != nil {
 			http.Error(w, "Failed to fetch games", http.StatusInternalServerError)
 			return
@@ -50,7 +50,7 @@ func manageSavedGameGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	savedGames, err := SavedRepo.GetGame(r.Context(), game_id)
+	savedGames, err := SavedGamesRepo.GetGame(r.Context(), game_id)
 	if err != nil {
 		http.Error(w, "Failed to fetch games", http.StatusInternalServerError)
 		return
@@ -64,7 +64,7 @@ func manageSavedGameGet(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func manageSavedGamePost(w http.ResponseWriter, r *http.Request) {
+func routeSavedGamePost(w http.ResponseWriter, r *http.Request) {
 	clientID := r.Context().Value("clientId").(uuid.UUID)
 	var GamePGNMsgArr []gamePGNStruct
 	var GamePGNMsg gamePGNStruct
@@ -109,7 +109,7 @@ func manageSavedGamePost(w http.ResponseWriter, r *http.Request) {
 		newG := chess.NewGame(pgn)
 		last_fen := newG.FEN()
 
-		_, err = SavedRepo.CreateNewGame(r.Context(), clientID, msg.Name, msg.PGN, last_fen)
+		_, err = SavedGamesRepo.CreateNewGame(r.Context(), clientID, msg.Name, msg.PGN, last_fen)
 
 		if err != nil {
 			errorMessage = "Failed to create game"
@@ -126,7 +126,7 @@ func manageSavedGamePost(w http.ResponseWriter, r *http.Request) {
 
 	// retorna todos os jogos atualizados do usuario para atualizar no frontend
 
-	savedGames, err := SavedRepo.GetGamesFromUser(r.Context(), clientID, 100)
+	savedGames, err := SavedGamesRepo.GetGamesFromUser(r.Context(), clientID, 100)
 	if err != nil {
 		http.Error(w, "Failed to fetch games", http.StatusInternalServerError)
 		return
@@ -140,7 +140,7 @@ func manageSavedGamePost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func manageSavedGamePut(w http.ResponseWriter, r *http.Request) {
+func routeSavedGamePut(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	clientID := r.Context().Value("clientId").(uuid.UUID)
 
@@ -182,14 +182,14 @@ func manageSavedGamePut(w http.ResponseWriter, r *http.Request) {
 		LastFEN:   last_fen,
 		CreatedAt: time.Now(),
 	}
-	err = SavedRepo.UpdateGame(r.Context(), &gameModel)
+	err = SavedGamesRepo.UpdateGame(r.Context(), &gameModel)
 
 	if err != nil {
 		http.Error(w, "Internal Error", http.StatusInternalServerError)
 		return
 	}
 
-	savedGames, err := SavedRepo.GetGamesFromUser(r.Context(), clientID, 100)
+	savedGames, err := SavedGamesRepo.GetGamesFromUser(r.Context(), clientID, 100)
 	if err != nil {
 		http.Error(w, "Failed to delete games", http.StatusInternalServerError)
 		return
@@ -203,7 +203,7 @@ func manageSavedGamePut(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func manageSavedGameDelete(w http.ResponseWriter, r *http.Request) {
+func routeSavedGameDelete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	clientID := r.Context().Value("clientId").(uuid.UUID)
 
@@ -219,7 +219,7 @@ func manageSavedGameDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = SavedRepo.DeleteGameFromUser(r.Context(), gameId_uuid, clientID)
+	_, err = SavedGamesRepo.DeleteGameFromUser(r.Context(), gameId_uuid, clientID)
 	if err != nil {
 		http.Error(w, "Internal Error", http.StatusInternalServerError)
 		return
@@ -227,7 +227,7 @@ func manageSavedGameDelete(w http.ResponseWriter, r *http.Request) {
 
 	// envia a lista completa de jogos atualizados
 
-	savedGames, err := SavedRepo.GetGamesFromUser(r.Context(), clientID, 100)
+	savedGames, err := SavedGamesRepo.GetGamesFromUser(r.Context(), clientID, 100)
 	if err != nil {
 		http.Error(w, "Failed to delete games", http.StatusInternalServerError)
 		return
