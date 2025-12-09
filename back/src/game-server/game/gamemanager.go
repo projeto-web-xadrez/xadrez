@@ -16,15 +16,17 @@ type GameManager struct {
 	games         map[uuid.UUID]*Game
 	mutex         sync.RWMutex
 	userRepo      *repositories.UserRepo
+	gameRepo      *repositories.GameRepo
 	StreamChannel (chan matchmaking_grpc.GameEndedEventMsg)
 }
 
-func NewGameManager(userRepo *repositories.UserRepo) *GameManager {
+func NewGameManager(userRepo *repositories.UserRepo, gameRepo *repositories.GameRepo) *GameManager {
 	return &GameManager{
 		players:       map[uuid.UUID]*Player{},
 		games:         map[uuid.UUID]*Game{},
 		mutex:         sync.RWMutex{},
 		userRepo:      userRepo,
+		gameRepo:      gameRepo,
 		StreamChannel: make(chan matchmaking_grpc.GameEndedEventMsg, 100),
 	}
 }
@@ -143,5 +145,7 @@ func (gm *GameManager) CreateNewGame(playerID1 uuid.UUID, playerID2 uuid.UUID) (
 	gm.players[p1.ID] = p1
 	gm.players[p2.ID] = p2
 	gm.mutex.Unlock()
+
+	gm.gameRepo.CreateNewGame(context.TODO(), game.ID, p1.ID, p2.ID, "", "in_progress", "in_progress", "", game.StartedAt, time.Now())
 	return game, nil
 }

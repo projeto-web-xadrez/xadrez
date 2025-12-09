@@ -13,14 +13,14 @@ type SavedGameRepo struct {
 	dbPool *pgxpool.Pool
 }
 
-func NewSavedGame(dbPool *pgxpool.Pool) *SavedGameRepo {
+func NewSavedGameRepo(dbPool *pgxpool.Pool) *SavedGameRepo {
 	return &SavedGameRepo{
 		dbPool: dbPool,
 	}
 }
 
 func (repo *SavedGameRepo) GetGame(ctx context.Context, gameID uuid.UUID) (*models.SavedGame, error) {
-	query := `SELECT * FROM chess.saved_games WHERE game_id=$1;`
+	query := `SELECT * FROM chess.saved_game WHERE game_id=$1;`
 
 	rows, err := repo.dbPool.Query(ctx, query, gameID)
 	if err != nil {
@@ -37,7 +37,7 @@ func (repo *SavedGameRepo) GetGame(ctx context.Context, gameID uuid.UUID) (*mode
 }
 
 func (repo *SavedGameRepo) GetGamesFromUser(ctx context.Context, userID uuid.UUID, limit int) ([]models.SavedGame, error) {
-	query := `SELECT * FROM chess.saved_games WHERE user_id=$1 LIMIT $2;`
+	query := `SELECT * FROM chess.saved_game WHERE user_id=$1 LIMIT $2;`
 
 	rows, err := repo.dbPool.Query(ctx, query, userID.String(), limit)
 
@@ -55,7 +55,7 @@ func (repo *SavedGameRepo) GetGamesFromUser(ctx context.Context, userID uuid.UUI
 }
 
 func (repo *SavedGameRepo) UpdateGame(ctx context.Context, savedGame *models.SavedGame) error {
-	query := `UPDATE chess.saved_games SET name=$3, pgn=$4, last_fen=$5 WHERE game_id = $1 and user_id = $2 RETURNING *;`
+	query := `UPDATE chess.saved_game SET name=$3, pgn=$4, last_fen=$5 WHERE game_id = $1 and user_id = $2 RETURNING *;`
 
 	rows, err := repo.dbPool.Query(ctx, query, savedGame.ID, savedGame.UserID, savedGame.Name, savedGame.PGN, savedGame.LastFEN)
 	if err != nil {
@@ -76,7 +76,7 @@ func (repo *SavedGameRepo) UpdateGame(ctx context.Context, savedGame *models.Sav
 }
 
 func (repo *SavedGameRepo) CreateNewGame(ctx context.Context, userID uuid.UUID, name string, pgn string, lastFEN string) (*models.SavedGame, error) {
-	query := `INSERT INTO chess.saved_games(user_id, name, pgn, last_fen) VALUES ($1, $2, $3, $4) RETURNING *;`
+	query := `INSERT INTO chess.saved_game(user_id, name, pgn, last_fen) VALUES ($1, $2, $3, $4) RETURNING *;`
 
 	rows, err := repo.dbPool.Query(ctx, query, userID, name, pgn, lastFEN)
 	if err != nil {
@@ -93,7 +93,7 @@ func (repo *SavedGameRepo) CreateNewGame(ctx context.Context, userID uuid.UUID, 
 }
 
 func (repo *SavedGameRepo) DeleteGame(ctx context.Context, gameID uuid.UUID) (bool, error) {
-	query := `DELETE FROM chess.saved_games WHERE game_id = $1;`
+	query := `DELETE FROM chess.saved_game WHERE game_id = $1;`
 
 	cmdTag, err := repo.dbPool.Exec(ctx, query, gameID)
 	if err != nil {
@@ -104,7 +104,7 @@ func (repo *SavedGameRepo) DeleteGame(ctx context.Context, gameID uuid.UUID) (bo
 }
 
 func (repo *SavedGameRepo) DeleteGameFromUser(ctx context.Context, gameID uuid.UUID, userID uuid.UUID) (bool, error) {
-	query := `DELETE FROM chess.saved_games WHERE game_id = $1 and user_id = $2;`
+	query := `DELETE FROM chess.saved_game WHERE game_id = $1 and user_id = $2;`
 
 	cmdTag, err := repo.dbPool.Exec(ctx, query, gameID, userID)
 	if err != nil {

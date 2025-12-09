@@ -198,7 +198,8 @@ func main() {
 	authGrpc = auth_grpc.NewAuthClient(authConn)
 
 	userRepo := repositories.NewUserRepo(dbPool)
-	gm = game.NewGameManager(userRepo)
+	gameRepo := repositories.NewGameRepo(dbPool)
+	gm = game.NewGameManager(userRepo, gameRepo)
 
 	go func() {
 		grpcListener, err := net.Listen("tcp", grpcAddress)

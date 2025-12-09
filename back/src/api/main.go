@@ -36,7 +36,7 @@ func main() {
 	if err = dbPool.Ping(context.TODO()); err != nil {
 		panic(err)
 	}
-	routes.SavedRepo = repositories.NewSavedGame(dbPool)
+	routes.SavedRepo = repositories.NewSavedGameRepo(dbPool)
 
 	// Inicia conexão gRPC
 	mmConn, err := grpc.NewClient("gameserver:9191", grpc.WithInsecure())

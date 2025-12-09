@@ -1,6 +1,8 @@
 package game
 
 import (
+	"context"
+	"database/models"
 	"encoding/json"
 	"fmt"
 	"proto-generated/matchmaking_grpc"
@@ -44,6 +46,7 @@ type Game struct {
 	Status      GameStatus
 	whiteReady  bool
 	blackReady  bool
+	StartedAt   time.Time
 }
 
 func NewGame(id uuid.UUID, whitePlayer *Player, blackPlayer *Player) *Game {
@@ -60,6 +63,7 @@ func NewGame(id uuid.UUID, whitePlayer *Player, blackPlayer *Player) *Game {
 		Status:      WaitingPlayers,
 		whiteReady:  false,
 		blackReady:  false,
+		StartedAt:   time.Now(),
 	}
 }
 
@@ -199,13 +203,17 @@ func (g *Game) SendMove(player *Player, message PlayerMovedMessage) bool {
 
 	outcome := g.game.Outcome()
 	if outcome != chess.NoOutcome {
+		result := ""
 		switch outcome {
 		case chess.Draw:
 			g.Winner = "draw"
+			result = "draw"
 		case chess.BlackWon:
 			g.Winner = g.BlackPlayer.ID.String()
+			result = "black"
 		case chess.WhiteWon:
 			g.Winner = g.WhitePlayer.ID.String()
+			result = "white"
 		case chess.UnknownOutcome:
 			fmt.Println(g.game.String())
 			fmt.Println(g.game.FEN())
@@ -245,6 +253,20 @@ func (g *Game) SendMove(player *Player, message PlayerMovedMessage) bool {
 		go func() {
 			time.Sleep(time.Second)
 			g.mutex.Lock()
+
+			player.gm.gameRepo.UpdateGame(context.Background(), &models.Game{
+				ID:           g.ID,
+				WhiteID:      g.WhitePlayer.ID,
+				BlackID:      g.BlackPlayer.ID,
+				PGN:          g.game.String(),
+				LastFEN:      g.game.FEN(),
+				Result:       result,
+				ResultReason: "",
+				Status:       "ended",
+				StartedAt:    g.StartedAt,
+				EndedAt:      time.Now(),
+			})
+
 			gameEndedMessage := Message{
 				Type: "quit",
 				Data: "Game ended",
@@ -296,12 +318,15 @@ func (g *Game) Resign(player *Player) bool {
 		return false
 	}
 
+	var opponentColor string
 	var opponent *Player
 	switch player.ID {
 	case g.WhitePlayer.ID:
 		opponent = g.BlackPlayer
+		opponentColor = "black"
 	case g.BlackPlayer.ID:
 		opponent = g.WhitePlayer
+		opponentColor = "white"
 	default:
 		return false
 	}
@@ -336,6 +361,20 @@ func (g *Game) Resign(player *Player) bool {
 	go func() {
 		time.Sleep(time.Second)
 		g.mutex.Lock()
+
+		player.gm.gameRepo.UpdateGame(context.Background(), &models.Game{
+			ID:           g.ID,
+			WhiteID:      g.WhitePlayer.ID,
+			BlackID:      g.BlackPlayer.ID,
+			PGN:          g.game.String(),
+			LastFEN:      g.game.FEN(),
+			Result:       opponentColor,
+			ResultReason: "resignation",
+			Status:       "ended",
+			StartedAt:    g.StartedAt,
+			EndedAt:      time.Now(),
+		})
+
 		gameEndedMessage := Message{
 			Type: "quit",
 			Data: "Game ended",
