@@ -9,10 +9,11 @@ import (
 	"time"
 	"utils"
 
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )
 
-var auth_server_grpc auth_grpc.AuthClient
+var authServerGRPC auth_grpc.AuthClient
 
 // NAO PRECISAMOS IMPORTAR MANUALMENTE SE OS ARQUIVOS ESTIVEREM NO MESMO DIRETÓRIO
 // E COM O MESMO PACKAGE NO TOPO
@@ -104,7 +105,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.Background()
-	userLoggedInMessage, err := auth_server_grpc.Login(ctx, &loginInput)
+	userLoggedInMessage, err := authServerGRPC.Login(ctx, &loginInput)
 
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
@@ -145,7 +146,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 		Email:    email,
 	}
 
-	verificationPendingMessage, err := auth_server_grpc.StartRegistration(ctx, &registrationInput)
+	verificationPendingMessage, err := authServerGRPC.StartRegistration(ctx, &registrationInput)
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return
@@ -201,7 +202,7 @@ func confirm_registration(w http.ResponseWriter, r *http.Request) {
 		VerificationCode:  verificationCode,
 	}
 
-	userLoggedInMessage, err := auth_server_grpc.ConfirmRegistration(ctx, &email_verification_input)
+	userLoggedInMessage, err := authServerGRPC.ConfirmRegistration(ctx, &email_verification_input)
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return
@@ -278,7 +279,7 @@ func validateUserSession(w http.ResponseWriter, r *http.Request) {
 	sessionValidationInput := auth_grpc.SessionValidationInput{
 		Token: sessionCookie.Value,
 	}
-	session, err := auth_server_grpc.ValidateSession(ctx, &sessionValidationInput)
+	session, err := authServerGRPC.ValidateSession(ctx, &sessionValidationInput)
 	if err != nil || session == nil || !session.Res.Ok {
 		http.SetCookie(w, &http.Cookie{
 			Name:     "session_token",
@@ -332,13 +333,13 @@ func corsMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
-	conn, err := grpc.NewClient("auth:8989", grpc.WithInsecure())
-	if err != nil {
-		panic("Couldn't stablish GRPC connection with game-server")
-	}
-	defer conn.Close()
+	godotenv.Load()
 
-	auth_server_grpc = auth_grpc.NewAuthClient(conn)
+	authGrpcAddress := utils.GetEnvVarOrPanic("INTERNAL_GRPC_AUTH_ADDRESS", "Auth GRPC Address")
+	port := utils.GetEnvVarOrPanic("PORT_LOGIN", "Login API Port")
+
+	conn := utils.RetryGRPCConnection(authGrpcAddress, grpc.WithInsecure(), time.Second)
+	authServerGRPC = auth_grpc.NewAuthClient(conn)
 
 	// mux ~= router
 	mux := http.NewServeMux()
@@ -351,6 +352,6 @@ func main() {
 
 	handler := corsMiddleware(mux)
 
-	fmt.Println("Login server started listening at 8085")
-	http.ListenAndServe("0.0.0.0:8085", handler)
+	fmt.Println("Login server started listening at " + port)
+	http.ListenAndServe(fmt.Sprintf("0.0.0.0:%s", port), handler)
 }

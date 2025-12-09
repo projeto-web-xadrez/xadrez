@@ -1,5 +1,8 @@
 FROM golang:1.25-alpine
 
+ARG PORT_GRPC_MATCHMAKING
+ARG PORT_WS
+
 RUN apk add --no-cache git gcompat bash make protoc protobuf-dev coreutils dos2unix
 
 WORKDIR /app
@@ -50,7 +53,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     make game-server
 
-EXPOSE 8082
-EXPOSE 9191
+EXPOSE ${PORT_GRPC_MATCHMAKING}
+EXPOSE ${PORT_WS}
 
 CMD ["/app/bin/game-server"]

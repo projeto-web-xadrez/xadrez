@@ -1,5 +1,7 @@
 FROM golang:1.25-alpine
 
+ARG PORT
+
 RUN apk add --no-cache git gcompat bash make protoc protobuf-dev coreutils dos2unix
 
 WORKDIR /app
@@ -50,6 +52,6 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     make auth
 
-EXPOSE 8989
+EXPOSE ${PORT}
 
 CMD ["/app/bin/auth"]

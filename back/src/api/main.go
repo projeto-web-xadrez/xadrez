@@ -8,51 +8,32 @@ import (
 	"database/repositories"
 	"fmt"
 	"net/http"
-	"os"
 	"proto-generated/auth_grpc"
 	"proto-generated/matchmaking_grpc"
 	"sync"
 	"time"
+	"utils"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		print("Couldn't load .env file, using default values.\n")
-	}
+	godotenv.Load()
 
-	postgresUrl := os.Getenv("POSTGRES_URL")
-	if postgresUrl == "" {
-		panic("Postgres URL env var not set")
-	}
-	dbPool, err := pgxpool.New(context.Background(), postgresUrl)
-	if err != nil {
-		panic(err)
-	}
-	if err = dbPool.Ping(context.TODO()); err != nil {
-		panic(err)
-	}
+	postgresUrl := utils.GetEnvVarOrPanic("POSTGRES_URL", "Postgres URL")
+	authGrpcAddress := utils.GetEnvVarOrPanic("INTERNAL_GRPC_AUTH_ADDRESS", "Auth GRPC address")
+	matchmakingGrpcAddress := utils.GetEnvVarOrPanic("INTERNAL_GRPC_MATCHMAKING_ADDRESS", "Matchmaking GRPC address")
+	port := utils.GetEnvVarOrPanic("PORT_API", "API Port")
 
+	dbPool := utils.RetryPostgresConnection(postgresUrl, time.Second)
 	routes.GameRepo = repositories.NewGameRepo(dbPool)
 	routes.SavedGamesRepo = repositories.NewSavedGameRepo(dbPool)
 	routes.UserRepo = repositories.NewUserRepo(dbPool)
 
 	// Inicia conexão gRPC
-	mmConn, err := grpc.NewClient("gameserver:9191", grpc.WithInsecure())
-	if err != nil {
-		panic("Couldn't stablish GRPC connection with game-server")
-	}
-	defer mmConn.Close()
-
-	authConn, err := grpc.NewClient("auth:8989", grpc.WithInsecure())
-	if err != nil {
-		panic("Couldn't stablish GRPC connection with auth-server")
-	}
-	defer authConn.Close()
+	mmConn := utils.RetryGRPCConnection(matchmakingGrpcAddress, grpc.WithInsecure(), time.Second)
+	authConn := utils.RetryGRPCConnection(authGrpcAddress, grpc.WithInsecure(), time.Second)
 
 	time.Sleep(2 * time.Second)
 	ctxStream := context.Background()
@@ -87,8 +68,8 @@ func main() {
 	// Goroutine do WebSocket server
 	go func() {
 		defer wg.Done()
-		fmt.Println("WebSocket server started on :8080")
-		if err := http.ListenAndServe("0.0.0.0:8080", server_ws); err != nil {
+		fmt.Println("WebSocket server started on :" + port)
+		if err := http.ListenAndServe(fmt.Sprintf("0.0.0.0:%s", port), server_ws); err != nil {
 			fmt.Println("ListenAndServe:", err)
 		}
 	}()

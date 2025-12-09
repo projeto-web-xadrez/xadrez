@@ -5,7 +5,6 @@ import (
 	"auth/authserver"
 	"auth/mailsender"
 	"auth/verificationmanager"
-	"context"
 	"database/repositories"
 	"fmt"
 	"net"
@@ -13,59 +12,52 @@ import (
 	"proto-generated/auth_grpc"
 	"strconv"
 	"time"
+	"utils"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
-	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 )
 
 func main() {
 	godotenv.Load()
-	emailPort, err := strconv.Atoi(os.Getenv("EMAIL_SMTP_PORT"))
+
+	emailSmtpUsername := utils.GetEnvVarOrPanic("EMAIL_SMTP_USERNAME", "Email SMTP Username")
+	emailSmtpPassword := utils.GetEnvVarOrPanic("EMAIL_SMTP_PASSWORD", "Email SMTP Password")
+	emailSmtpHost := utils.GetEnvVarOrPanic("EMAIL_SMTP_HOST", "Email SMTP Host")
+	emailSmtpPort := utils.GetEnvVarOrPanic("EMAIL_SMTP_PORT", "Email SMTP Port")
+	emailName := utils.GetEnvVarOrPanic("EMAIL_NAME", "Email Name")
+	emailTemplateDir := utils.GetEnvVarOrPanic("EMAIL_TEMPLATE_DIR", "Email Template Directory")
+	postgresUrl := utils.GetEnvVarOrPanic("POSTGRES_URL", "Postgres URL")
+	redisAddress := utils.GetEnvVarOrPanic("REDIS_ADDRESS", "Redis Address")
+	port := utils.GetEnvVarOrPanic("INTERNAL_PORT_AUTH_GRPC", "Auth GRPC Port")
+
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+	if redisPassword == "" {
+		println("WARNING: Redis password may be blank or is not defined")
+	}
+
+	emailPort, err := strconv.Atoi(emailSmtpPort)
 	if err != nil {
-		panic(err)
+		panic("Email port is not an integer")
 	}
 
 	emailSender, err := mailsender.NewEmailSender(
-		os.Getenv("EMAIL_SMTP_USERNAME"),
-		os.Getenv("EMAIL_SMTP_PASSWORD"),
-		os.Getenv("EMAIL_SMTP_HOST"),
+		emailSmtpUsername,
+		emailSmtpPassword,
+		emailSmtpHost,
 		emailPort,
-		os.Getenv("EMAIL_NAME"),
-		os.Getenv("EMAIL_TEMPLATE_DIR"),
+		emailName,
+		emailTemplateDir,
 	)
 
 	if err != nil {
 		panic(err)
 	}
 
-	grpcListener, err := net.Listen("tcp", "0.0.0.0:8989")
-	if err != nil {
-		panic(err)
-	}
-
-	dbPool, err := pgxpool.New(context.Background(), os.Getenv("POSTGRES_URL"))
-	if err != nil {
-		panic(err)
-	}
-	if err = dbPool.Ping(context.TODO()); err != nil {
-		panic(err)
-	}
-
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("REDIS_ADDRESS"),
-		Password: os.Getenv("REDIS_PASSWORD"),
-		DB:       0,
-	})
-
-	_, err = redisClient.Ping(context.TODO()).Result()
-	if err != nil {
-		fmt.Println("Error pinging redis")
-		panic(err)
-	}
-
+	dbPool := utils.RetryPostgresConnection(postgresUrl, time.Second)
 	userRepo := repositories.NewUserRepo(dbPool)
+
+	redisClient := utils.RetryRedisConnection(redisAddress, redisPassword, time.Second)
 
 	verificationManager := verificationmanager.NewVerificationManager(5 * time.Minute)
 
@@ -84,6 +76,12 @@ func main() {
 		// Minimum time for critical functions to be executed (protect against timebased attacks)
 		MinExecTimeForCriticalFuncs: 150 * time.Millisecond,
 	}))
+
+	grpcListener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", port))
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Printf("GRPC internal server listening at %s\n", grpcListener.Addr())
 	err = server.Serve(grpcListener)
 	if err != nil {
