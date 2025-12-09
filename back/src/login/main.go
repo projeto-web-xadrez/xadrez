@@ -9,6 +9,7 @@ import (
 	"time"
 	"utils"
 
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )
 
@@ -332,7 +333,12 @@ func corsMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
-	conn, err := grpc.NewClient("auth:8989", grpc.WithInsecure())
+	godotenv.Load()
+
+	authGrpcAddress := utils.GetEnvVarOrPanic("INTERNAL_GRPC_AUTH_ADDRESS", "Auth GRPC Address")
+	port := utils.GetEnvVarOrPanic("PORT_LOGIN", "Login API Port")
+
+	conn, err := grpc.NewClient(authGrpcAddress, grpc.WithInsecure())
 	if err != nil {
 		panic("Couldn't stablish GRPC connection with game-server")
 	}
@@ -351,6 +357,6 @@ func main() {
 
 	handler := corsMiddleware(mux)
 
-	fmt.Println("Login server started listening at 8085")
-	http.ListenAndServe("0.0.0.0:8085", handler)
+	fmt.Println("Login server started listening at " + port)
+	http.ListenAndServe(fmt.Sprintf("0.0.0.0:%s", port), handler)
 }

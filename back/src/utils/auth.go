@@ -4,11 +4,11 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"os"
 )
 
 func GenerateCSRFToken(sessionToken string) string {
-	h := hmac.New(sha256.New, []byte(os.Getenv("CSRF_HASH_KEY")))
+	key := GetEnvVarOrPanic("CSRF_HASH_KEY", "CSRF Token Hash Key")
+	h := hmac.New(sha256.New, []byte(key))
 	h.Write([]byte(sessionToken))
 	return hex.EncodeToString(h.Sum(nil))
 }
