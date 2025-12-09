@@ -37,7 +37,7 @@ func (repo *SavedGameRepo) GetGame(ctx context.Context, gameID uuid.UUID) (*mode
 }
 
 func (repo *SavedGameRepo) GetGamesFromUser(ctx context.Context, userID uuid.UUID, limit int) ([]models.SavedGame, error) {
-	query := `SELECT * FROM chess.saved_game WHERE user_id=$1 LIMIT $2;`
+	query := `SELECT * FROM chess.saved_game WHERE user_id=$1 ORDER BY created_at DESC LIMIT $2;`
 
 	rows, err := repo.dbPool.Query(ctx, query, userID.String(), limit)
 

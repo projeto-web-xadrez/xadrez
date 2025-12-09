@@ -29,3 +29,13 @@ func UserStatsRouter(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid Method", err)
 	}
 }
+
+func GameRouter(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		routeGameGet(w, r)
+	default:
+		err := http.StatusMethodNotAllowed
+		http.Error(w, "Invalid Method", err)
+	}
+}

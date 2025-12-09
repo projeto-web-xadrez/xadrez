@@ -12,7 +12,7 @@ type User struct {
 	Email        string     `db:"email" json:"email,omitempty"`
 	CreatedAt    time.Time  `db:"created_at" json:"created_at,omitempty"`
 	PasswordHash string     `db:"password_hash" json:"-"`
-	Stats        *UserStats `json:"stats,omitempty"`
+	Stats        *UserStats `db:"-" json:"stats,omitempty"`
 }
 
 type UserStats struct {

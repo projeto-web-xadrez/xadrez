@@ -36,6 +36,8 @@ func main() {
 	if err = dbPool.Ping(context.TODO()); err != nil {
 		panic(err)
 	}
+
+	routes.GameRepo = repositories.NewGameRepo(dbPool)
 	routes.SavedGamesRepo = repositories.NewSavedGameRepo(dbPool)
 	routes.UserRepo = repositories.NewUserRepo(dbPool)
 
@@ -78,6 +80,8 @@ func main() {
 	server_ws.HandleFunc("/ws", auth.AuthMiddleware(mm.HandleNewConnection))
 	server_ws.HandleFunc("/savedgame", auth.AuthMiddleware(routes.SavedGameRouter))
 	server_ws.HandleFunc("/savedgame/{id}", auth.AuthMiddleware(routes.SavedGameRouter))
+	server_ws.HandleFunc("/game", routes.GameRouter)
+	server_ws.HandleFunc("/game/{id}", routes.GameRouter)
 	server_ws.HandleFunc("/userstats/{id}", routes.UserStatsRouter)
 
 	// Goroutine do WebSocket server

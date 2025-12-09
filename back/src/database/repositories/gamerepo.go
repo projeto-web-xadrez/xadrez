@@ -30,6 +30,9 @@ func (repo *GameRepo) GetGame(ctx context.Context, gameID uuid.UUID) (*models.Ga
 	defer rows.Close()
 
 	game, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[models.Game])
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -38,10 +41,12 @@ func (repo *GameRepo) GetGame(ctx context.Context, gameID uuid.UUID) (*models.Ga
 }
 
 func (repo *GameRepo) GetGamesFromUser(ctx context.Context, userID uuid.UUID, limit int) ([]models.Game, error) {
-	query := `SELECT * FROM chess.game WHERE white_id=$1 or white_id=$2 LIMIT $2;`
+	query := `SELECT * FROM chess.game WHERE white_id=$1 or black_id=$1 ORDER BY started_at DESC LIMIT $2;`
 
 	rows, err := repo.dbPool.Query(ctx, query, userID.String(), limit)
-
+	if err == pgx.ErrNoRows {
+		return make([]models.Game, 0), nil
+	}
 	if err != nil {
 		return nil, err
 	}
