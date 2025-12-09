@@ -72,11 +72,13 @@ export default function Dashboard() {
 
   return (
     <div className='main'>
-      <div className="game-card-container">
-        <MatchSearchComponent
-          onCancel={handleCancel}
-          onSearch={requestMatch}
-        />
+      <div className="dashboard-card-container">
+        <div className='match-search-container'>
+          <MatchSearchComponent
+            onCancel={handleCancel}
+            onSearch={requestMatch}
+          />
+        </div>
         <div className='user-stats-container-div'>
           {isUserStatsLoaded ? (
             <>

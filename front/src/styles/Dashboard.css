@@ -7,37 +7,64 @@
   margin: 0 auto;
   max-width: 1200px;
   background-color: #1a1a1a;
+  min-height: calc(80vh - 64px); /* Reduzido de 100vh para 80vh */
 }
 
-/* Cria duas colunas: stats (esquerda) + search (direita) */
-.game-card-container {
+/* Container principal com duas colunas - Search menor, Stats maior */
+.dashboard-card-container {
+  margin: 24px;
+  padding: 24px;
+  background-color: #1a1a1a;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid #333;
   display: grid;
-  grid-template-columns: 1fr 400px; /* AUMENTADO */
+  grid-template-columns: 300px 1fr;
   gap: 32px;
-  align-items: start;
+  align-items: stretch;
+  height: 100%;
+  min-height: 500px; /* Reduzido de 600px para 500px */
 }
 
 /* ------------------------------ */
-/* COLUNA ESQUERDA (STATS)        */
+/* COLUNA ESQUERDA (MATCH SEARCH) */
+/* ------------------------------ */
+
+.match-search-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ------------------------------ */
+/* COLUNA DIREITA (STATS GRID)    */
 /* ------------------------------ */
 
 .user-stats-container-div {
-  margin-top: 8px;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
   gap: 24px;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
 }
 
 .solid-block-container {
   background-color: #2a2a2a;
-  padding: 24px;
+  padding: 20px; /* Reduzido de 24px para 20px */
   border-radius: 12px;
   border: 1px solid #333;
   box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   transition: all 0.25s ease;
+  min-height: 0;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .solid-block-container:hover {
@@ -48,166 +75,133 @@
 
 .solid-block-container-title {
   color: #fff;
-  font-size: 22px;
+  font-size: 18px; /* Reduzido de 20px para 18px */
   font-weight: 600;
-  margin: 0 0 12px 0;
+  margin: 0 0 10px 0; /* Reduzido de 12px para 10px */
   text-align: center;
   letter-spacing: -0.3px;
+  line-height: 1.2;
+  word-wrap: break-word;
+  width: 100%;
 }
 
 .solid-block-container-content {
   color: #1ae2b0;
-  font-size: 34px;
+  font-size: 32px; /* Reduzido de 36px para 32px */
   font-weight: 700;
   margin: 0;
   text-align: center;
+  line-height: 1;
 }
 
-.solid-block-container-loading {
-  color: #aaa;
-  font-size: 20px;
-  font-weight: 500;
-  text-align: center;
-}
-
-/* ------------------------------ */
-/* COLUNA DIREITA (SEARCH MATCH)  */
-/* ------------------------------ */
-
-.search-match-div {
-  display: flex;
-  width: 100%;
-  justify-content: center;
-}
-
-.search-button {
-  padding: 14px 36px;
-  background-color: #1ae2b0;
-  color: #000;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  width: auto !important; /* FIX: evitar botão gigante */
-}
-
-.search-button:hover {
-  background-color: #17cca0;
-  transform: translateY(-2px);
-}
-
-/* ------------------------------ */
-/* SEARCHING BOX                  */
-/* ------------------------------ */
-
-.searching-box {
-  width: 100%;
-  background-color: #1f1f1f;
-  border: 1px solid #333;
-  border-radius: 16px;
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
-  padding: 20px 24px;
-  margin-top: 16px;
-  display: flex;
-  flex-direction: column;
-  opacity: 0;
-  animation: fadeIn 0.3s ease forwards;
-}
-
-@keyframes fadeIn {
-  to {
-    opacity: 1;
-  }
-}
-
-.searching-header {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.searching-title {
-  color: #fff;
-  font-size: 22px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.searching-time {
-  color: #aaa;
-  margin: 8px 0 0 0;
-  font-size: 14px;
-}
-
-/* ------------------------------ */
-/* LOADING (CAVALO GIRANDO)       */
-/* ------------------------------ */
-
-.searching-loader {
-  display: flex;
-  justify-content: center;
-  padding: 26px 0;
-}
-
-.knight-loading {
-  font-size: 60px;
+/* Estilos específicos para cada container se necessário */
+#total-games-played .solid-block-container-content {
   color: #1ae2b0;
-  animation: knightSpin 1s linear infinite;
 }
 
-@keyframes knightSpin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+#player-draws .solid-block-container-content {
+  color: #ffcc00;
 }
 
-/* ------------------------------ */
-/* FOOTER DE CANCELAR             */
-/* ------------------------------ */
-
-.searching-footer {
-  display: flex;
-  justify-content: center;
-  margin-top: 10px;
+#player-wins .solid-block-container-content {
+  color: #4caf50;
 }
 
-.cancel-button {
-  padding: 12px 28px;
-  background-color: #2a2a2a;
+#player-losses .solid-block-container-content {
   color: #ff6b6b;
-  border: 1px solid #ff6b6b;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  width: auto !important; /* FIX */
-}
-
-.cancel-button:hover {
-  background-color: #3a1f1f;
-  border-color: #ff4747;
-  color: #ff4747;
-  transform: translateY(-2px);
 }
 
 /* ------------------------------ */
 /* RESPONSIVIDADE                 */
 /* ------------------------------ */
 
+@media (max-width: 1024px) {
+  .dashboard-card-container {
+    grid-template-columns: 280px 1fr;
+    gap: 24px;
+    min-height: 450px; /* Ajustado para responsividade */
+  }
+  
+  .main {
+    min-height: calc(85vh - 64px); /* Ajustado para responsividade */
+  }
+}
+
 @media (max-width: 900px) {
-  .game-card-container {
+  .dashboard-card-container {
     grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 24px;
+    min-height: auto;
+  }
+  
+  .match-search-container {
+    height: 450px; /* Reduzido de 500px para 450px */
+    max-width: 500px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  
+  .user-stats-container-div {
+    height: auto;
+    min-height: 350px; /* Reduzido de 400px para 350px */
+  }
+}
+
+@media (max-width: 768px) {
+  .main {
+    padding: 24px;
+    min-height: calc(90vh - 64px);
+  }
+  
+  .dashboard-card-container {
+    gap: 20px;
+  }
+  
+  .user-stats-container-div {
+    gap: 16px;
+  }
+  
+  .solid-block-container {
+    padding: 18px; /* Reduzido para mobile */
+  }
+}
+
+@media (max-width: 600px) {
+  .main {
+    padding: 20px;
+    min-height: calc(85vh - 40px);
+  }
+  
+  .user-stats-container-div {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(4, 1fr);
+    gap: 16px;
+  }
+  
+  .solid-block-container {
+    padding: 16px;
+  }
+  
+  .solid-block-container-title {
+    font-size: 16px;
+  }
+  
+  .solid-block-container-content {
+    font-size: 28px;
   }
 }
 
 @media (max-width: 480px) {
   .user-stats-container-div {
-    grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 12px;
   }
-
+  
   .solid-block-container {
-    padding: 18px;
+    padding: 14px;
+  }
+  
+  .searching-box {
+    padding: 16px;
   }
 }

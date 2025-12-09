@@ -6,6 +6,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
 }
 
 /* ------------------------------- */
@@ -22,7 +25,7 @@
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  width: auto !important; /* FIX */
+  width: auto !important;
 }
 
 .search-button:hover {
@@ -36,16 +39,18 @@
 
 .searching-box {
   width: 100%;
+  height: 100%;
   background-color: #1f1f1f;
   border: 1px solid #333;
   border-radius: 16px;
   box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
-  padding: 20px 24px;
-  margin-top: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   opacity: 0;
   animation: fadeIn 0.3s ease forwards;
+  min-height: 0;
+  box-sizing: border-box;
 }
 
 @keyframes fadeIn {
@@ -59,6 +64,7 @@
 .searching-header {
   text-align: center;
   margin-bottom: 20px;
+  flex-shrink: 0;
 }
 
 .searching-title {
@@ -75,24 +81,186 @@
 }
 
 /* ------------------------------- */
-/*     KNIGHT SPINNER (LOADING)    */
+/*     DISPLAY BOARD AREA          */
+/* ------------------------------- */
+
+.display-board-div {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
+.display-board-div > div {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: 1/1;
+}
+
+/* ------------------------------- */
+/*     KNIGHT LOADING BASE         */
 /* ------------------------------- */
 
 .searching-loader {
   display: flex;
   justify-content: center;
   padding: 26px 0;
+  flex: 1;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .knight-loading {
-  font-size: 60px;
+  font-size: 90px;
   color: #1ae2b0;
+  display: inline-block;
+}
+
+/* ------------------------------- */
+/*    OPÇÕES DE ANIMAÇÃO           */
+/* ------------------------------- */
+
+/* 1. ROTAÇÃO SIMPLES (original) */
+.knight-spin {
   animation: knightSpin 1s linear infinite;
 }
 
 @keyframes knightSpin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
+}
+
+/* 2. PULSO (pulsação suave) */
+.knight-pulse {
+  animation: knightPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes knightPulse {
+  0%, 100% { 
+    transform: scale(1); 
+    opacity: 1;
+  }
+  50% { 
+    transform: scale(1.2); 
+    opacity: 0.8;
+  }
+}
+
+/* 3. BALANÇO (oscilação lateral) */
+.knight-swing {
+  animation: knightSwing 1.5s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+@keyframes knightSwing {
+  0%, 100% { transform: rotate(-10deg); }
+  50% { transform: rotate(10deg); }
+}
+
+/* 4. QUICAR (movimento vertical) */
+.knight-bounce {
+  animation: knightBounce 1s ease infinite;
+}
+
+@keyframes knightBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+/* 5. TREMEDEIRA (vibração) */
+.knight-shake {
+  animation: knightShake 0.5s ease-in-out infinite;
+}
+
+@keyframes knightShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* 6. ROTAÇÃO 3D (efeito de profundidade) */
+.knight-3dspin {
+  animation: knight3DSpin 2s linear infinite;
+}
+
+@keyframes knight3DSpin {
+  0% { 
+    transform: perspective(500px) rotateY(0deg);
+  }
+  100% { 
+    transform: perspective(500px) rotateY(360deg);
+  }
+}
+
+/* 7. CORRIDA (movimento de andar) */
+.knight-trot {
+  animation: knightTrot 0.6s ease-in-out infinite;
+}
+
+@keyframes knightTrot {
+  0%, 100% { 
+    transform: translateX(0) rotate(0deg);
+  }
+  25% { 
+    transform: translateX(5px) rotate(-5deg);
+  }
+  75% { 
+    transform: translateX(-5px) rotate(5deg);
+  }
+}
+
+/* 8. PULSO DE COR */
+.knight-colorpulse {
+  animation: knightColorPulse 2s ease-in-out infinite;
+}
+
+@keyframes knightColorPulse {
+  0%, 100% { 
+    color: #1ae2b0;
+    filter: drop-shadow(0 0 5px #1ae2b0);
+  }
+  50% { 
+    color: #00ffaa;
+    filter: drop-shadow(0 0 15px #00ffaa);
+  }
+}
+
+/* 9. FLUTUAÇÃO SUAVE */
+.knight-float {
+  animation: knightFloat 3s ease-in-out infinite;
+}
+
+@keyframes knightFloat {
+  0%, 100% { 
+    transform: translateY(0) rotate(0deg);
+  }
+  33% { 
+    transform: translateY(-15px) rotate(5deg);
+  }
+  66% { 
+    transform: translateY(5px) rotate(-5deg);
+  }
+}
+
+/* 10. ROTAÇÃO PULSANTE */
+.knight-spinpulse {
+  animation: knightSpinPulse 2s ease-in-out infinite;
+}
+
+@keyframes knightSpinPulse {
+  0% { 
+    transform: rotate(0deg) scale(1);
+  }
+  50% { 
+    transform: rotate(180deg) scale(1.1);
+  }
+  100% { 
+    transform: rotate(360deg) scale(1);
+  }
 }
 
 /* ------------------------------- */
@@ -102,7 +270,9 @@
 .searching-footer {
   display: flex;
   justify-content: center;
-  margin-top: 10px;
+  margin-top: auto;
+  padding-top: 20px;
+  flex-shrink: 0;
 }
 
 .cancel-button {
@@ -115,7 +285,7 @@
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  width: auto !important; /* FIX */
+  width: auto !important;
 }
 
 .cancel-button:hover {

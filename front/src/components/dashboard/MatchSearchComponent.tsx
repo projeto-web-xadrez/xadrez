@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-
+import "../../styles/match-search-component-styles.css"
 interface MatchSearchProps {
     onSearch: () => void;
     onCancel: () => void;
@@ -22,38 +22,49 @@ export default function MatchSearchComponent(props: MatchSearchProps) {
 
     return (
         <div className="search-match-container">
-            
-            {!isSearching ? (
-                <button className="search-button"
-                    onClick={() => {
-                        props.onSearch();
-                        setIsSearching(true);
-                    }}>
-                    ♘ Search Match
-                </button>
-            ) : (
-                <div className="searching-box">
-
-                    <div className="searching-header">
-                        <h2 className="searching-title">Searching...</h2>
-                        <p className="searching-time">{seconds}s elapsed</p>
-                    </div>
-
-                    <div className="searching-loader">
-                        <span className="knight-loading">♞</span>
-                    </div>
-
-                    <div className="searching-footer">
-                        <button className="cancel-button"
-                            onClick={() => {
-                                props.onCancel();
-                                setIsSearching(false);
-                            }}>
-                            Cancel
-                        </button>
-                    </div>
+            <div className="searching-box">
+                <div hidden={!isSearching} className="searching-header">
+                    <h2 className="searching-title">Searching match...</h2>
+                    <p className="searching-time">{seconds} seconds elapsed</p>
                 </div>
-            )}
+                {!isSearching ? (
+                    <>
+                        <div className="display-board-div">
+                            <img draggable="false" src="../../../public/chess_green_black.svg" alt="" />
+                            
+                        </div>
+
+                        <div className="searching-footer">
+                            <button className="search-button"
+                                onClick={() => {
+                                    props.onSearch();
+                                    setIsSearching(true);
+                                }}>
+                                ♘ Search Match
+                            </button>
+                        </div>
+                    </>
+
+                ) : (
+                    <>
+                        <div className="searching-loader">
+                            <span className="knight-loading knight-spinpulse">♞</span>
+                        </div>
+                        <div className="searching-footer">
+                            <button className="cancel-button"
+                                onClick={() => {
+                                    props.onCancel();
+                                    setIsSearching(false);
+                                }}>
+                                Cancel
+                            </button>
+                        </div>
+                    </>
+
+                )}
+
+            </div>
+
         </div>
     );
 }

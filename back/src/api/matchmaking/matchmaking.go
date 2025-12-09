@@ -176,6 +176,11 @@ func (mm *MatchmakingManager) matchmaking() {
 		tempMatch = append(tempMatch, client)
 	}
 
+	if len(tempMatch) == 0 {
+		mm.universalLock.Unlock()
+		return
+	}
+
 	if len(tempMatch) < 2 || tempMatch[0] == tempMatch[1] {
 		// cria nova fila: tempMatch + queue
 		mm.queue = append(mm.queue, tempMatch[0])

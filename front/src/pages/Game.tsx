@@ -229,10 +229,8 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
                             displayHandle.current?.pushMove(playerMoved)
                         break;
                     case MessageType.GAME_STARTED:
-                        alert('Game started');
                         break;
                     case MessageType.GAME_ENDED:
-                        alert('Game ended')
                         const message = JSON.parse(msg.data) as GameEndedMessage
                         setWinner(message?.winner_id as string)
                         break;
