@@ -20,7 +20,7 @@ type gamePGNStruct struct {
 	Name string `json:"name"`
 }
 
-func routeSavedGameGet(w http.ResponseWriter, r *http.Request) {
+func routeGetSavedGame(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	clientID := r.Context().Value("clientId").(uuid.UUID)
 
@@ -64,7 +64,7 @@ func routeSavedGameGet(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func routeSavedGamePost(w http.ResponseWriter, r *http.Request) {
+func routePostSavedGame(w http.ResponseWriter, r *http.Request) {
 	clientID := r.Context().Value("clientId").(uuid.UUID)
 	var GamePGNMsgArr []gamePGNStruct
 	var GamePGNMsg gamePGNStruct
@@ -140,7 +140,7 @@ func routeSavedGamePost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func routeSavedGamePut(w http.ResponseWriter, r *http.Request) {
+func routePutSavedGame(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	clientID := r.Context().Value("clientId").(uuid.UUID)
 
@@ -203,7 +203,7 @@ func routeSavedGamePut(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func routeSavedGameDelete(w http.ResponseWriter, r *http.Request) {
+func routeDeleteSavedGame(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	clientID := r.Context().Value("clientId").(uuid.UUID)
 

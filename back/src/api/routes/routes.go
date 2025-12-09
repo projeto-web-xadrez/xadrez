@@ -7,13 +7,13 @@ import (
 func SavedGameRouter(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
-		routeSavedGamePost(w, r)
+		routePostSavedGame(w, r)
 	case http.MethodGet:
-		routeSavedGameGet(w, r)
+		routeGetSavedGame(w, r)
 	case http.MethodPut:
-		routeSavedGamePut(w, r)
+		routePutSavedGame(w, r)
 	case http.MethodDelete:
-		routeSavedGameDelete(w, r)
+		routeDeleteSavedGame(w, r)
 	default:
 		err := http.StatusMethodNotAllowed
 		http.Error(w, "Invalid Method", err)
@@ -23,7 +23,7 @@ func SavedGameRouter(w http.ResponseWriter, r *http.Request) {
 func UserStatsRouter(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		routeUserStatsGet(w, r)
+		routeGetUserStats(w, r)
 	default:
 		err := http.StatusMethodNotAllowed
 		http.Error(w, "Invalid Method", err)
@@ -33,7 +33,7 @@ func UserStatsRouter(w http.ResponseWriter, r *http.Request) {
 func GameRouter(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		routeGameGet(w, r)
+		routeGetGame(w, r)
 	default:
 		err := http.StatusMethodNotAllowed
 		http.Error(w, "Invalid Method", err)

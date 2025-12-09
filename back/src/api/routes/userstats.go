@@ -10,7 +10,7 @@ import (
 
 var UserRepo *repositories.UserRepo
 
-func routeUserStatsGet(w http.ResponseWriter, r *http.Request) {
+func routeGetUserStats(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "Invalid user ID", http.StatusBadRequest)

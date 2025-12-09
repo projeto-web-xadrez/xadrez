@@ -10,7 +10,7 @@ import (
 
 var GameRepo *repositories.GameRepo
 
-func routeGameGet(w http.ResponseWriter, r *http.Request) {
+func routeGetGame(w http.ResponseWriter, r *http.Request) {
 	gameID, err := uuid.Parse(r.PathValue("id"))
 
 	if err == nil {
