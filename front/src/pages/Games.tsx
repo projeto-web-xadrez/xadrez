@@ -27,24 +27,20 @@ async function handleLichessImport(username: string, maxGames: number, axiosSett
   const res = await fetch(`https://lichess.org/api/games/user/${username}?max=${maxGames}&pgnInJson=true&lastFen=true`, {
     headers: { "Accept": "application/x-ndjson" }
   });
-  
+
   if (res.status == 200) {
     const text = await res.text();
 
     const games = text
       .trim()
       .split("\n")
-      .map(line => JSON.parse(line));
-
-    games.forEach(async (game) => {
-      const game_name = game.id;
-      const game_pgn = game.pgn
-      try {
-        await axios.post(`/api/manage-game`, { PGN: game_pgn, Name: game_name }, axiosSettings);
-      } catch (err: any) {
-        console.log("failed to insert " + game_name)
-      }
-    })
+      .map(line => JSON.parse(line))
+      .map(game => ({
+        PGN: game.pgn,
+        Name: `${game.players.white.user.name} x ${game.players.black.user.name} - ${game.id}`
+      }));
+    
+    await axios.post(`/api/game`, games, axiosSettings);
   } else {
     const text = await res.text();
     const error = JSON.parse(text)
@@ -81,11 +77,8 @@ export default function Games() {
 
 
   useEffect(() => {
-    axios.get(`/api/manage-game`, axiosSettings)
-      .then((games: any) => {
-        setGames(games.data as SavedGame[])
-      }
-      )
+    axios.get(`/api/game`, axiosSettings)
+      .then((games: any) => setGames(games.data as SavedGame[]))
       .catch((e: any) => setError(e))
   }, []);
 
@@ -106,7 +99,7 @@ export default function Games() {
           onConfirm={async () => {
             if (!gameToHandle) return;
             try {
-              const res = await axios.delete(`/api/manage-game/${gameToHandle.game_id}`, axiosSettings);
+              const res = await axios.delete(`/api/game/${gameToHandle.game_id}`, axiosSettings);
               setGames(res.data);
             } catch (err: any) {
               setError(err.response?.data);
@@ -126,7 +119,7 @@ export default function Games() {
               return;
             }
             try {
-              const res = await axios.put(`/api/manage-game/${gameToHandle?.game_id}`, { PGN, Name }, axiosSettings);
+              const res = await axios.put(`/api/game/${gameToHandle?.game_id}`, { PGN, Name }, axiosSettings);
               setGames(res.data);
               setEditModalOpen(false);
             } catch (err: any) {
@@ -146,7 +139,7 @@ export default function Games() {
               return;
             }
             try {
-              const res = await axios.post(`/api/manage-game`, { PGN, Name }, axiosSettings);
+              const res = await axios.post(`/api/game`, { PGN, Name }, axiosSettings);
               setGames(res.data);
               setAddGameModalOpen(false);
             } catch (err: any) {
@@ -169,7 +162,7 @@ export default function Games() {
             }
             try {
               await handleLichessImport(username, maxGames, axiosSettings)
-              axios.get(`/api/manage-game`, axiosSettings)
+              axios.get(`/api/game`, axiosSettings)
                 .then((games: any) => {
                   setGames(games.data as SavedGame[]);
                   setImportLichessModalOpen(false);
@@ -177,8 +170,8 @@ export default function Games() {
                 .catch((e: any) => {
                   setError(e.response?.data)
                 })
-                
-              
+
+
             } catch (err: any) {
               setError(err.message);
             }
@@ -195,7 +188,7 @@ export default function Games() {
           'pgn': `1. e4 e5 2. Nc3 Nc6 3. Nf3 Nf6 4. Bc4 Nxe4 5. Nxe4 d5 { C55 Italian Game: Two Knights Defense } 6. Bxd5 Qxd5 7. Nc3 Qe6 8. d3 f5 9. Ng5 Qf6 10. Nd5 Qxg5 { Black resigns. } 1-0`
         }
 
-        axios.post(`/api/manage-game`,
+        axios.post(`/api/game`,
           data
           , axiosSettings)
           .then((response: any) => {

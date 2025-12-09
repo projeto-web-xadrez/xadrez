@@ -404,8 +404,8 @@ func main() {
 
 	server_ws := http.NewServeMux()
 	server_ws.HandleFunc("/ws", authMiddleware(handleConnections))
-	server_ws.HandleFunc("/manage-game", authMiddleware(routes.ManageGame))
-	server_ws.HandleFunc("/manage-game/{id}", authMiddleware(routes.ManageGame))
+	server_ws.HandleFunc("/game", authMiddleware(routes.ManageGame))
+	server_ws.HandleFunc("/game/{id}", authMiddleware(routes.ManageGame))
 	/* server_ws.HandleFunc("/fetch-game", authMiddleware(handleConnections))
 	server_ws.HandleFunc("/fetch-all-games", authMiddleware(handleConnections))
 	server_ws.HandleFunc("/edit-game", authMiddleware(handleConnections))

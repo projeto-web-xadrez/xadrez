@@ -4,6 +4,7 @@ import (
 	"database/models"
 	"database/repositories"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -30,32 +31,61 @@ func ManageGame(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
 		//create-game
+		var GamePGNMsgArr []GamePGNStruct
 		var GamePGNMsg GamePGNStruct
-		decoder := json.NewDecoder(r.Body)
 
-		err := decoder.Decode(&GamePGNMsg)
-
+		data, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Internal Error", http.StatusInternalServerError)
 			break
 		}
 
-		// validacao do PGN
-		reader := strings.NewReader(GamePGNMsg.PGN)
-		pgn, err := chess.PGN(reader)
+		err = json.Unmarshal([]byte(data), &GamePGNMsg)
 		if err != nil {
-			println("PGN: " + GamePGNMsg.PGN)
-			http.Error(w, "PGN is invalid", http.StatusInternalServerError)
+			err = json.Unmarshal([]byte(data), &GamePGNMsgArr)
+			if err != nil {
+				http.Error(w, "Internal Error", http.StatusInternalServerError)
+				break
+			}
+		} else {
+			GamePGNMsgArr = make([]GamePGNStruct, 1)
+			GamePGNMsgArr[0] = GamePGNMsg
+		}
+
+		if len(GamePGNMsgArr) == 0 {
+			http.Error(w, "Empty games array", http.StatusInternalServerError)
 			break
 		}
-		newG := chess.NewGame(pgn)
-		last_fen := newG.FEN()
+		if len(GamePGNMsgArr) > 20 {
+			http.Error(w, "Too many games", http.StatusInternalServerError)
+			break
+		}
 
-		_, err = SavedRepo.CreateNewGame(r.Context(), user_uuid, GamePGNMsg.Name, GamePGNMsg.PGN, last_fen)
+		someOk := false
+		errorMessage := ""
+		for _, msg := range GamePGNMsgArr {
+			// validacao do PGN
+			reader := strings.NewReader(msg.PGN)
+			pgn, err := chess.PGN(reader)
+			if err != nil {
+				errorMessage = "PGN is invalid"
+				continue
+			}
+			newG := chess.NewGame(pgn)
+			last_fen := newG.FEN()
 
-		if err != nil {
-			println(err)
-			http.Error(w, "Failed to create game", http.StatusInternalServerError)
+			_, err = SavedRepo.CreateNewGame(r.Context(), user_uuid, msg.Name, msg.PGN, last_fen)
+
+			if err != nil {
+				errorMessage = "Failed to create game"
+				continue
+			}
+
+			someOk = true
+		}
+
+		if !someOk {
+			http.Error(w, errorMessage, http.StatusInternalServerError)
 			break
 		}
 
@@ -67,7 +97,7 @@ func ManageGame(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		jsonData, err := json.Marshal(savedGames)
+		jsonData, _ := json.Marshal(savedGames)
 
 		if _, e := w.Write([]byte(jsonData)); e != nil {
 			err := http.StatusInternalServerError
@@ -106,7 +136,6 @@ func ManageGame(w http.ResponseWriter, r *http.Request) {
 
 		savedGames, err := SavedRepo.GetGame(r.Context(), game_id)
 		if err != nil {
-			println(err)
 			http.Error(w, "Failed to fetch games", http.StatusInternalServerError)
 			break
 		}

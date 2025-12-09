@@ -44,7 +44,7 @@ export default function SavedGame({ soundPlayer }: { soundPlayer: RefObject<Soun
 
 
     useEffect(() => {
-        axios.get(`/api/manage-game/${gameId}`, axiosSettings)
+        axios.get(`/api/game/${gameId}`, axiosSettings)
             .then(game => setGame(game.data as SavedGame))
             .catch(e => alert(e))
     }, []);
@@ -61,7 +61,7 @@ export default function SavedGame({ soundPlayer }: { soundPlayer: RefObject<Soun
             message='Are you sure you want to delete this game?'
             onClose={() => setDialogOpen(false)}
             onConfirm={async () => {
-                await axios.delete(`/api/manage-game/${game?.game_id}`, axiosSettings)
+                await axios.delete(`/api/game/${game?.game_id}`, axiosSettings)
                             .then(() => navigate('/games'))
                             .catch(() => alert('Error deleting game'));
                 setDialogOpen(false);
