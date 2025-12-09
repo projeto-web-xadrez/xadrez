@@ -75,8 +75,8 @@ func main() {
 
 	server_ws := http.NewServeMux()
 	server_ws.HandleFunc("/ws", auth.AuthMiddleware(mm.HandleNewConnection))
-	server_ws.HandleFunc("/game", auth.AuthMiddleware(routes.ManageGame))
-	server_ws.HandleFunc("/game/{id}", auth.AuthMiddleware(routes.ManageGame))
+	server_ws.HandleFunc("/savedgame", auth.AuthMiddleware(routes.ManageSavedGame))
+	server_ws.HandleFunc("/savedgame/{id}", auth.AuthMiddleware(routes.ManageSavedGame))
 
 	// Goroutine do WebSocket server
 	go func() {
