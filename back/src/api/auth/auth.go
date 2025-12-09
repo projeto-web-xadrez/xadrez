@@ -43,7 +43,7 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userData, err := ValidateWithLoginServer(r)
 
-		if err != nil || !userData.Res.Ok {
+		if err != nil || userData.Res == nil || !userData.Res.Ok || userData.Session == nil || userData.Session.UserId == "" {
 			fmt.Println("Client session was not valid")
 
 			http.SetCookie(w, &http.Cookie{

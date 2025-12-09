@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { type Color, type Move, type Square } from 'chess.js';
 import GameDisplayComponent, { type GameDisplayHandle } from '../components/gameboard/GameDisplayComponent';
 import type { SoundPlayerHandle } from '../components/SoundPlayerComponent';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import GameEndedComponent from '../components/GameEndedComponent';
+import axios from 'axios';
 
 const MessageType = {
     INIT: 'init',
@@ -115,11 +116,35 @@ const UsernameDisplay = ({ username }: { username: string | undefined }) =>
         {username || ''}
     </span>
 
+interface ApiGameType {
+    game_id: string;
+    white_id: string;
+    black_id: string;
+    ended_at: string;
+    last_fen?: string;
+    pgn?: string;
+    result?: string;
+    started_at: string;
+    status: string;
+};
+
+interface UserStatsType {
+    username: string;
+    draws: number;
+    games_played: number;
+    last_updated: string;
+    losses: number;
+    wins: number;
+};
+
 export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlayerHandle | null> }) {
     const { gameId: paramGameId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+
     const { isAuthenticated, clientId } = useAuth();
-    const [winner, setWinner] = useState<string | null>(null)
+    const [winner, setWinner] = useState<string | null>(null);
+    const liveGame = useRef<boolean>(!!location?.state?.liveGame)
 
     if (!paramGameId || !isAuthenticated) {
         navigate('/');
@@ -165,80 +190,110 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
 
 
     useEffect(() => {
-        if (!client.current) {
-            client.current = new WebSocket(`/gameserver/ws?csrfToken=${localStorage.getItem('csrf_token')}`);
-            console.log('Instantiated now')
-            setTimeout(() => {
-                console.log('ha')
-            }, 1000)
-            client.current.onopen = () => {
-                setConnected(true);
-                console.log('Connected')
-                const msg = new InitMessage(gameId.current).encode();
-                console.log(msg)
-                
-                client.current?.send(msg);
-            }
-            client.current.onclose = (e) => {
-                setConnected(false);
-                console.error(`Disconnected. Reason: ${e.reason}, code = ${e.code}`);
-            }
 
-            client.current.onmessage = (e) => {
-                const msg = JSON.parse(e.data) as IncomingMessage;
-                console.log(`Received message ${msg.type}`);
+        const exec = async () => {
+            if (!liveGame.current) {
+                try {
+                    const game = (await axios.get(`/api/game/${gameId.current}`)).data as ApiGameType;
+                    liveGame.current = (game.status === 'in_progress');
 
-                switch (msg.type) {
-                    case MessageType.WELCOME:
-                        const welcome = JSON.parse(msg.data) as WelcomeMessage
+                    if (!liveGame.current) {
+                        const whiteName = ((await axios.get(`/api/userstats/${game.white_id}`)).data as UserStatsType).username;
+                        const blackName = ((await axios.get(`/api/userstats/${game.black_id}`)).data as UserStatsType).username;
 
-                        if (welcome.room_id !== gameId.current) {
-                            gameId.current = welcome.room_id as string;
-                            welcome.player1_id
-
-                            // Update the URL without reloading the page
-                            history.replaceState({}, '', `/game/${welcome.room_id}`);
-                        }
-                        console.log(welcome)
-                        const userId = localStorage.getItem('clientId') as string;
-                        console.log(userId)
-                        let color = null;
-                        if(welcome.player1_id === userId)
-                            color = 'w';
-                        else if (welcome.player2_id === userId)
-                            color = 'b';
-
-                        const playing = color !== null;
-                        
-                        if (color !== null)
-                            setPerspective(color as Color)
-                        
                         setStartSettings({
-                            pgn: welcome.game_pgn as string,
-                            playingColor: playing ? (color as Color) : null,
-                            playerWhiteId: welcome.player1_id as string,
-                            playerWhiteUsername: welcome.player1_username as string,
-                            playerBlackId: welcome.player2_id as string,
-                            playerBlackUsername: welcome.player2_username as string,
+                            pgn: game.pgn || '*',
+                            playerBlackId: game.black_id,
+                            playerWhiteId: game.white_id,
+                            playerBlackUsername: blackName,
+                            playerWhiteUsername: whiteName,
+                            playingColor: null
                         });
-                        break;
-                    case MessageType.PLAYER_MOVED:
-                        const playerMoved = JSON.parse(msg.data) as PlayerMovedMessage;
-                        if (displayHandle.current?.pushMove)
-                            displayHandle.current?.pushMove(playerMoved)
-                        break;
-                    case MessageType.GAME_STARTED:
-                        break;
-                    case MessageType.GAME_ENDED:
-                        const message = JSON.parse(msg.data) as GameEndedMessage
-                        setWinner(message?.winner_id as string)
-                        break;
-                    case MessageType.PING:
-                        client.current?.send(new MessagePing().encode())
-                        break;
+                        if (game.black_id === clientId)
+                            setPerspective('b');
+                        else setPerspective('w');
+                    }
+
+                } catch (e) {
+                    alert(e)
+                }
+            }
+
+            if (liveGame.current && !client.current) {
+                client.current = new WebSocket(`/gameserver/ws?csrfToken=${localStorage.getItem('csrf_token')}`);
+                console.log('Instantiated now')
+
+                client.current.onopen = () => {
+                    setConnected(true);
+
+                    const msg = new InitMessage(gameId.current).encode();
+                    client.current?.send(msg);
+                }
+                client.current.onclose = (e) => {
+                    setConnected(false);
+                    console.error(`Disconnected. Reason: ${e.reason}, code = ${e.code}`);
+                }
+
+                client.current.onmessage = (e) => {
+                    const msg = JSON.parse(e.data) as IncomingMessage;
+                    console.log(`Received message ${msg.type}`);
+
+                    switch (msg.type) {
+                        case MessageType.WELCOME:
+                            const welcome = JSON.parse(msg.data) as WelcomeMessage
+
+                            if (welcome.room_id !== gameId.current) {
+                                gameId.current = welcome.room_id as string;
+                                welcome.player1_id
+
+                                // Update the URL without reloading the page
+                                history.replaceState({}, '', `/game/${welcome.room_id}`);
+                            }
+
+                            const userId = localStorage.getItem('clientId') as string;
+                            let color = null;
+                            if (welcome.player1_id === userId)
+                                color = 'w';
+                            else if (welcome.player2_id === userId)
+                                color = 'b';
+
+                            const playing = color !== null;
+
+                            if (color !== null)
+                                setPerspective(color as Color)
+
+                            setStartSettings({
+                                pgn: welcome.game_pgn as string,
+                                playingColor: playing ? (color as Color) : null,
+                                playerWhiteId: welcome.player1_id as string,
+                                playerWhiteUsername: welcome.player1_username as string,
+                                playerBlackId: welcome.player2_id as string,
+                                playerBlackUsername: welcome.player2_username as string,
+                            });
+                            break;
+                        case MessageType.PLAYER_MOVED:
+                            const playerMoved = JSON.parse(msg.data) as PlayerMovedMessage;
+                            if (displayHandle.current?.pushMove)
+                                displayHandle.current?.pushMove(playerMoved)
+                            break;
+                        case MessageType.GAME_STARTED:
+                            break;
+                        case MessageType.GAME_ENDED:
+                            const message = JSON.parse(msg.data) as GameEndedMessage
+                            setWinner(message?.winner_id as string)
+                            break;
+                        case MessageType.PING:
+                            client.current?.send(new MessagePing().encode())
+                            break;
+                    }
                 }
             }
         }
+
+        exec();
+
+
+
     }, []);
 
 
@@ -250,53 +305,53 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
 
     return (
         <>
-        {
-            (!winner) ? (
-            
-        <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            width: '100%',
-            marginTop: '5%',
-        }}>
+            {
+                (!winner || !startSettings?.playingColor) ? (
 
-            <div style={{
-                display: 'inline-flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start'
-            }}>
-                <UsernameDisplay username={perspective === 'b' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername} />
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        width: '100%',
+                        marginTop: '5%',
+                    }}>
 
-                <GameDisplayComponent
-                    boardStyle={{
-                        boardBackground: '/board_bg/maple.jpg',
-                        pieceStyle: 'merida', //cburnett
-                        pieceSize: 55,
-                        shouldLabelSquares: true
-                    }}
-                    type={startSettings?.playingColor === null ? 'spectating' : 'playing'}
-                    pgn={startSettings?.pgn || ''}
-                    playerColor={startSettings?.playingColor || 'w'}
-                    perspective={perspective}
-                    onPlayerMove={onPlayerMove}
-                    onPlayerSwitchPerspective={(p) => setPerspective(p)}
-                    onPlayerResign={() => {
-                        if (startSettings?.playingColor !== null && client?.current?.send)
-                            client.current.send(new ResignMessage().encode());
-                    }}
-                    soundPlayer={soundPlayer}
-                    ref={displayHandle}
-                />
+                        <div style={{
+                            display: 'inline-flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-start'
+                        }}>
+                            <UsernameDisplay username={perspective === 'b' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername} />
 
-                <UsernameDisplay username={perspective === 'w' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername} />
-            </div>
-        </div>)
-        :
-        (<GameEndedComponent playerId={clientId as string} winner={winner as string} />)   
-        }
-        
+                            <GameDisplayComponent
+                                boardStyle={{
+                                    boardBackground: '/board_bg/maple.jpg',
+                                    pieceStyle: 'merida', //cburnett
+                                    pieceSize: 55,
+                                    shouldLabelSquares: true
+                                }}
+                                type={startSettings?.playingColor === null ? 'spectating' : 'playing'}
+                                pgn={startSettings?.pgn || ''}
+                                playerColor={startSettings?.playingColor || 'w'}
+                                perspective={perspective}
+                                onPlayerMove={onPlayerMove}
+                                onPlayerSwitchPerspective={(p) => setPerspective(p)}
+                                onPlayerResign={() => {
+                                    if (startSettings?.playingColor !== null && client?.current?.send)
+                                        client.current.send(new ResignMessage().encode());
+                                }}
+                                soundPlayer={soundPlayer}
+                                ref={displayHandle}
+                            />
+
+                            <UsernameDisplay username={perspective === 'w' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername} />
+                        </div>
+                    </div>)
+                    :
+                    <GameEndedComponent playerId={clientId as string} winner={winner as string} />
+            }
+
         </>
-        
-        
+
+
     );
 }
