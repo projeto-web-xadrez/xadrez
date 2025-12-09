@@ -193,7 +193,6 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
                         const welcome = JSON.parse(msg.data) as WelcomeMessage
 
                         if (welcome.room_id !== gameId.current) {
-                            alert('You have an ongoing game!');
                             gameId.current = welcome.room_id as string;
                             welcome.player1_id
 
