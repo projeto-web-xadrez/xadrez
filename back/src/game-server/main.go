@@ -14,7 +14,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
@@ -161,21 +160,10 @@ func main() {
 	grpcPort := utils.GetEnvVarOrPanic("INTERNAL_PORT_GAMESERVER_GRPC_MATCHMAKING", "Matchmaking GRPC Port")
 	port := utils.GetEnvVarOrPanic("PORT_GAMESERVER", "WS Gameserver Port")
 
-	dbPool, err := pgxpool.New(context.Background(), postgresUrl)
-	if err != nil {
-		panic(err)
-	}
-	if err = dbPool.Ping(context.TODO()); err != nil {
-		panic(err)
-	}
-
-	authConn, err := grpc.NewClient(authGrpcAddress, grpc.WithInsecure())
-	if err != nil {
-		panic("Couldn't stablish GRPC connection with auth-server")
-	}
-
+	authConn := utils.RetryGRPCConnection(authGrpcAddress, grpc.WithInsecure(), time.Second)
 	authGrpc = auth_grpc.NewAuthClient(authConn)
 
+	dbPool := utils.RetryPostgresConnection(postgresUrl, time.Second)
 	userRepo := repositories.NewUserRepo(dbPool)
 	gameRepo := repositories.NewGameRepo(dbPool)
 	gm = game.NewGameManager(userRepo, gameRepo)
@@ -199,9 +187,8 @@ func main() {
 	http.HandleFunc("/ws", handlePlayerConnection)
 
 	fmt.Printf("WS game server listening at 0.0.0.0%s\n", port)
-	err = http.ListenAndServe(fmt.Sprintf("0.0.0.0:%s", port), nil)
+	err := http.ListenAndServe(fmt.Sprintf("0.0.0.0:%s", port), nil)
 	if err != nil {
 		panic(err)
 	}
-
 }

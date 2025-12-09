@@ -5,7 +5,6 @@ import (
 	"auth/authserver"
 	"auth/mailsender"
 	"auth/verificationmanager"
-	"context"
 	"database/repositories"
 	"fmt"
 	"net"
@@ -15,9 +14,7 @@ import (
 	"time"
 	"utils"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
-	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 )
 
@@ -57,32 +54,10 @@ func main() {
 		panic(err)
 	}
 
-	grpcListener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", port))
-	if err != nil {
-		panic(err)
-	}
-
-	dbPool, err := pgxpool.New(context.Background(), postgresUrl)
-	if err != nil {
-		panic(err)
-	}
-	if err = dbPool.Ping(context.TODO()); err != nil {
-		panic(err)
-	}
-
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     redisAddress,
-		Password: redisPassword,
-		DB:       0,
-	})
-
-	_, err = redisClient.Ping(context.TODO()).Result()
-	if err != nil {
-		fmt.Println("Error pinging redis")
-		panic(err)
-	}
-
+	dbPool := utils.RetryPostgresConnection(postgresUrl, time.Second)
 	userRepo := repositories.NewUserRepo(dbPool)
+
+	redisClient := utils.RetryRedisConnection(redisAddress, redisPassword, time.Second)
 
 	verificationManager := verificationmanager.NewVerificationManager(5 * time.Minute)
 
@@ -101,6 +76,12 @@ func main() {
 		// Minimum time for critical functions to be executed (protect against timebased attacks)
 		MinExecTimeForCriticalFuncs: 150 * time.Millisecond,
 	}))
+
+	grpcListener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", port))
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Printf("GRPC internal server listening at %s\n", grpcListener.Addr())
 	err = server.Serve(grpcListener)
 	if err != nil {

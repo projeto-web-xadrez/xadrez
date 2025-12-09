@@ -14,7 +14,6 @@ import (
 	"time"
 	"utils"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )
@@ -27,30 +26,14 @@ func main() {
 	matchmakingGrpcAddress := utils.GetEnvVarOrPanic("INTERNAL_GRPC_MATCHMAKING_ADDRESS", "Matchmaking GRPC address")
 	port := utils.GetEnvVarOrPanic("PORT_API", "API Port")
 
-	dbPool, err := pgxpool.New(context.Background(), postgresUrl)
-	if err != nil {
-		panic(err)
-	}
-	if err = dbPool.Ping(context.TODO()); err != nil {
-		panic(err)
-	}
-
+	dbPool := utils.RetryPostgresConnection(postgresUrl, time.Second)
 	routes.GameRepo = repositories.NewGameRepo(dbPool)
 	routes.SavedGamesRepo = repositories.NewSavedGameRepo(dbPool)
 	routes.UserRepo = repositories.NewUserRepo(dbPool)
 
 	// Inicia conexão gRPC
-	mmConn, err := grpc.NewClient(matchmakingGrpcAddress, grpc.WithInsecure())
-	if err != nil {
-		panic("Couldn't stablish GRPC connection with game-server")
-	}
-	defer mmConn.Close()
-
-	authConn, err := grpc.NewClient(authGrpcAddress, grpc.WithInsecure())
-	if err != nil {
-		panic("Couldn't stablish GRPC connection with auth-server")
-	}
-	defer authConn.Close()
+	mmConn := utils.RetryGRPCConnection(matchmakingGrpcAddress, grpc.WithInsecure(), time.Second)
+	authConn := utils.RetryGRPCConnection(authGrpcAddress, grpc.WithInsecure(), time.Second)
 
 	time.Sleep(2 * time.Second)
 	ctxStream := context.Background()
