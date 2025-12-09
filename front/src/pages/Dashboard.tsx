@@ -22,7 +22,7 @@ export default function Dashboard() {
       });
     });
 
-    const ok = sendMessage("requestMatch", { id: playerId });
+    const ok = sendMessage("joinQueue", { id: playerId });
     if (!ok) {
       unsubscribe("matchFound");
       return;

@@ -32,8 +32,10 @@ type ValidateResponse struct {
 }
 
 type clientObj struct {
-	id uuid.UUID
-	ws *websocket.Conn
+	id               uuid.UUID
+	ws               *websocket.Conn
+	lastPing         time.Time
+	lastPingResponse time.Time
 }
 
 /*
@@ -118,12 +120,13 @@ func (mm *MatchmakingManager) safeRegisterMatchRequest(client clientObj) bool {
 func (mm *MatchmakingManager) safeSetUserState(c uuid.UUID, state string) {
 	mm.universalLock.Lock()
 	defer mm.universalLock.Unlock()
-	_, ok := mm.usersMap[c]
 
+	/* Isto é realmente necessário?
+	_, ok := mm.usersMap[c]
 	// evita que ele set para idle caso o usuario recarregue a pagina
 	if state == "idle" && ok {
 		return
-	}
+	}*/
 
 	mm.usersMap[c] = state
 }
@@ -173,9 +176,9 @@ func (mm *MatchmakingManager) matchmaking() {
 		tempMatch = append(tempMatch, client)
 	}
 
-	if len(tempMatch) < 2 {
+	if len(tempMatch) < 2 || tempMatch[0] == tempMatch[1] {
 		// cria nova fila: tempMatch + queue
-		mm.queue = append(tempMatch, mm.queue...)
+		mm.queue = append(mm.queue, tempMatch[0])
 		mm.universalLock.Unlock()
 		return
 	}
@@ -205,6 +208,8 @@ func (mm *MatchmakingManager) matchmaking() {
 		return
 	}
 
+	mm.safeSetUserState(player1, "playing")
+	mm.safeSetUserState(player2, "playing")
 	println("Room: " + room.RoomId)
 
 	matchFoundObj := dataObj{
@@ -232,7 +237,6 @@ func (mm *MatchmakingManager) matchmaking() {
 	if err := player2_ws.WriteMessage(websocket.TextMessage, jsonObj); err != nil {
 		fmt.Println("Falha ao enviar a sala para o player1")
 	}
-
 }
 
 func (mm *MatchmakingManager) HandleNewConnection(w http.ResponseWriter, r *http.Request) {
@@ -247,6 +251,11 @@ func (mm *MatchmakingManager) HandleNewConnection(w http.ResponseWriter, r *http
 	}
 	defer ws.Close()
 
+	prevClient, ok := mm.safeGetClient(clientId)
+	if ok {
+		prevClient.Close()
+	}
+
 	fmt.Println("Client conectado:", clientId, username)
 	mm.safeSetClient(clientId, ws)
 	mm.safeSetUserState(clientId, "idle")
@@ -254,20 +263,60 @@ func (mm *MatchmakingManager) HandleNewConnection(w http.ResponseWriter, r *http
 	var client clientObj
 	client.id = clientId
 	client.ws = ws
+	client.lastPing = time.Now()
+	client.lastPingResponse = time.Now()
+
+	go func() {
+		for {
+			if client.lastPing.Sub(client.lastPingResponse) > 3*time.Second {
+				client.ws.Close()
+				conn, ok := mm.safeGetClient(client.id)
+				if ok && conn == client.ws {
+					mm.safeSetUserState(client.id, "idle")
+				}
+				break
+			}
+
+			time.Sleep(time.Second)
+			pingMessage, _ := json.Marshal(dataObj{
+				Type: "ping",
+				Data: map[string]interface{}{},
+			})
+			err := client.ws.WriteMessage(websocket.TextMessage, pingMessage)
+			if err != nil {
+				conn, ok := mm.safeGetClient(client.id)
+				if ok && conn == client.ws {
+					mm.safeSetUserState(client.id, "idle")
+				}
+				break
+			}
+			client.lastPing = time.Now()
+		}
+	}()
 
 	for {
 		// Read message from browser
 		var obj dataObj
 		err := ws.ReadJSON(&obj)
 		if err != nil {
-			fmt.Println(err)
-			//log.fatal (esse lixo encerra o programa)
+			conn, ok := mm.safeGetClient(client.id)
+			if ok && conn == client.ws {
+				mm.safeSetUserState(client.id, "idle")
+			}
 			return
 		}
 
-		if obj.Type == "requestMatch" {
+		if obj.Type == "joinQueue" {
 			fmt.Println("Processing " + client.id.String() + " request")
 			mm.safeRegisterMatchRequest(client)
+		}
+
+		if obj.Type == "leaveQueue" {
+			mm.safeSetUserState(client.id, "idle")
+		}
+
+		if obj.Type == "ping" {
+			client.lastPingResponse = time.Now()
 		}
 	}
 }

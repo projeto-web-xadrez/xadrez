@@ -27,12 +27,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     }
 
     useEffect(() => {
-        const pingInterval = setInterval(() => {
-            if (ws?.current) {
-                ws?.current?.send(JSON.stringify({ "type": "ping", "data": { "ping": "ping" } }))
-            }
-        }, 15 * 1000);
-
         if (isAuthenticated) {
             ws.current = new WebSocket(`/api/ws?csrfToken=${localStorage.getItem('csrf_token')}`);
 
@@ -54,7 +48,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
                 const dataType = rawData.type
                 const data = rawData.data
 
-                if (channels.current?.[dataType]) channels.current[dataType](data)
+                if(dataType === 'ping')
+                    sendMessage('ping', {});
+                else if (channels.current?.[dataType]) channels.current[dataType](data)
 
             };
 
@@ -67,7 +63,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
             ) ws?.current?.close();
 
             //socket.current = null
-            clearInterval(pingInterval)
             setConnected(false);
         };
     }, [isAuthenticated]);
