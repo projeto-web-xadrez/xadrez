@@ -143,7 +143,6 @@ export default function Games() {
               setGames(res.data);
               setAddGameModalOpen(false);
             } catch (err: any) {
-              console.log("adkadkad")
               setError(err.response?.data);
             }
           }}

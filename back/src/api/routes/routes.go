@@ -20,238 +20,239 @@ type GamePGNStruct struct {
 
 var SavedRepo *repositories.SavedGameRepo
 
-func ManageGame(w http.ResponseWriter, r *http.Request) {
-	clientId := r.Context().Value("clientId").(string)
-	user_uuid, err := uuid.Parse(clientId)
+func manageGameGet(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	clientID := r.Context().Value("clientId").(uuid.UUID)
+
+	if id == "" {
+		// fetch-all-games
+
+		savedGames, err := SavedRepo.GetGamesFromUser(r.Context(), clientID, 100)
+		if err != nil {
+			http.Error(w, "Failed to fetch games", http.StatusInternalServerError)
+			return
+		}
+
+		jsonData, err := json.Marshal(savedGames)
+
+		if _, e := w.Write([]byte(jsonData)); e != nil {
+			err := http.StatusInternalServerError
+			http.Error(w, "Failed to respond to fetch games request", err)
+		}
+		return
+	}
+
+	//fetch-game
+	game_id, err := uuid.Parse(id)
+
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	savedGames, err := SavedRepo.GetGame(r.Context(), game_id)
+	if err != nil {
+		http.Error(w, "Failed to fetch games", http.StatusInternalServerError)
+		return
+	}
+
+	jsonData, err := json.Marshal(savedGames)
+
+	if _, e := w.Write([]byte(jsonData)); e != nil {
+		err := http.StatusInternalServerError
+		http.Error(w, "Failed to respond to create game request", err)
+	}
+}
+
+func manageGamePost(w http.ResponseWriter, r *http.Request) {
+	clientID := r.Context().Value("clientId").(uuid.UUID)
+	var GamePGNMsgArr []GamePGNStruct
+	var GamePGNMsg GamePGNStruct
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Internal Error", http.StatusInternalServerError)
+		return
+	}
+
+	err = json.Unmarshal([]byte(data), &GamePGNMsg)
+	if err != nil {
+		err = json.Unmarshal([]byte(data), &GamePGNMsgArr)
+		if err != nil {
+			http.Error(w, "Internal Error", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		GamePGNMsgArr = make([]GamePGNStruct, 1)
+		GamePGNMsgArr[0] = GamePGNMsg
+	}
+
+	if len(GamePGNMsgArr) == 0 {
+		http.Error(w, "Empty games array", http.StatusInternalServerError)
+		return
+	}
+	if len(GamePGNMsgArr) > 20 {
+		http.Error(w, "Too many games", http.StatusInternalServerError)
+		return
+	}
+
+	someOk := false
+	errorMessage := ""
+	for _, msg := range GamePGNMsgArr {
+		// validacao do PGN
+		reader := strings.NewReader(msg.PGN)
+		pgn, err := chess.PGN(reader)
+		if err != nil {
+			errorMessage = "PGN is invalid"
+			continue
+		}
+		newG := chess.NewGame(pgn)
+		last_fen := newG.FEN()
+
+		_, err = SavedRepo.CreateNewGame(r.Context(), clientID, msg.Name, msg.PGN, last_fen)
+
+		if err != nil {
+			errorMessage = "Failed to create game"
+			continue
+		}
+
+		someOk = true
+	}
+
+	if !someOk {
+		http.Error(w, errorMessage, http.StatusInternalServerError)
+		return
+	}
+
+	// retorna todos os jogos atualizados do usuario para atualizar no frontend
+
+	savedGames, err := SavedRepo.GetGamesFromUser(r.Context(), clientID, 100)
+	if err != nil {
+		http.Error(w, "Failed to fetch games", http.StatusInternalServerError)
+		return
+	}
+
+	jsonData, _ := json.Marshal(savedGames)
+
+	if _, e := w.Write([]byte(jsonData)); e != nil {
+		err := http.StatusInternalServerError
+		http.Error(w, "Failed to respond to create games request", err)
+	}
+}
+
+func manageGamePut(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	clientID := r.Context().Value("clientId").(uuid.UUID)
+
+	if id == "" {
+		http.Error(w, "Invalid game id", http.StatusInternalServerError)
+		return
+	}
+
+	var GamePGNMsg GamePGNStruct
+	decoder := json.NewDecoder(r.Body)
+
+	err := decoder.Decode(&GamePGNMsg)
 
 	if err != nil {
 		http.Error(w, "Internal Error", http.StatusInternalServerError)
 		return
 	}
+	reader := strings.NewReader(GamePGNMsg.PGN)
+	pgn, err := chess.PGN(reader)
+	if err != nil {
+		http.Error(w, "PGN is invalid", http.StatusInternalServerError)
+		return
+	}
+	newG := chess.NewGame(pgn)
+	last_fen := newG.FEN()
+
+	gameId_uuid, err := uuid.Parse(id)
+
+	if err != nil {
+		http.Error(w, "Internal Error", http.StatusInternalServerError)
+		return
+	}
+
+	gameModel := models.SavedGame{
+		ID:        gameId_uuid,
+		UserID:    clientID,
+		Name:      GamePGNMsg.Name,
+		PGN:       GamePGNMsg.PGN,
+		LastFEN:   last_fen,
+		CreatedAt: time.Now(),
+	}
+	err = SavedRepo.UpdateGame(r.Context(), &gameModel)
+
+	if err != nil {
+		http.Error(w, "Internal Error", http.StatusInternalServerError)
+		return
+	}
+
+	savedGames, err := SavedRepo.GetGamesFromUser(r.Context(), clientID, 100)
+	if err != nil {
+		http.Error(w, "Failed to delete games", http.StatusInternalServerError)
+		return
+	}
+
+	jsonData, err := json.Marshal(savedGames)
+
+	if _, e := w.Write([]byte(jsonData)); e != nil {
+		err := http.StatusInternalServerError
+		http.Error(w, "Failed to respond to update games request", err)
+	}
+}
+
+func manageGameDelete(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	clientID := r.Context().Value("clientId").(uuid.UUID)
+
+	if id == "" {
+		http.Error(w, "Invalid game id", http.StatusInternalServerError)
+		return
+	}
+
+	gameId_uuid, err := uuid.Parse(id)
+
+	if err != nil {
+		http.Error(w, "Internal Error", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = SavedRepo.DeleteGameFromUser(r.Context(), gameId_uuid, clientID)
+	if err != nil {
+		http.Error(w, "Internal Error", http.StatusInternalServerError)
+		return
+	}
+
+	// envia a lista completa de jogos atualizados
+
+	savedGames, err := SavedRepo.GetGamesFromUser(r.Context(), clientID, 100)
+	if err != nil {
+		http.Error(w, "Failed to delete games", http.StatusInternalServerError)
+		return
+	}
+
+	jsonData, err := json.Marshal(savedGames)
+
+	if _, e := w.Write([]byte(jsonData)); e != nil {
+		err := http.StatusInternalServerError
+		http.Error(w, "Failed to respond to delete games request", err)
+	}
+}
+
+func ManageGame(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
-		//create-game
-		var GamePGNMsgArr []GamePGNStruct
-		var GamePGNMsg GamePGNStruct
-
-		data, err := io.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, "Internal Error", http.StatusInternalServerError)
-			break
-		}
-
-		err = json.Unmarshal([]byte(data), &GamePGNMsg)
-		if err != nil {
-			err = json.Unmarshal([]byte(data), &GamePGNMsgArr)
-			if err != nil {
-				http.Error(w, "Internal Error", http.StatusInternalServerError)
-				break
-			}
-		} else {
-			GamePGNMsgArr = make([]GamePGNStruct, 1)
-			GamePGNMsgArr[0] = GamePGNMsg
-		}
-
-		if len(GamePGNMsgArr) == 0 {
-			http.Error(w, "Empty games array", http.StatusInternalServerError)
-			break
-		}
-		if len(GamePGNMsgArr) > 20 {
-			http.Error(w, "Too many games", http.StatusInternalServerError)
-			break
-		}
-
-		someOk := false
-		errorMessage := ""
-		for _, msg := range GamePGNMsgArr {
-			// validacao do PGN
-			reader := strings.NewReader(msg.PGN)
-			pgn, err := chess.PGN(reader)
-			if err != nil {
-				errorMessage = "PGN is invalid"
-				continue
-			}
-			newG := chess.NewGame(pgn)
-			last_fen := newG.FEN()
-
-			_, err = SavedRepo.CreateNewGame(r.Context(), user_uuid, msg.Name, msg.PGN, last_fen)
-
-			if err != nil {
-				errorMessage = "Failed to create game"
-				continue
-			}
-
-			someOk = true
-		}
-
-		if !someOk {
-			http.Error(w, errorMessage, http.StatusInternalServerError)
-			break
-		}
-
-		// retorna todos os jogos atualizados do usuario para atualizar no frontend
-
-		savedGames, err := SavedRepo.GetGamesFromUser(r.Context(), user_uuid, 100)
-		if err != nil {
-			http.Error(w, "Failed to fetch games", http.StatusInternalServerError)
-			break
-		}
-
-		jsonData, _ := json.Marshal(savedGames)
-
-		if _, e := w.Write([]byte(jsonData)); e != nil {
-			err := http.StatusInternalServerError
-			http.Error(w, "Failed to respond to create games request", err)
-		}
-		break
-
+		manageGamePost(w, r)
 	case http.MethodGet:
-		id := r.PathValue("id")
-
-		if id == "" {
-			// fetch-all-games
-
-			savedGames, err := SavedRepo.GetGamesFromUser(r.Context(), user_uuid, 100)
-			if err != nil {
-				http.Error(w, "Failed to fetch games", http.StatusInternalServerError)
-				break
-			}
-
-			jsonData, err := json.Marshal(savedGames)
-
-			if _, e := w.Write([]byte(jsonData)); e != nil {
-				err := http.StatusInternalServerError
-				http.Error(w, "Failed to respond to fetch games request", err)
-			}
-			break
-		}
-
-		//fetch-game
-		game_id, err := uuid.Parse(id)
-
-		if err != nil {
-			http.Error(w, "Internal error", http.StatusInternalServerError)
-			break
-		}
-
-		savedGames, err := SavedRepo.GetGame(r.Context(), game_id)
-		if err != nil {
-			http.Error(w, "Failed to fetch games", http.StatusInternalServerError)
-			break
-		}
-
-		jsonData, err := json.Marshal(savedGames)
-
-		if _, e := w.Write([]byte(jsonData)); e != nil {
-			err := http.StatusInternalServerError
-			http.Error(w, "Failed to respond to create game request", err)
-		}
-
-		break
+		manageGameGet(w, r)
 	case http.MethodPut:
-		//edit-game
-		id := r.PathValue("id")
-
-		if id == "" {
-			http.Error(w, "Invalid game id", http.StatusInternalServerError)
-			break
-		}
-
-		var GamePGNMsg GamePGNStruct
-		decoder := json.NewDecoder(r.Body)
-
-		err := decoder.Decode(&GamePGNMsg)
-
-		if err != nil {
-			http.Error(w, "Internal Error", http.StatusInternalServerError)
-			break
-		}
-		reader := strings.NewReader(GamePGNMsg.PGN)
-		pgn, err := chess.PGN(reader)
-		if err != nil {
-			http.Error(w, "PGN is invalid", http.StatusInternalServerError)
-			break
-		}
-		newG := chess.NewGame(pgn)
-		last_fen := newG.FEN()
-
-		gameId_uuid, err := uuid.Parse(id)
-
-		if err != nil {
-			http.Error(w, "Internal Error", http.StatusInternalServerError)
-			break
-		}
-
-		gameModel := models.SavedGame{
-			ID:        gameId_uuid,
-			UserID:    user_uuid,
-			Name:      GamePGNMsg.Name,
-			PGN:       GamePGNMsg.PGN,
-			LastFEN:   last_fen,
-			CreatedAt: time.Now(),
-		}
-		err = SavedRepo.UpdateGame(r.Context(), &gameModel)
-
-		if err != nil {
-			http.Error(w, "Internal Error", http.StatusInternalServerError)
-			break
-		}
-
-		savedGames, err := SavedRepo.GetGamesFromUser(r.Context(), user_uuid, 100)
-		if err != nil {
-			http.Error(w, "Failed to delete games", http.StatusInternalServerError)
-			break
-		}
-
-		jsonData, err := json.Marshal(savedGames)
-
-		if _, e := w.Write([]byte(jsonData)); e != nil {
-			err := http.StatusInternalServerError
-			http.Error(w, "Failed to respond to update games request", err)
-		}
-		break
-
+		manageGamePut(w, r)
 	case http.MethodDelete:
-		// del-game
-		id := r.PathValue("id")
-
-		if id == "" {
-			http.Error(w, "Invalid game id", http.StatusInternalServerError)
-			break
-		}
-
-		gameId_uuid, err := uuid.Parse(id)
-
-		if err != nil {
-			http.Error(w, "Internal Error", http.StatusInternalServerError)
-			break
-		}
-
-		_, err = SavedRepo.DeleteGameFromUser(r.Context(), gameId_uuid, user_uuid)
-		if err != nil {
-			http.Error(w, "Internal Error", http.StatusInternalServerError)
-			break
-		}
-
-		// envia a lista completa de jogos atualizados
-
-		savedGames, err := SavedRepo.GetGamesFromUser(r.Context(), user_uuid, 100)
-		if err != nil {
-			http.Error(w, "Failed to delete games", http.StatusInternalServerError)
-			break
-		}
-
-		jsonData, err := json.Marshal(savedGames)
-
-		if _, e := w.Write([]byte(jsonData)); e != nil {
-			err := http.StatusInternalServerError
-			http.Error(w, "Failed to respond to delete games request", err)
-		}
-		break
-
+		manageGameDelete(w, r)
 	default:
 		err := http.StatusMethodNotAllowed
 		http.Error(w, "Invalid Method", err)
-		break
 	}
 }
