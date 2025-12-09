@@ -1,15 +1,6 @@
 CREATE SCHEMA IF NOT EXISTS chess;
 CREATE EXTENSION IF NOT EXISTS citext;
 
-/*
-DROP TABLE IF EXISTS chess.game;
-DROP TABLE IF EXISTS chess.user;
-DROP TYPE IF EXISTS chess.game_result;
-DROP TYPE IF EXISTS chess.game_result_reason;
-DROP TYPE IF EXISTS chess.game_category;
-*/
-
-CREATE TYPE chess.game_result AS ENUM('in_progress', 'white_won', 'black_won', 'draw', 'aborted');
 
 CREATE TABLE IF NOT EXISTS chess.user(
     user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
