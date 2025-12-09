@@ -283,7 +283,10 @@ func (server *AuthServer) ValidateSession(ctx context.Context, sessionInput *aut
 	}
 
 	if session == nil {
-		return nil, nil
+		return &auth_grpc.UserLoggedIn{
+			Res:     &RES_ERR_INVALID_SESSION,
+			Session: nil,
+		}, nil
 	}
 
 	return &auth_grpc.UserLoggedIn{

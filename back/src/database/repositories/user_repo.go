@@ -23,6 +23,27 @@ func NewUserRepo(dbPool *pgxpool.Pool) *UserRepo {
 	}
 }
 
+func (repo *UserRepo) GetUserStats(ctx context.Context, userID uuid.UUID) (*models.UserStats, error) {
+	query := `SELECT * FROM chess.user_stats WHERE user_id=$1;`
+
+	rows, err := repo.dbPool.Query(ctx, query, userID)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	userStats, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[models.UserStats])
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &userStats, nil
+}
+
 func (repo *UserRepo) UpdateUserPasswordByEmail(ctx context.Context, email string, newPassword string, includeCredentials bool) (*models.User, error) {
 	if !utils.ValidatePassword(newPassword) {
 		return nil, errors.New("password is not in a valid format")

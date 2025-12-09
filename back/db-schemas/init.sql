@@ -32,6 +32,61 @@ CREATE TABLE IF NOT EXISTS chess.game(
     ended_at TIMESTAMPTZ NOT NULL
 );
 
+
+CREATE TABLE IF NOT EXISTS chess.user_stats(
+    user_id UUID PRIMARY KEY REFERENCES chess.user(user_id),
+    wins INT DEFAULT 0,
+    draws INT DEFAULT 0,
+    losses INT DEFAULT 0,
+    games_played INT DEFAULT 0,
+    last_updated TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE OR REPLACE FUNCTION init_user_stats()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO chess.user_stats(user_id) VALUES (NEW.user_id);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER user_created
+AFTER INSERT ON chess.user
+FOR EACH ROW
+EXECUTE FUNCTION init_user_stats();
+
+CREATE OR REPLACE FUNCTION update_user_stats()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.result != 'in_progress' AND OLD.result = 'in_progress' THEN
+        UPDATE chess.user_stats us
+        SET
+            games_played = games_played + 1,
+            wins = wins + CASE WHEN NEW.result = 'white' THEN 1 ELSE 0 END,
+            losses = losses + CASE WHEN NEW.result = 'black' THEN 1 ELSE 0 END,
+            draws = draws + CASE WHEN NEW.result = 'draw' THEN 1 ELSE 0 END,
+            last_updated = NOW()
+        WHERE us.user_id = NEW.white_id;
+
+        UPDATE chess.user_stats us
+        SET
+            games_played = games_played + 1,
+            wins = wins + CASE WHEN NEW.result = 'black' THEN 1 ELSE 0 END,
+            losses = losses + CASE WHEN NEW.result = 'white' THEN 1 ELSE 0 END,
+            draws = draws + CASE WHEN NEW.result = 'draw' THEN 1 ELSE 0 END,
+            last_updated = NOW()
+        WHERE us.user_id = NEW.black_id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER game_result_update
+AFTER UPDATE ON chess.game
+FOR EACH ROW
+EXECUTE FUNCTION update_user_stats();
+
 CREATE TABLE IF NOT EXISTS chess.saved_game(
     game_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL,

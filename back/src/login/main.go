@@ -279,20 +279,7 @@ func validateUserSession(w http.ResponseWriter, r *http.Request) {
 		Token: sessionCookie.Value,
 	}
 	session, err := auth_server_grpc.ValidateSession(ctx, &sessionValidationInput)
-	if err != nil {
-		http.SetCookie(w, &http.Cookie{
-			Name:     "session_token",
-			Value:    "",
-			Expires:  time.Now().Add(-time.Hour),
-			HttpOnly: true,
-			Path:     "/",
-			SameSite: http.SameSiteLaxMode,
-		})
-		http.Error(w, "Invalid session", http.StatusUnauthorized)
-		return
-	}
-
-	if session == nil {
+	if err != nil || session == nil || !session.Res.Ok {
 		http.SetCookie(w, &http.Cookie{
 			Name:     "session_token",
 			Value:    "",
