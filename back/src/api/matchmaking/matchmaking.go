@@ -312,6 +312,7 @@ func (mm *MatchmakingManager) HandleNewConnection(w http.ResponseWriter, r *http
 		}
 
 		if obj.Type == "leaveQueue" {
+			fmt.Println("Setting " + client.id.String() + "as idle since the user requested cancel")
 			mm.safeSetUserState(client.id, "idle")
 		}
 
