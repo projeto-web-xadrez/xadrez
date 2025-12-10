@@ -348,9 +348,11 @@ export default function Game({ boardStyle, soundPlayer }: { boardStyle: BoardSty
                 }}>
                     <div className={`game-header ${(!liveGameState && game) ? ' game-header-ended' : ''}`}>
                         <h2 className="game-title">
-                            {(liveGameState ? 'Live Match: ' : 'Recorded Match: ') + `${startSettings?.playerWhiteUsername} vs ${startSettings?.playerBlackUsername}`}
+                            {
+                            startSettings?.playerWhiteUsername ? (liveGameState ? 'Live Match: ' : 'Recorded Match: ') + `${startSettings?.playerWhiteUsername} vs ${startSettings?.playerBlackUsername}`
+                            : 'Loading match...'
+                            }
                         </h2>
-
                         {!liveGameState && game && <div>
                             <p className="label">Duration</p>
                             <p className="descDuration">
