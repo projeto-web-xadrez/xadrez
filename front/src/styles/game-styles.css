@@ -1,0 +1,94 @@
+.game-container {
+  padding: 40px;
+  padding-top: 10px;
+  background-color: #1a1a1a;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid #333;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 10px;
+  align-items: stretch;
+  height: 100%;
+  min-height: 500px; /* Reduzido de 600px para 500px */
+}
+
+.game-container-ended {
+    
+}
+
+.game-title {
+  margin: 0;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.game-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding-top: 15px;
+  color: #fff;
+  padding-right: 15px
+}
+
+.game-header-ended {
+    margin-bottom: -25px;
+}
+
+.descWinner {
+  margin-top: -2px;
+  color: #1ae2b0; /* Verde na fonte */
+  font-size: 15px;
+  font-weight: 600;
+  padding: 4px 0; /* Removido padding horizontal para não ter fundo */
+  display: inline-block;
+}
+
+.descDraw {
+  margin: 0;
+  color: #ffd700; /* Amarelo na fonte */
+  font-size: 15px;
+  font-weight: 600;
+  padding: 4px 0; /* Removido padding horizontal para não ter fundo */
+  display: inline-block;
+}
+
+.label {
+  margin: 0;
+  color: #aaa;
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Valores das informações */
+.descDuration {
+  margin: 0;
+  margin-bottom: 5px;
+  color: #ddd;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.descReason {
+  margin: 0;
+  margin-bottom: 5px;
+  color: #ddd;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+
+/* Data de finalização */
+.descFinishDate {
+  margin: 0;
+  color: #ddd;
+  font-size: 15px;
+  font-weight: 500;
+}

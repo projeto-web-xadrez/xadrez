@@ -32,7 +32,7 @@ function App() {
               isAuthenticated
                   ? <Navigate to="/dashboard" replace />
                   : <Navigate to="/login" replace />} />
-          <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+          <Route path="/dashboard" element={<RequireAuth><Dashboard soundPlayer={soundPlayer}/></RequireAuth>} />
           <Route path="/game/:gameId" element={<RequireAuth><Game soundPlayer={soundPlayer}/></RequireAuth>} />
           <Route path="/games" element={<RequireAuth><Games/></RequireAuth>} />
           <Route path="/savedgame/:gameId" element={<RequireAuth><SavedGame soundPlayer={soundPlayer}/></RequireAuth>} />

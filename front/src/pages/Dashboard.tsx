@@ -1,10 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useWebsocket } from '../context/WebSocketContext';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type RefObject } from 'react';
 import MatchSearchComponent from '../components/dashboard/MatchSearchComponent';
 import MatchHistoryList from '../components/dashboard/MatchHistoryList';
 import "../styles/Dashboard.css"
+import type { SoundPlayerHandle } from '../components/SoundPlayerComponent';
 
 interface UserStatsType {
   draws: number,
@@ -25,7 +26,7 @@ interface PastGameType {
 }
 
 
-export default function Dashboard() {
+export default function Dashboard({soundPlayer}: {soundPlayer: RefObject<SoundPlayerHandle | null>}) {
   const playerId = localStorage.getItem("clientId") || "null";
   const { isAuthenticated, clientId } = useAuth();
   const { sendMessage, subscribe, unsubscribe } = useWebsocket()
@@ -48,6 +49,7 @@ export default function Dashboard() {
     subscribe("matchFound", (data) => {
       const room = data['roomId'] as string;
       unsubscribe("matchFound"); // evita múltiplas execuções
+      soundPlayer?.current?.playSound(`/sounds/GameStart.mp3`);
       navigate(`/game/${room}`, {
         state: {
           liveGame: true
@@ -89,7 +91,7 @@ export default function Dashboard() {
       const jsonData = await data.json()
       console.log(jsonData)
       const past_games_array: PastGameType[] = jsonData.filter((e:any) => e.status == "ended").map((element: any) => {
-        const calculated_duration = Math.floor((new Date(element.ended_at).getTime() - new Date(element.started_at).getTime())/1000);
+        const calculated_duration = Math.ceil((new Date(element.ended_at).getTime() - new Date(element.started_at).getTime())/1000);
         const cur = {
           "player1": element.white_username,
           "player2": element.black_username,
@@ -117,7 +119,7 @@ export default function Dashboard() {
             onSearch={requestMatch}
           />
         </div>
-        <div className='user-stats-container-div'>
+        <div className='user-stats-container-div' style={{width:'100%1'}}>
           {isUserStatsLoaded ? (
             <>
               <div className='solid-block-container' id='total-games-played'>

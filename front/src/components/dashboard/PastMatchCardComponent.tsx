@@ -58,7 +58,7 @@ export default function PastMatchCard(props: PastMatchCardProps) {
                 <h3 className='past-match-card-title'>{`${props.player1} vs ${props.player2}`}</h3>
                 <p className="past-match-card-label">Duration</p>
                 <p className="past-match-card-descDuration">{durationToString(props.duration)}</p>
-                <p className="past-match-card-label">Match status</p>
+                <p className="past-match-card-label">Match result</p>
                 {(props.winner != "draw") ? 
                     (<p className="past-match-card-descWinner">{props.winner} 🏆</p>) 
                         : 

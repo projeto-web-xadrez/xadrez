@@ -232,6 +232,19 @@ func (g *Game) SendMove(player *Player, message PlayerMovedMessage) bool {
 			Data: string(jsonData),
 		}
 
+		player.gm.gameRepo.UpdateGame(context.Background(), &models.Game{
+			ID:           g.ID,
+			WhiteID:      g.WhitePlayer.ID,
+			BlackID:      g.BlackPlayer.ID,
+			PGN:          g.game.String(),
+			LastFEN:      g.game.FEN(),
+			Result:       result,
+			ResultReason: g.game.Method().String(),
+			Status:       "ended",
+			StartedAt:    g.StartedAt,
+			EndedAt:      time.Now(),
+		})
+
 		opponent.SendMessage(moveMessage)
 		opponent.SendMessage(winMsg)
 		player.SendMessage(winMsg)
@@ -253,19 +266,6 @@ func (g *Game) SendMove(player *Player, message PlayerMovedMessage) bool {
 		go func() {
 			time.Sleep(time.Second)
 			g.mutex.Lock()
-
-			player.gm.gameRepo.UpdateGame(context.Background(), &models.Game{
-				ID:           g.ID,
-				WhiteID:      g.WhitePlayer.ID,
-				BlackID:      g.BlackPlayer.ID,
-				PGN:          g.game.String(),
-				LastFEN:      g.game.FEN(),
-				Result:       result,
-				ResultReason: "",
-				Status:       "ended",
-				StartedAt:    g.StartedAt,
-				EndedAt:      time.Now(),
-			})
 
 			gameEndedMessage := Message{
 				Type: "quit",
@@ -324,12 +324,15 @@ func (g *Game) Resign(player *Player) bool {
 	case g.WhitePlayer.ID:
 		opponent = g.BlackPlayer
 		opponentColor = "black"
+		g.game.Resign(chess.White)
 	case g.BlackPlayer.ID:
 		opponent = g.WhitePlayer
 		opponentColor = "white"
+		g.game.Resign(chess.Black)
 	default:
 		return false
 	}
+
 	g.Winner = opponent.ID.String()
 
 	gameEndMessage := GameEndedMessage{
@@ -343,6 +346,19 @@ func (g *Game) Resign(player *Player) bool {
 		Type: "game_ended",
 		Data: string(jsonData),
 	}
+
+	player.gm.gameRepo.UpdateGame(context.Background(), &models.Game{
+		ID:           g.ID,
+		WhiteID:      g.WhitePlayer.ID,
+		BlackID:      g.BlackPlayer.ID,
+		PGN:          g.game.String(),
+		LastFEN:      g.game.FEN(),
+		Result:       opponentColor,
+		ResultReason: "Resignation",
+		Status:       "ended",
+		StartedAt:    g.StartedAt,
+		EndedAt:      time.Now(),
+	})
 
 	g.WhitePlayer.SendMessage(winMsg)
 	g.BlackPlayer.SendMessage(winMsg)
@@ -361,19 +377,6 @@ func (g *Game) Resign(player *Player) bool {
 	go func() {
 		time.Sleep(time.Second)
 		g.mutex.Lock()
-
-		player.gm.gameRepo.UpdateGame(context.Background(), &models.Game{
-			ID:           g.ID,
-			WhiteID:      g.WhitePlayer.ID,
-			BlackID:      g.BlackPlayer.ID,
-			PGN:          g.game.String(),
-			LastFEN:      g.game.FEN(),
-			Result:       opponentColor,
-			ResultReason: "resignation",
-			Status:       "ended",
-			StartedAt:    g.StartedAt,
-			EndedAt:      time.Now(),
-		})
 
 		gameEndedMessage := Message{
 			Type: "quit",

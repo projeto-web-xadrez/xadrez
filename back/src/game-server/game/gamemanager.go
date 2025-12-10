@@ -146,6 +146,6 @@ func (gm *GameManager) CreateNewGame(playerID1 uuid.UUID, playerID2 uuid.UUID) (
 	gm.players[p2.ID] = p2
 	gm.mutex.Unlock()
 
-	gm.gameRepo.CreateNewGame(context.TODO(), game.ID, p1.ID, p2.ID, "", "in_progress", "in_progress", "", game.StartedAt, time.Now())
+	gm.gameRepo.CreateNewGame(context.TODO(), game.ID, p1.ID, p2.ID, "", "in_progress", "in_progress", "", game.StartedAt, time.Now(), "")
 	return game, nil
 }

@@ -179,27 +179,6 @@ export default function Games() {
           error={error}
         />
       )}
-
-      <button onClick={() => {
-
-        const data = {
-          'name': 'Teste',
-          'pgn': `1. e4 e5 2. Nc3 Nc6 3. Nf3 Nf6 4. Bc4 Nxe4 5. Nxe4 d5 { C55 Italian Game: Two Knights Defense } 6. Bxd5 Qxd5 7. Nc3 Qe6 8. d3 f5 9. Ng5 Qf6 10. Nd5 Qxg5 { Black resigns. } 1-0`
-        }
-
-        axios.post(`/api/savedgame`,
-          data
-          , axiosSettings)
-          .then((response: any) => {
-            if (response.status == 200) {
-              setGames(response.data as SavedGame[])
-            }
-          })
-
-      }}>
-        Add game
-
-      </button>
     </div>
 
   );

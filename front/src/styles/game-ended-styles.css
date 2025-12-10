@@ -1,0 +1,137 @@
+/* GameEndedComponent.css */
+.game-ended-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.game-ended-modal {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90vw;
+  overflow: hidden;
+}
+
+.game-ended-title {
+  margin: 0;
+  padding: 20px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  border-bottom: 1px solid #333;
+  text-align: center;
+}
+
+.game-ended-body {
+  padding: 30px 20px;
+}
+
+.game-ended-message {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.game-ended-message.winner {
+  color: #1ae2b0;
+}
+
+.game-ended-message.loser {
+  color: #e74c3c;
+}
+
+.game-ended-message.draw {
+  color: #f39c12;
+}
+
+.game-ended-footer {
+  padding: 20px;
+  border-top: 1px solid #333;
+  display: flex;
+  justify-content: center;
+}
+
+.game-ended-btn {
+  padding: 12px 24px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 160px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  text-align: center;
+}
+
+.game-ended-btn.winner-btn {
+  background: #1ae2b0;
+  color: #000;
+  border-color: #1ae2b0;
+}
+
+.game-ended-btn.winner-btn:hover {
+  background: #17cca0;
+  transform: translateY(-1px);
+}
+
+.game-ended-btn.loser-btn {
+  background: #2a2a2a;
+  color: #ccc;
+  border-color: #444;
+}
+
+.game-ended-btn.loser-btn:hover {
+  background: #333;
+  color: #fff;
+  border-color: #555;
+}
+
+.game-ended-btn.draw-btn {
+  background: #f39c12;
+  color: #000;
+  border-color: #f39c12;
+}
+
+.game-ended-btn.draw-btn:hover {
+  background: #e67e22;
+  border-color: #e67e22;
+  transform: translateY(-1px);
+}
+
+.game-ended-btn:active {
+  transform: translateY(0);
+}
+
+/* Responsivo */
+@media (max-width: 480px) {
+  .game-ended-modal {
+    width: 100%;
+    max-width: 100%;
+    margin: 16px;
+  }
+  
+  .game-ended-body {
+    padding: 20px 16px;
+  }
+  
+  .game-ended-message {
+    font-size: 18px;
+  }
+  
+  .game-ended-btn {
+    width: 100%;
+    padding: 12px;
+  }
+}

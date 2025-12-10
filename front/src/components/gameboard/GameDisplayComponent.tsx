@@ -34,6 +34,7 @@ export interface GameDisplayHandle {
         move_s2: Square;
         move_notation: string;
     }) => void;
+    setType: (type: string) => void;
 }
 
 const GameDisplayComponent = forwardRef<GameDisplayHandle, GameDisplaySettings>((props, ref) => {
@@ -110,7 +111,21 @@ const GameDisplayComponent = forwardRef<GameDisplayHandle, GameDisplaySettings>(
     };
 
     useImperativeHandle(ref, () => ({
-        pushMove
+        pushMove,
+        setType: (type: string) => {
+            const allowedMoves = currentPage === pages.length - 1 && props.playerColor && type === 'playing'
+            ? props.playerColor : 'none';
+            
+            setGameState((prev) => {
+                return {
+                    allowedMoves,
+                    perspective: (prev?.lastMove && prev?.perspective) || props.perspective,
+                    fen: pages[currentPage].fen,
+                    highlightedSquare: currentPage === pages.length - 1 ? highlightedSquare : null,
+                    lastMove: pages[currentPage].lastMoves
+                }
+            });
+        }
     }));
 
     const updatePage = (index: number, shouldScroll: boolean) => updatePageNoState(pages, index, shouldScroll);
@@ -118,7 +133,7 @@ const GameDisplayComponent = forwardRef<GameDisplayHandle, GameDisplaySettings>(
         if (index < 0 || index >= pages.length)
             return;
 
-        if (index >= currentPage) {
+        if (index > currentPage) {
             const move = pages[index].move;
             if(move) {
                 const soundFile = move.isCapture() ? '/sounds/Capture.mp3' : '/sounds/Move.mp3';
@@ -132,7 +147,7 @@ const GameDisplayComponent = forwardRef<GameDisplayHandle, GameDisplaySettings>(
 
         const allowedMoves = index === pages.length - 1 && props.playerColor && props.type === 'playing'
             ? props.playerColor : 'none';
-
+    
         setGameState((prev) => {
             return {
                 allowedMoves,
@@ -226,7 +241,7 @@ const GameDisplayComponent = forwardRef<GameDisplayHandle, GameDisplaySettings>(
         }
         return groups;
     }
-
+    
     if (!props.pgn)
         return (
             <div style={{

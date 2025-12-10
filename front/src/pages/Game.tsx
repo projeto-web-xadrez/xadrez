@@ -6,6 +6,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import GameEndedComponent from '../components/GameEndedComponent';
 import axios from 'axios';
+import '../styles/game-styles.css'
 
 const MessageType = {
     INIT: 'init',
@@ -124,8 +125,11 @@ interface ApiGameType {
     last_fen?: string;
     pgn?: string;
     result?: string;
+    result_reason?: string;
     started_at: string;
     status: string;
+    black_username: string;
+    white_username: string;
 };
 
 interface UserStatsType {
@@ -144,7 +148,8 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
 
     const { isAuthenticated, clientId } = useAuth();
     const [winner, setWinner] = useState<string | null>(null);
-    const liveGame = useRef<boolean>(!!location?.state?.liveGame)
+    const liveGame = useRef<boolean>(!!location?.state?.liveGame);
+    const [liveGameState, setLiveGameState] = useState<boolean>(!!location?.state?.liveGame);
 
     if (!paramGameId || !isAuthenticated) {
         navigate('/');
@@ -152,29 +157,6 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
     }
 
     const gameId = useRef<string>(paramGameId);
-
-    // If this flag is true, we are sure this is a live game, so we don't need to
-    // request the API to check it. However, if it isn't, it could still be a live game
-    // (cause the user may have refreshed the page or retyped the URL)
-    /*
-    const location = useLocation();
-    useEffect(() => {
-        if(location?.state?.liveGame)
-            alert('Live game') // Connect to websocket
-        else // Connect to API, then connect to websocket if necessary
-    }, []);*/
-
-    // TODO: if liveGame, connect to websocket directly
-    // otherwise, request the API (with a HTTP request) for game information
-    // the API should return whether it is a live game, the players, etc...
-    // So, in the act of making the rooom, we should also store it in the database.
-    // And we should also write this API route that gets the game info from DB
-
-    // TODO: add GameEndedComponent when game finishes
-    // TODO: only allow user to move when received a GameStarted or a welcome with game_status == 'started'
-    // TODO: abstract this WebSocket away
-    // TODO: make a checked king highlight in the DumbDisplayBoard
-
     const displayHandle = useRef<GameDisplayHandle>(null);
     const [connected, setConnected] = useState(false);
     const client = useRef<WebSocket | null>(null);
@@ -187,26 +169,24 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
         playerBlackId: string,
     } | null>();
     const [perspective, setPerspective] = useState<Color>('w');
-
+    const [gameEndedOpen, setGameEndedOpen] = useState<boolean>(false);
+    const [game, setGame] = useState<ApiGameType | null>(null);
 
     useEffect(() => {
-
         const exec = async () => {
             if (!liveGame.current) {
                 try {
                     const game = (await axios.get(`/api/game/${gameId.current}`)).data as ApiGameType;
+                    setGame(game);
                     liveGame.current = (game.status === 'in_progress');
-
+                    setLiveGameState(liveGame.current);
                     if (!liveGame.current) {
-                        const whiteName = ((await axios.get(`/api/userstats/${game.white_id}`)).data as UserStatsType).username;
-                        const blackName = ((await axios.get(`/api/userstats/${game.black_id}`)).data as UserStatsType).username;
-
                         setStartSettings({
                             pgn: game.pgn || '*',
                             playerBlackId: game.black_id,
                             playerWhiteId: game.white_id,
-                            playerBlackUsername: blackName,
-                            playerWhiteUsername: whiteName,
+                            playerBlackUsername: game.black_username,
+                            playerWhiteUsername: game.white_username,
                             playingColor: null
                         });
                         if (game.black_id === clientId)
@@ -280,7 +260,14 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
                             break;
                         case MessageType.GAME_ENDED:
                             const message = JSON.parse(msg.data) as GameEndedMessage
-                            setWinner(message?.winner_id as string)
+                            setWinner(message?.winner_id as string);
+                            setGameEndedOpen(true);
+                            setLiveGameState(false);
+                            axios.get(`/api/game/${gameId.current}`)
+                                .then(res => setGame(res.data as ApiGameType))
+                                .catch(() => { });
+
+                            soundPlayer.current?.playSound(`/sounds/GameEnd.mp3`);
                             break;
                         case MessageType.PING:
                             client.current?.send(new MessagePing().encode())
@@ -303,55 +290,115 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
         client.current?.send(new PlayerMovedMessage(move).encode());
     };
 
+    const durationToString = (seconds: number) => {
+        let minutes = Math.floor(seconds / 60);
+        seconds -= minutes * 60;
+
+        const hours = Math.floor(minutes / 60);
+        minutes -= hours * 60;
+
+        let h = hours !== 0 ? `${hours} hour${hours === 1 ? '' : 's'}` : '';
+        let m = minutes !== 0 ? `${minutes} minute${minutes === 1 ? '' : 's'}` : '';
+        const s = seconds !== 0 ? `${seconds} second${seconds === 1 ? '' : 's'}` : '';
+
+        if (h && (m || s))
+            h += ', ';
+        if (m && s)
+            m += ', ';
+        return h + m + s;
+    }
+
     return (
         <>
-            {
-                (!winner || !startSettings?.playingColor) ? (
+            {(gameEndedOpen && startSettings?.playingColor) && <GameEndedComponent onClose={() => {
+                setStartSettings((settings) => {
+                    if (!settings)
+                        return settings;
+                    return {
+                        ...settings,
+                        playingColor: null,
+                    }
+                });
+                setGameEndedOpen(false);
+                liveGame.current = false;
+                setLiveGameState(false);
+                displayHandle.current?.setType('spectating');
+                navigate(`/game/${gameId.current}`, {
+                    state: {
+                        liveGame: false
+                    },
+                    flushSync: true,
+                });
+            }} playerId={clientId as string} winner={winner as string} />}
 
-                    <div style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        width: '100%',
-                        marginTop: '5%',
-                    }}>
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                width: '100%',
+                marginTop: `${(!liveGameState && game) ? '1%' : '5%'}`,
+            }}>
 
-                        <div style={{
-                            display: 'inline-flex',
-                            flexDirection: 'column',
-                            alignItems: 'flex-start'
-                        }}>
-                            <UsernameDisplay username={perspective === 'b' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername} />
+                <div className="game-container" style={{
+                    display: 'inline-flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start'
+                }}>
+                    <div className={`game-header ${(!liveGameState && game) ? ' game-header-ended' : ''}`}>
+                        <h2 className="game-title">
+                            {(liveGameState ? 'Live Match: ' : 'Recorded Match: ') + `${startSettings?.playerWhiteUsername} vs ${startSettings?.playerBlackUsername}`}
+                        </h2>
 
-                            <GameDisplayComponent
-                                boardStyle={{
-                                    boardBackground: '/board_bg/maple.jpg',
-                                    pieceStyle: 'merida', //cburnett
-                                    pieceSize: 55,
-                                    shouldLabelSquares: true
-                                }}
-                                type={startSettings?.playingColor === null ? 'spectating' : 'playing'}
-                                pgn={startSettings?.pgn || ''}
-                                playerColor={startSettings?.playingColor || 'w'}
-                                perspective={perspective}
-                                onPlayerMove={onPlayerMove}
-                                onPlayerSwitchPerspective={(p) => setPerspective(p)}
-                                onPlayerResign={() => {
-                                    if (startSettings?.playingColor !== null && client?.current?.send)
-                                        client.current.send(new ResignMessage().encode());
-                                }}
-                                soundPlayer={soundPlayer}
-                                ref={displayHandle}
-                            />
+                        {!liveGameState && game && <div>
+                            <p className="label">Duration</p>
+                            <p className="descDuration">
+                                {durationToString(Math.ceil((new Date(game.ended_at).getTime() - new Date(game.started_at).getTime())/1000))}
+                            </p>
+                            <p className="label">Match Result</p>
+                            {(game.result !== "draw") ?
+                                (<p className="descWinner">{game.result === 'white' ? `${game.white_username} 🏆`
+                                    : `${game.black_username} 🏆`}</p>)
+                                :
+                                (<p className="descDraw">Draw 🤝</p>)}
+                            {game.result_reason && <>
+                                <p className="label">Reason</p>
+                                <p className="descReason">{game.result_reason}</p>
+                            </>
+                            }
 
-                            <UsernameDisplay username={perspective === 'w' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername} />
+                            <p className="label">Finished in</p>
+                            <p className="descFinishDate">{
+                                new Date(game.ended_at).toLocaleString('pt-BR')
+                            }</p>
+
                         </div>
-                    </div>)
-                    :
-                    <GameEndedComponent playerId={clientId as string} winner={winner as string} />
-            }
+                        }
+                    </div>
 
+                    <UsernameDisplay username={perspective === 'b' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername} />
+                    <GameDisplayComponent
+                        boardStyle={{
+                            boardBackground: '/board_bg/maple.jpg',
+                            pieceStyle: 'merida', //cburnett
+                            pieceSize: 55,
+                            shouldLabelSquares: true
+                        }}
+                        type={startSettings?.playingColor === null ? 'spectating' : 'playing'}
+                        pgn={startSettings?.pgn || ''}
+                        playerColor={startSettings?.playingColor || 'w'}
+                        perspective={perspective}
+                        onPlayerMove={onPlayerMove}
+                        onPlayerSwitchPerspective={(p) => setPerspective(p)}
+                        onPlayerResign={() => {
+                            if (startSettings?.playingColor !== null && client?.current?.send)
+                                client.current.send(new ResignMessage().encode());
+                        }}
+                        soundPlayer={soundPlayer}
+                        ref={displayHandle}
+                    />
+
+                    <UsernameDisplay username={perspective === 'w' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername} />
+                </div>
+            </div>
         </>
-
-
     );
 }
