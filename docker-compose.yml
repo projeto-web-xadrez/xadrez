@@ -133,6 +133,8 @@ services:
     build: ./front
     networks:
       - internal
+    ports:
+      - "3000:3000"
     develop:
       watch:
         - action: sync

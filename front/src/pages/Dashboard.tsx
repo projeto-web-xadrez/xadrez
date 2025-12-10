@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useWebsocket } from '../context/WebSocketContext';
 import { useEffect, useState } from 'react';
 import MatchSearchComponent from '../components/dashboard/MatchSearchComponent';
+import MatchHistoryList from '../components/dashboard/MatchHistoryList';
 import "../styles/Dashboard.css"
 
 interface UserStatsType {
@@ -13,6 +14,16 @@ interface UserStatsType {
   wins: number
 }
 
+interface PastGameType {
+  player1: string,
+  player2: string,
+  winner: string,
+  date: string,
+  duration: number,
+  last_fen: string,
+  game_id: string
+}
+
 
 export default function Dashboard() {
   const playerId = localStorage.getItem("clientId") || "null";
@@ -20,6 +31,7 @@ export default function Dashboard() {
   const { sendMessage, subscribe, unsubscribe } = useWebsocket()
   const [isUserStatsLoaded, setUserStatsLoaded] = useState<boolean>(false)
   const [userStats, setUserStats] = useState<UserStatsType | undefined>(undefined)
+  const [pastGames, setPastGames] = useState<PastGameType[]>([])
 
   const navigate = useNavigate();
 
@@ -29,6 +41,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchUserStats()
+    fetchUserPastGames()
   }, [isAuthenticated])
 
   const requestMatch = () => {
@@ -66,7 +79,32 @@ export default function Dashboard() {
       setUserStats(user_stats_updated)
       setUserStatsLoaded(true)
     }).catch((error) => console.log(error))
+  }
 
+  const fetchUserPastGames = async () => {
+    await fetch(`api/game?user=${clientId}`, {
+      method: "GET",
+      credentials: "include",
+    }).then(async (data: any) => {
+      const jsonData = await data.json()
+      console.log(jsonData)
+      const past_games_array: PastGameType[] = jsonData.filter((e:any) => e.status == "ended").map((element: any) => {
+        const calculated_duration = Math.floor((new Date(element.ended_at).getTime() - new Date(element.started_at).getTime())/1000);
+        const cur = {
+          "player1": element.white_username,
+          "player2": element.black_username,
+          "winner": (element.result != "draw") ? element[`${element.result}_username`] : "draw",
+          "date": element.started_at,
+          "duration": calculated_duration,
+          "last_fen": element.last_fen,
+          "game_id": element.game_id
+        } as PastGameType
+
+        return cur;
+      })
+      setPastGames(past_games_array)
+      setUserStatsLoaded(true)
+    }).catch((error) => console.log(error))
   }
 
 
@@ -118,6 +156,10 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      <MatchHistoryList
+        games={pastGames}
+      />
     </div>
 
   );

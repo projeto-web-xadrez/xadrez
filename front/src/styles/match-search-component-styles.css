@@ -17,9 +17,9 @@
 
 .search-button {
   padding: 14px 36px;
-  background-color: #1ae2b0;
-  color: #000;
-  border: none;
+  color: #1ae2b0;
+  background-color: #2a2a2a;
+  border: 1px solid #1ae2b0;
   border-radius: 12px;
   font-size: 16px;
   font-weight: 700;
@@ -29,7 +29,8 @@
 }
 
 .search-button:hover {
-  background-color: #17cca0;
+  transform: translateY(-2px);
+  background-color: #17cc9f28;
   transform: translateY(-2px);
 }
 
@@ -92,6 +93,10 @@
   min-height: 0;
   overflow: hidden;
   width: 100%;
+}
+
+.display-board-div:hover {
+    transform: translateY(-2px);
 }
 
 .display-board-div > div {

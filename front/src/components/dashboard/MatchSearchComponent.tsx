@@ -23,15 +23,15 @@ export default function MatchSearchComponent(props: MatchSearchProps) {
     return (
         <div className="search-match-container">
             <div className="searching-box">
-                <div hidden={!isSearching} className="searching-header">
-                    <h2 className="searching-title">Searching match...</h2>
-                    <p className="searching-time">{seconds} seconds elapsed</p>
+                <div className="searching-header">
+                    <h2 hidden={!isSearching} className="searching-title">Searching match...</h2>
+                    <h2 hidden={isSearching} className="searching-title">Ready to Play?</h2>
+                    <p hidden={!isSearching} className="searching-time">{seconds} seconds elapsed</p>
                 </div>
                 {!isSearching ? (
                     <>
                         <div className="display-board-div">
                             <img draggable="false" src="../../../public/chess_green_black.svg" alt="" />
-                            
                         </div>
 
                         <div className="searching-footer">

@@ -1,0 +1,216 @@
+/* match-history-list-styles.css */
+
+.match-history-card-container {
+  margin: 24px;
+  padding: 24px;
+  background-color: #1a1a1a;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid #333;
+}
+
+.match-container-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #333;
+}
+
+.match-container-title {
+  margin: 0;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.match-history-card-empty {
+  text-align: center;
+  padding: 60px 20px;
+  background-color: #2a2a2a;
+  border-radius: 12px;
+  border: 2px dashed #444;
+  margin-top: 20px;
+}
+
+.match-history-card-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: #555;
+}
+
+.match-history-card-empty-text {
+  font-size: 18px;
+  margin: 0 0 8px 0;
+  color: #ddd;
+  font-weight: 500;
+}
+
+.match-history-card-empty-subtext {
+  font-size: 14px;
+  margin: 0;
+  color: #888;
+}
+
+/* Container principal em coluna (vertical) com scroll */
+.match-history-card-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: 600px; /* Altura máxima */
+  overflow-y: auto; /* Scroll vertical */
+  overflow-x: hidden; /* Sem scroll horizontal */
+  padding-right: 8px; /* Espaço para a scrollbar não sobrepor conteúdo */
+  margin-right: -4px; /* Compensa o padding para alinhamento */
+  
+  /* Estilização da scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #444 #2a2a2a;
+}
+
+/* Estilizando a scrollbar para navegadores WebKit */
+.match-history-card-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.match-history-card-grid::-webkit-scrollbar-track {
+  background: #1a1a1a; /* Cor do fundo do track */
+  border-radius: 4px;
+  margin: 4px 0;
+}
+
+.match-history-card-grid::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+  border: 2px solid #1a1a1a; /* Borda para destacar da track */
+}
+
+.match-history-card-grid::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Itens individuais - largura total em layout vertical */
+.match-history-card-item {
+  width: 100%;
+  background-color: #2a2a2a;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  border: 1px solid #333;
+  flex-shrink: 0; /* Evita que os cards encolham */
+}
+
+/* Último item não precisa de margem inferior extra */
+.match-history-card-item:last-child {
+  margin-bottom: 0;
+}
+
+.match-history-card-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  border-color: #444;
+}
+
+/* Estilos para o conteúdo vazio quando não há jogos */
+.match-history-card-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background-color: #2a2a2a;
+  border-radius: 12px;
+  border: 2px dashed #444;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .match-history-card-container {
+    margin: 16px;
+    padding: 20px;
+  }
+
+  .match-container-title {
+    font-size: 24px;
+  }
+
+  .match-container-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .match-history-card-grid {
+    gap: 16px;
+    max-height: 500px; /* Altura menor em tablets */
+    padding-right: 6px;
+  }
+
+  .match-history-card-empty {
+    padding: 40px 16px;
+    margin-top: 16px;
+  }
+  
+  .match-history-card-empty-state {
+    padding: 40px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .match-history-card-container {
+    margin: 12px;
+    padding: 16px;
+  }
+
+  .match-container-title {
+    font-size: 22px;
+  }
+
+  .match-history-card-grid {
+    gap: 12px;
+    max-height: 400px; /* Altura ainda menor em mobile */
+    padding-right: 4px;
+  }
+
+  .match-history-card-empty {
+    padding: 30px 12px;
+  }
+  
+  .match-history-card-empty-state {
+    padding: 30px 12px;
+  }
+
+  .match-history-card-empty-icon {
+    font-size: 36px;
+  }
+
+  .match-history-card-empty-text {
+    font-size: 16px;
+  }
+
+  .match-history-card-empty-subtext {
+    font-size: 13px;
+  }
+  
+  /* Scrollbar mais fina em mobile */
+  .match-history-card-grid::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .match-history-card-grid::-webkit-scrollbar-thumb {
+    border: 1px solid #1a1a1a;
+  }
+}
+
+/* Estilo para quando o container está vazio (sem scroll) */
+.match-history-card-grid:empty {
+  max-height: none;
+  overflow-y: visible;
+  padding-right: 0;
+  margin-right: 0;
+}
+
+/* Adiciona um pouco de espaço no topo do primeiro card */
+.match-history-card-grid > .match-history-card-item:first-child {
+  margin-top: 2px;
+}
