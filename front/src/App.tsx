@@ -14,6 +14,7 @@ import type { SoundPlayerHandle } from './components/SoundPlayerComponent'
 import { useRef } from 'react'
 import SoundPlayerComponent from './components/SoundPlayerComponent'
 import SavedGame from './pages/SavedGame'
+import Profile from './pages/Profile'
 
 function App() {
   const soundPlayer = useRef<SoundPlayerHandle>(null);
@@ -36,7 +37,7 @@ function App() {
           <Route path="/game/:gameId" element={<RequireAuth><Game soundPlayer={soundPlayer}/></RequireAuth>} />
           <Route path="/games" element={<RequireAuth><Games/></RequireAuth>} />
           <Route path="/savedgame/:gameId" element={<RequireAuth><SavedGame soundPlayer={soundPlayer}/></RequireAuth>} />
-          <Route path="/leaderboard" element={<Leaderboard/>}/>
+          <Route path="/profile/:id" element={<RequireAuth><Profile/></RequireAuth>} />
           <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} />
           <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />} />
       </Routes>

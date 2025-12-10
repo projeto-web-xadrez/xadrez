@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"fmt"
 	"net/http"
 )
 
@@ -24,7 +23,6 @@ func SavedGameRouter(w http.ResponseWriter, r *http.Request) {
 func UserStatsRouter(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		fmt.Println("User stats router reached")
 		routeGetUserStats(w, r)
 	default:
 		err := http.StatusMethodNotAllowed

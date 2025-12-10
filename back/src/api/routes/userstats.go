@@ -30,6 +30,7 @@ func routeGetUserStats(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
+	user.PasswordHash = ""
 	user.Email = ""
 
 	jsonData, err := json.Marshal(user)
@@ -37,8 +38,6 @@ func routeGetUserStats(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 		return
 	}
-
-	fmt.Println(user.ID)
 
 	_, err = w.Write([]byte(jsonData))
 	if err != nil {

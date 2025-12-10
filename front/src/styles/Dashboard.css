@@ -100,7 +100,7 @@
 }
 
 #player-draws .solid-block-container-content {
-  color: #ffcc00;
+  color: #f39c12;
 }
 
 #player-wins .solid-block-container-content {
@@ -108,7 +108,7 @@
 }
 
 #player-losses .solid-block-container-content {
-  color: #ff6b6b;
+  color: #e74c3c;
 }
 
 /* ------------------------------ */

@@ -1,0 +1,12 @@
+.clickable-username {
+    cursor: pointer;
+    color: #ffffff;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+    position: relative;
+}
+
+.clickable-username:hover {
+    color: #1ae2b0;
+}

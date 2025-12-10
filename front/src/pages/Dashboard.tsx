@@ -18,6 +18,8 @@ interface UserStatsType {
 interface PastGameType {
   player1: string,
   player2: string,
+  player1Id: string,
+  player2Id: string,
   winner: string,
   date: string,
   duration: number,
@@ -95,6 +97,8 @@ export default function Dashboard({soundPlayer}: {soundPlayer: RefObject<SoundPl
         const cur = {
           "player1": element.white_username,
           "player2": element.black_username,
+          "player1Id": element.white_id,
+          "player2Id": element.black_id,
           "winner": (element.result != "draw") ? element[`${element.result}_username`] : "draw",
           "date": element.started_at,
           "duration": calculated_duration,

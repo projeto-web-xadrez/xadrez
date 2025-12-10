@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import GameEndedComponent from '../components/GameEndedComponent';
 import axios from 'axios';
 import '../styles/game-styles.css'
+import ClickableUsername from '../components/ClickableUsernameComponent';
 
 const MessageType = {
     INIT: 'init',
@@ -101,8 +102,10 @@ class MessagePing extends AbstractBaseMessage {
     }
 }
 
-const UsernameDisplay = ({ username }: { username: string | undefined }) =>
-    <span
+const UsernameDisplay = ({ id, username }: { id?: string, username?: string }) => {
+    if(!username || !id) return <></>
+
+    return <span
         style={{
             color: '#fff',
             fontWeight: "600",
@@ -114,8 +117,9 @@ const UsernameDisplay = ({ username }: { username: string | undefined }) =>
             userSelect: "none",
         }}
     >
-        {username || ''}
+        <ClickableUsername id={id} username={username}/>
     </span>
+}
 
 interface ApiGameType {
     game_id: string;
@@ -130,15 +134,6 @@ interface ApiGameType {
     status: string;
     black_username: string;
     white_username: string;
-};
-
-interface UserStatsType {
-    username: string;
-    draws: number;
-    games_played: number;
-    last_updated: string;
-    losses: number;
-    wins: number;
 };
 
 export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlayerHandle | null> }) {
@@ -355,8 +350,8 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
                             </p>
                             <p className="label">Match Result</p>
                             {(game.result !== "draw") ?
-                                (<p className="descWinner">{game.result === 'white' ? `${game.white_username} 🏆`
-                                    : `${game.black_username} 🏆`}</p>)
+                                (<p className="descWinner">{game.result === 'white' ? <ClickableUsername overrideColor="#1ae2b0" id={game.white_id} username={game.white_username}/>
+                                    : <ClickableUsername overrideColor="#1ae2b0" id={game.black_id} username={game.black_username}/>} 🏆</p>)
                                 :
                                 (<p className="descDraw">Draw 🤝</p>)}
                             {game.result_reason && <>
@@ -374,7 +369,7 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
                         }
                     </div>
 
-                    <UsernameDisplay username={perspective === 'b' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername} />
+                    <UsernameDisplay id={perspective === 'b' ? startSettings?.playerWhiteId : startSettings?.playerBlackId} username={perspective === 'b' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername} />
                     <GameDisplayComponent
                         boardStyle={{
                             boardBackground: '/board_bg/maple.jpg',
@@ -395,8 +390,7 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
                         soundPlayer={soundPlayer}
                         ref={displayHandle}
                     />
-
-                    <UsernameDisplay username={perspective === 'w' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername} />
+                    <UsernameDisplay id={perspective === 'w' ? startSettings?.playerWhiteId : startSettings?.playerBlackId} username={perspective === 'w' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername} />
                 </div>
             </div>
         </>

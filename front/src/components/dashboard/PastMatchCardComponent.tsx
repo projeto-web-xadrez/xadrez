@@ -1,9 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import DumbDisplayBoard from "../gameboard/DumbDisplayBoardComponent";
 import "../../styles/past-match-card-styles.css"
+import ClickableUsername from "../ClickableUsernameComponent";
 export interface PastMatchCardProps {
     player1: string,
     player2: string,
+    player1Id: string,
+    player2Id: string,
     winner: string,
     date: string,
     duration: number,
@@ -55,12 +58,13 @@ export default function PastMatchCard(props: PastMatchCardProps) {
                 </div>
             </div>
             <div className="past-match-card-body">
-                <h3 className='past-match-card-title'>{`${props.player1} vs ${props.player2}`}</h3>
+                <h3 className='past-match-card-title'>
+                    <p><ClickableUsername id={props.player1Id} username={props.player1}/> vs <ClickableUsername id={props.player2Id} username={props.player2}/></p></h3>
                 <p className="past-match-card-label">Duration</p>
                 <p className="past-match-card-descDuration">{durationToString(props.duration)}</p>
                 <p className="past-match-card-label">Match result</p>
                 {(props.winner != "draw") ? 
-                    (<p className="past-match-card-descWinner">{props.winner} 🏆</p>) 
+                    (<p className="past-match-card-descWinner"><ClickableUsername overrideColor="#1ae2b0" username={props.winner} id={props.winner === props.player1 ? props.player1Id : props.player2Id}/> 🏆</p>) 
                         : 
                     (<p className="past-match-card-descDraw">Draw 🤝</p>)}
                 
