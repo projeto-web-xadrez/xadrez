@@ -2,9 +2,12 @@ services:
   proxy:
     image: nginx
     ports:
-      - "80:80"
+      - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/templates/default.conf.template
+      - ./nginx.conf:/etc/nginx/templates/default.conf.template:ro
+      - ./cert/private.key:/etc/nginx/private.key:ro
+      - ./cert/certificate.crt:/etc/nginx/certificate.crt:ro
+      - ./front/dist:/usr/share/nginx/html:ro
     networks:
       - internal
     depends_on:
@@ -129,27 +132,7 @@ services:
             - ./back/.gitignore
             - ./back/bin
             - ./back/db-schemas
-  front:
-    build: ./front
-    networks:
-      - internal
-    ports:
-      - "3000:3000"
-    develop:
-      watch:
-        - action: sync
-          path: ./front
-          target: /app
-          ignore:
-            - ./front/node_modules/
-            - ./front/.git/
-        - action: rebuild
-          path: ./front/package.json
-    depends_on:
-      - login
-      - gameserver
-      - api
-
+            
 volumes:
   postgres_data:
   redis_data:
