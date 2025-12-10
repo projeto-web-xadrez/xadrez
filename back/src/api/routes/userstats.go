@@ -3,7 +3,6 @@ package routes
 import (
 	"database/repositories"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -12,8 +11,6 @@ import (
 var UserRepo *repositories.UserRepo
 
 func routeGetUserStats(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("User stats req handler")
-
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "Invalid user ID", http.StatusBadRequest)

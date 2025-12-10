@@ -15,6 +15,7 @@
     z-index: 10;
     border-bottom: 1px solid #333;
     font-family: sans-serif;
+    position: relative; /* Adicionado: contexto para position absolute */
 }
 
 /* -------------------------- */
@@ -36,12 +37,15 @@
 }
 
 /* -------------------------- */
-/* NAV LINKS                  */
+/* NAV LINKS - CENTRALIZADO   */
 /* -------------------------- */
 .nav-links {
     display: flex;
     gap: 24px;
     align-items: center;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .nav-links a {
@@ -75,6 +79,9 @@
 /* -------------------------- */
 /* PROFILE SECTION            */
 /* -------------------------- */
+.profile-section {
+    /* Container opcional para o botão de perfil */
+}
 
 .profile-btn {
     background: #2a2a2a;

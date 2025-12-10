@@ -38,14 +38,14 @@ function Navbar(props: NavbarProps) {
         {settingsModalOpen && <SettingsModal onUpdateSettings={props.onUpdateSettings} onClose={() => setSettingsModalOpen(false)}/>}
 
         <nav className='navbar'>
+            <div>
             <Link to="/" className="nav-brand">
                 Xadrez Web
             </Link>
+            </div>
             
             <div className="nav-links">
-                <Link to="/" className={location.pathname === '/' ? 'active' : ''}>
-                    Home
-                </Link>
+               
                 
                 {isAuthenticated ? (
                     <>
@@ -60,16 +60,23 @@ function Navbar(props: NavbarProps) {
                         </Link>
                     </>
                 ) : (
-                    <>
-                        <Link to="/login" className={location.pathname === '/login' ? 'active' : ''}>
-                            Login
-                        </Link>
-                        <Link to="/register" className={location.pathname === '/register' ? 'active' : ''}>
-                            Register
-                        </Link>
-                    </>
+
+                        <>
+                            <Link to="/" className={location.pathname === '/' ? 'active' : ''}>
+                                Home
+                            </Link>
+                            <Link to="/login" className={location.pathname === '/login' ? 'active' : ''}>
+                                Login
+                            </Link>
+                            <Link to="/register" className={location.pathname === '/register' ? 'active' : ''}>
+                                Register
+                            </Link>
+                        </>
+                        
                 )}
+
             </div>
+            {!isAuthenticated && <div></div>}
             {isAuthenticated && (
                 <div className="profile">
                     <button
