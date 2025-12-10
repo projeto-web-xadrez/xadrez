@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import "../../styles/saved-game-card-styles.css";
 import DumbDisplayBoard from "../gameboard/DumbDisplayBoardComponent";
 import { Trash2, Edit, Eye } from 'lucide-react';
+import type { BoardStyle } from "../../App";
 
 export interface SavedGameCardProps {
     game_id: string,
@@ -11,6 +12,7 @@ export interface SavedGameCardProps {
     last_fen: string,
     onDelete: () => void;
     onUpdate: () => void;
+    boardStyle: BoardStyle;
 }
 
 export default function SavedGameCard(props: SavedGameCardProps) {
@@ -48,8 +50,8 @@ export default function SavedGameCard(props: SavedGameCardProps) {
                 <div className="saved-game-card-board-container">
                     <DumbDisplayBoard
                         boardStyle={{
-                            boardBackground: '/board_bg/maple.jpg',
-                            pieceStyle: 'merida',
+                            boardBackground: props.boardStyle.background,
+                            pieceStyle: props.boardStyle.piece,
                             pieceSize: 20,
                             shouldLabelSquares: true
                         }}

@@ -6,6 +6,7 @@ import MatchSearchComponent from '../components/dashboard/MatchSearchComponent';
 import MatchHistoryList from '../components/dashboard/MatchHistoryList';
 import "../styles/dashboard-styles.css"
 import type { SoundPlayerHandle } from '../components/SoundPlayerComponent';
+import type { BoardStyle } from '../App';
 
 interface UserStatsType {
   draws: number,
@@ -24,11 +25,12 @@ interface PastGameType {
   date: string,
   duration: number,
   last_fen: string,
-  game_id: string
+  game_id: string,
+  boardStyle: BoardStyle
 }
 
 
-export default function Dashboard({soundPlayer}: {soundPlayer: RefObject<SoundPlayerHandle | null>}) {
+export default function Dashboard({soundPlayer, boardStyle}: {boardStyle: BoardStyle, soundPlayer: RefObject<SoundPlayerHandle | null>}) {
   const playerId = localStorage.getItem("clientId") || "null";
   const { isAuthenticated, clientId } = useAuth();
   const { sendMessage, subscribe, unsubscribe } = useWebsocket()
@@ -109,7 +111,7 @@ export default function Dashboard({soundPlayer}: {soundPlayer: RefObject<SoundPl
           "date": element.started_at,
           "duration": calculated_duration,
           "last_fen": element.last_fen,
-          "game_id": element.game_id
+          "game_id": element.game_id,
         } as PastGameType
 
         return cur;
@@ -170,7 +172,10 @@ export default function Dashboard({soundPlayer}: {soundPlayer: RefObject<SoundPl
       </div>
 
       <MatchHistoryList
-        games={pastGames}
+        games={pastGames.map(g => ({
+          ...g,
+          boardStyle
+        }))}
       />
     </div>
 

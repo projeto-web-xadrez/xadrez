@@ -8,6 +8,7 @@ import GameEndedComponent from '../components/GameEndedComponent';
 import axios, { type AxiosRequestConfig } from 'axios';
 import '../styles/game-styles.css'
 import ClickableUsername from '../components/ClickableUsernameComponent';
+import type { BoardStyle } from '../App';
 
 const MessageType = {
     INIT: 'init',
@@ -136,7 +137,7 @@ interface ApiGameType {
     white_username: string;
 };
 
-export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlayerHandle | null> }) {
+export default function Game({ boardStyle, soundPlayer }: { boardStyle: BoardStyle, soundPlayer: RefObject<SoundPlayerHandle | null> }) {
     const { gameId: paramGameId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
@@ -379,8 +380,8 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
                     <UsernameDisplay id={perspective === 'b' ? startSettings?.playerWhiteId : startSettings?.playerBlackId} username={perspective === 'b' ? startSettings?.playerWhiteUsername : startSettings?.playerBlackUsername} />
                     <GameDisplayComponent
                         boardStyle={{
-                            boardBackground: '/board_bg/maple.jpg',
-                            pieceStyle: 'merida', //cburnett
+                            boardBackground: boardStyle.background,
+                            pieceStyle: boardStyle.piece,
                             pieceSize: 55,
                             shouldLabelSquares: true
                         }}

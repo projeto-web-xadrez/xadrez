@@ -8,14 +8,31 @@ import Navbar from './components/NavbarComponent'
 import Game from './pages/Game'
 import Games from './pages/Games'
 import type { SoundPlayerHandle } from './components/SoundPlayerComponent'
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import SoundPlayerComponent from './components/SoundPlayerComponent'
 import SavedGame from './pages/SavedGame'
 import Profile from './pages/Profile'
 
+export interface BoardStyle {
+  background: string, piece: string
+}
+
 function App() {
   const soundPlayer = useRef<SoundPlayerHandle>(null);
   const {isAuthenticated} = useAuth()
+
+  useEffect(() => {
+    if(!localStorage.getItem('background'))
+      localStorage.setItem('background', 'maple');
+    if(!localStorage.getItem('piece'))
+        localStorage.setItem('piece', 'merida');
+  }, []);
+  
+
+  const [style, setStyle] = useState<BoardStyle>({
+    background: localStorage.getItem('background') ? `/board_bg/${localStorage.getItem('background')}.jpg` : '/board_bg/maple.jpg',
+    piece: localStorage.getItem('piece') || 'merida'
+  });
 
   return (
     <>
@@ -24,17 +41,22 @@ function App() {
           ref={soundPlayer}
       />
       <div className='xadrez'>
-        <Navbar/>
+        <Navbar onUpdateSettings={(background, piece) => {
+          setStyle({
+            background: `/board_bg/${background}.jpg`,
+            piece
+          });
+        }}/>
         <Routes>
           <Route path="/" element={
               isAuthenticated
                   ? <Navigate to="/dashboard" replace />
                   : <Navigate to="/login" replace />} />
-          <Route path="/dashboard" element={<RequireAuth><Dashboard soundPlayer={soundPlayer}/></RequireAuth>} />
-          <Route path="/game/:gameId" element={<RequireAuth><Game soundPlayer={soundPlayer}/></RequireAuth>} />
-          <Route path="/games" element={<RequireAuth><Games/></RequireAuth>} />
-          <Route path="/savedgame/:gameId" element={<RequireAuth><SavedGame soundPlayer={soundPlayer}/></RequireAuth>} />
-          <Route path="/profile/:id" element={<RequireAuth><Profile/></RequireAuth>} />
+          <Route path="/dashboard" element={<RequireAuth><Dashboard boardStyle={style} soundPlayer={soundPlayer}/></RequireAuth>} />
+          <Route path="/game/:gameId" element={<RequireAuth><Game boardStyle={style} soundPlayer={soundPlayer}/></RequireAuth>} />
+          <Route path="/games" element={<RequireAuth><Games boardStyle={style}/></RequireAuth>} />
+          <Route path="/savedgame/:gameId" element={<RequireAuth><SavedGame boardStyle={style} soundPlayer={soundPlayer}/></RequireAuth>} />
+          <Route path="/profile/:id" element={<RequireAuth><Profile boardStyle={style}/></RequireAuth>} />
           <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} />
           <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />} />
       </Routes>

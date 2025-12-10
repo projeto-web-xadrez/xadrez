@@ -1,4 +1,5 @@
 
+import type { BoardStyle } from '../../App';
 import '../../styles/games-styles.css'
 import SavedGameCard from './SavedGameCardComponent'
 
@@ -17,9 +18,10 @@ interface GameListProps {
   onUpdate: (game: SavedGame) => void;
   onAddGame: () => void;
   onImportLichess: () => void;
+  boardStyle: BoardStyle;
 }
 
-export default function GameList({ games, onDelete, onUpdate, onAddGame, onImportLichess }: GameListProps) {
+export default function GameList({ games, onDelete, onUpdate, onAddGame, onImportLichess, boardStyle }: GameListProps) {
   return (
     <div className="game-card-container">
       <div className="game-card-header">
@@ -60,6 +62,7 @@ export default function GameList({ games, onDelete, onUpdate, onAddGame, onImpor
                 {...game}
                 onDelete={() => onDelete(game)}
                 onUpdate={() => onUpdate(game)}
+                boardStyle={boardStyle}
               />
             </div>
           ))}

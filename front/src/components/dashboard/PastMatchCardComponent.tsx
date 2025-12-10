@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import DumbDisplayBoard from "../gameboard/DumbDisplayBoardComponent";
 import "../../styles/past-match-card-styles.css"
 import ClickableUsername from "../ClickableUsernameComponent";
+import type { BoardStyle } from "../../App";
 export interface PastMatchCardProps {
     player1: string,
     player2: string,
@@ -11,7 +12,8 @@ export interface PastMatchCardProps {
     date: string,
     duration: number,
     last_fen: string,
-    game_id: string
+    game_id: string,
+    boardStyle: BoardStyle,
 }
 
 const durationToString = (seconds: number) => {
@@ -42,8 +44,8 @@ export default function PastMatchCard(props: PastMatchCardProps) {
                 <div className="past-match-card-board-container">
                     <DumbDisplayBoard
                         boardStyle={{
-                            boardBackground: '/board_bg/maple.jpg',
-                            pieceStyle: 'merida',
+                            boardBackground: props.boardStyle.background,
+                            pieceStyle: props.boardStyle.piece,
                             pieceSize: 20,
                             shouldLabelSquares: true
                         }}

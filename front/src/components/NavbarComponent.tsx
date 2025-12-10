@@ -2,12 +2,18 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../styles/nav-bar-styles.css';
+import SettingsModal from './SettingsModalComponent';
 
-function Navbar() {
+interface NavbarProps {
+    onUpdateSettings: (selectedBackground: string, selectedPiece: string) => void;
+}
+
+function Navbar(props: NavbarProps) {
     const navigate = useNavigate();
     const location = useLocation();
     const { isAuthenticated, username, clientId, logout } = useAuth();
     const [open, setOpen] = useState(false);
+    const [settingsModalOpen, setSettingsModalOpen] = useState<boolean>(false);
 
     useEffect(() => {
         const handleClick = (event: MouseEvent) => {
@@ -28,6 +34,9 @@ function Navbar() {
     };
 
     return (
+        <>
+        {settingsModalOpen && <SettingsModal onUpdateSettings={props.onUpdateSettings} onClose={() => setSettingsModalOpen(false)}/>}
+
         <nav className='navbar'>
             <Link to="/" className="nav-brand">
                 Xadrez Web
@@ -80,6 +89,12 @@ function Navbar() {
                         }}>
                             Profile
                         </button>
+                        <button onClick={() => {
+                            setOpen(false);
+                            setSettingsModalOpen(true);
+                        }}>
+                            Board Settings
+                        </button>
                         <button onClick={handleLogout}>
                             Sign Out
                         </button>
@@ -87,6 +102,7 @@ function Navbar() {
                 </div>
             )}
         </nav>
+        </>
     );
 }
 

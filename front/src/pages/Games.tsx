@@ -10,6 +10,7 @@ import ImportlLichessModal from '../components/savedgames/ImportLichessModal';
 import GameList from '../components/savedgames/SavedGamesList';
 
 import '../styles/games-styles.css'
+import type { BoardStyle } from '../App';
 
 interface SavedGame {
   game_id: string,
@@ -50,7 +51,7 @@ async function handleLichessImport(username: string, maxGames: number, axiosSett
 
 }
 
-export default function Games() {
+export default function Games({boardStyle} : {boardStyle: BoardStyle}) {
   const { isAuthenticated, csrf } = useAuth();
   const [isDelDialogOpen, setDelDialogOpen] = useState<boolean>(false)
   const [isEditModalOpen, setEditModalOpen] = useState<boolean>(false)
@@ -85,6 +86,7 @@ export default function Games() {
   return (
     <div className='main'>
       <GameList
+        boardStyle={boardStyle}
         games={games}
         onDelete={(g) => { setGameToHandle(g); setDelDialogOpen(true); }}
         onUpdate={(g) => { setGameToHandle(g); setEditModalOpen(true); }}

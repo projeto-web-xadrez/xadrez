@@ -9,6 +9,7 @@ import ConfirmDialog from '../components/DialogConfirmComponent';
 import '../styles/saved-game-styles.css'
 import { Edit, Trash2 } from 'lucide-react';
 import EditSavedModal from '../components/savedgames/EditSavedGameModal';
+import type { BoardStyle } from '../App';
 
 interface SavedGame {
     user_id: string,
@@ -18,7 +19,7 @@ interface SavedGame {
     last_fen: string,
 };
 
-export default function SavedGame({ soundPlayer }: { soundPlayer: RefObject<SoundPlayerHandle | null> }) {
+export default function SavedGame({ boardStyle, soundPlayer }: { boardStyle: BoardStyle, soundPlayer: RefObject<SoundPlayerHandle | null> }) {
     const { gameId } = useParams();
 
     const navigate = useNavigate();
@@ -137,8 +138,8 @@ export default function SavedGame({ soundPlayer }: { soundPlayer: RefObject<Soun
 
                         <GameDisplayComponent
                             boardStyle={{
-                                boardBackground: '/board_bg/maple.jpg',
-                                pieceStyle: 'merida', //cburnett
+                                boardBackground: boardStyle.background,
+                                pieceStyle: boardStyle.piece,
                                 pieceSize: 55,
                                 shouldLabelSquares: true
                             }}

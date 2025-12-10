@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import MatchHistoryList from "../components/dashboard/MatchHistoryList";
 import '../styles/profile-styles.css'
 import { useAuth } from "../context/AuthContext";
+import type { BoardStyle } from "../App";
 
 interface ApiGameType {
     game_id: string;
@@ -43,10 +44,10 @@ interface PastGameType {
     date: string,
     duration: number,
     last_fen: string,
-    game_id: string
+    game_id: string,
 };
 
-export default function Profile() {
+export default function Profile({boardStyle}: {boardStyle: BoardStyle}) {
     const { id } = useParams();
     const [pastGames, setPastGames] = useState<PastGameType[]>([]);
     const [user, setUser] = useState<UserType | null>(null);
@@ -86,7 +87,7 @@ export default function Profile() {
                             date: game.started_at,
                             duration: Math.ceil((new Date(game.ended_at).getTime() - new Date(game.started_at).getTime()) / 1000),
                             last_fen: game.last_fen,
-                            game_id: game.game_id
+                            game_id: game.game_id,
                         } as PastGameType))
                 );
 
@@ -204,7 +205,9 @@ export default function Profile() {
                 </div>
             </div>
 
-            <MatchHistoryList games={pastGames} />
+            <MatchHistoryList games={pastGames.map(g => ({
+                ...g, boardStyle
+            }))} />
 
         </div>
     );

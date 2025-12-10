@@ -1,0 +1,207 @@
+.settings-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.settings-modal-component-div {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  width: 500px;
+  max-width: 90vw;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.settings-modal-title {
+  margin: 0;
+  padding: 20px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  border-bottom: 1px solid #333;
+  text-align: center;
+}
+
+.settings-modal-input-body {
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+
+.settings-modal-footer {
+  padding: 20px;
+  border-top: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+
+.settings-modal-footer-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.settings-modal-btn {
+  padding: 10px 24px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  min-width: 100px;
+  transition: all 0.2s ease;
+}
+
+.settings-modal-btn-confirm {
+  background: #1ae2b0;
+  color: #000;
+  border-color: #1ae2b0;
+  font-weight: 600;
+}
+
+.settings-modal-btn-confirm:hover {
+  background: #17cca0;
+  transform: translateY(-1px);
+}
+
+.settings-modal-btn-confirm:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 480px) {
+  .settings-modal-backdrop {
+    padding: 16px;
+  }
+  
+  .settings-modal-component-div {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .settings-modal-input-body {
+    padding: 20px 16px;
+    gap: 20px;
+  }
+  
+  .settings-modal-footer-buttons {
+    flex-direction: column;
+  }
+  
+  .settings-modal-btn {
+    width: 100%;
+    padding: 12px;
+  }
+}
+
+.settings-modal-tabs {
+    display: flex;
+    border-bottom: 1px solid #333;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.settings-tab-btn {
+    flex: 1;
+    padding: 16px 20px;
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.settings-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.settings-tab-btn.active {
+    color: #1ae2b0;
+    font-weight: 600;
+}
+
+.settings-tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #1ae2b0;
+}
+
+.background {
+    width: 80px;
+    height: 40px;
+    object-fit: cover;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.piece {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #2a2a2a;
+    padding: 4px;
+}
+
+.background-selected, .piece-selected {
+    border: 3px solid #1ae2b0;
+    box-shadow: 0 0 0 2px rgba(26, 226, 176, 0.3);
+    transform: scale(1.05);
+}
+
+.background-not-selected:hover, .piece-not-selected:hover {
+    border-color: #555;
+    transform: scale(1.05);
+}
+
+.current-selection {
+    text-align: center;
+    color: #888;
+    font-size: 13px;
+    margin-top: 12px;
+    font-style: italic;
+}
+
+@media (max-width: 480px) {
+    .settings-modal-tabs {
+        flex-direction: column;
+    }
+    
+    .settings-tab-btn {
+        padding: 12px 16px;
+    }
+    
+    .background, .piece {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .backgrounds-grid, .pieces-grid {
+        grid-template-columns: repeat(auto-fill, 50px) !important;
+        gap: 8px !important;
+    }
+}
