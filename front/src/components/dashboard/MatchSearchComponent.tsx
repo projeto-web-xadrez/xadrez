@@ -31,7 +31,7 @@ export default function MatchSearchComponent(props: MatchSearchProps) {
                 {!isSearching ? (
                     <>
                         <div className="display-board-div">
-                            <img draggable="false" src="/public/chess_green_black.svg" alt="" />
+                            <img draggable="false" src="/chess_green_black.svg" alt="" />
                         </div>
 
                         <div className="searching-footer">
