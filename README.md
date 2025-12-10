@@ -22,10 +22,10 @@ da notação PGN, assim como a sua observação através de um sistema de demos 
 ![Home](https://i.imgur.com/BAAEIAP.png)
 
 ### Login
-![Login](https://i.imgur.com/FJ6pzWq.png)
+![Login](https://i.imgur.com/U5QdqOC.png)
 
 ### Registro
-![Registro](https://i.imgur.com/q2XiOM5.png)
+![Registro](https://i.imgur.com/cI2LzoW.png)
 
 ### Dashboard
 ![Dashboard](https://i.imgur.com/RGjqb0K.png)
