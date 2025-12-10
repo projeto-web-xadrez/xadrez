@@ -1,0 +1,81 @@
+/* Container principal com duas colunas - Search menor, Stats maior */
+.savedgame-container {
+  padding: 40px;
+  padding-top: 10px;
+  background-color: #1a1a1a;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid #333;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 10px;
+  align-items: stretch;
+  height: 100%;
+  min-height: 500px; /* Reduzido de 600px para 500px */
+}
+
+.savedgame-title {
+  margin: 0;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.savedgame-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.savedgame-buttons {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-top: -2px;
+}
+
+.savedgame-delete-btn {
+  padding: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: #ff6b6b;
+  border-radius: 4px;
+}
+
+.savedgame-delete-btn:hover {
+  background-color: rgba(255, 107, 107, 0.1);
+  color: #ff4757;
+}
+
+.savedgame-edit-btn {
+  padding: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: #aaa;
+  border-radius: 4px;
+}
+
+.savedgame-edit-btn:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.savedgame-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 10px 12px 10px;
+  color: #fff;
+}

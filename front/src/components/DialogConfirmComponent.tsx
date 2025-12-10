@@ -1,5 +1,5 @@
 import { type MouseEvent } from 'react';
-import '../styles/DialogConfirmComponent.css';
+import '../styles/dialog-confirm-styles.css';
 
 interface ConfirmDialogProps {
   isOpen: boolean;

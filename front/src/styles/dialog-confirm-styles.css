@@ -1,4 +1,4 @@
-/* ConfirmDialog.css - Tema Escuro Minimalista */
+/* ConfirmDialog.css - Modal de Confirmação */
 .confirm-dialog-backdrop {
   position: fixed;
   top: 0;
@@ -15,6 +15,7 @@
 .confirm-dialog {
   background: #1a1a1a;
   border: 1px solid #333;
+  border-radius: 8px;
   width: 400px;
   max-width: 90vw;
 }
@@ -68,18 +69,20 @@
   padding: 20px;
   border-top: 1px solid #333;
   display: flex;
-  gap: 10px;
+  gap: 12px;
   justify-content: flex-end;
 }
 
 .confirm-dialog-btn {
-  padding: 10px 20px;
+  padding: 10px 24px;
   border: 1px solid #444;
   border-radius: 4px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  min-width: 80px;
+  min-width: 100px;
+  transition: all 0.2s ease;
+  font-family: inherit;
 }
 
 .confirm-dialog-btn-cancel {
@@ -96,10 +99,16 @@
   background: #1ae2b0;
   color: #000;
   border-color: #1ae2b0;
+  font-weight: 600;
 }
 
 .confirm-dialog-btn-confirm:hover {
   background: #17cca0;
+  transform: translateY(-1px);
+}
+
+.confirm-dialog-btn-confirm:active {
+  transform: translateY(0);
 }
 
 /* Tipos específicos */

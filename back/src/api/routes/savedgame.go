@@ -99,6 +99,15 @@ func routePostSavedGame(w http.ResponseWriter, r *http.Request) {
 	someOk := false
 	errorMessage := ""
 	for _, msg := range GamePGNMsgArr {
+		if len(msg.Name) > 50 {
+			errorMessage = "Name is too big (has to be at most 50 chars wide)"
+			continue
+		}
+		if strings.Contains(msg.Name, "<") || strings.Contains(msg.Name, ">") {
+			errorMessage = "Name contains blacklisted chars (< or >)"
+			continue
+		}
+
 		// validacao do PGN
 		reader := strings.NewReader(msg.PGN)
 		pgn, err := chess.PGN(reader)
@@ -158,6 +167,16 @@ func routePutSavedGame(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Error", http.StatusInternalServerError)
 		return
 	}
+
+	if len(GamePGNMsg.Name) > 50 {
+		http.Error(w, "Name is too big (has to be at most 50 chars wide)", http.StatusBadRequest)
+		return
+	}
+	if strings.Contains(GamePGNMsg.Name, "<") || strings.Contains(GamePGNMsg.Name, ">") {
+		http.Error(w, "Name contains blacklisted chars (< or >)", http.StatusBadRequest)
+		return
+	}
+
 	reader := strings.NewReader(GamePGNMsg.PGN)
 	pgn, err := chess.PGN(reader)
 	if err != nil {
