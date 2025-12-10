@@ -61,9 +61,9 @@ func main() {
 	server_ws.HandleFunc("/ws", auth.AuthMiddleware(mm.HandleNewConnection))
 	server_ws.HandleFunc("/savedgame", auth.AuthMiddleware(routes.SavedGameRouter))
 	server_ws.HandleFunc("/savedgame/{id}", auth.AuthMiddleware(routes.SavedGameRouter))
-	server_ws.HandleFunc("/game", routes.GameRouter)
-	server_ws.HandleFunc("/game/{id}", routes.GameRouter)
-	server_ws.HandleFunc("/userstats/{id}", routes.UserStatsRouter)
+	server_ws.HandleFunc("/game", auth.AuthMiddleware(routes.GameRouter))
+	server_ws.HandleFunc("/game/{id}", auth.AuthMiddleware(routes.GameRouter))
+	server_ws.HandleFunc("/userstats/{id}", auth.AuthMiddleware(routes.UserStatsRouter))
 
 	// Goroutine do WebSocket server
 	go func() {
