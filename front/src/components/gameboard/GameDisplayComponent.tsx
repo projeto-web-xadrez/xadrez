@@ -5,7 +5,7 @@ import { type SoundPlayerHandle } from '../SoundPlayerComponent';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faArrowRight, faFlag, faRotate } from '@fortawesome/free-solid-svg-icons';
 
-import '../../styles/GameDisplay.css';
+import '../../styles/game-display-styles.css';
 
 declare type DisplayType = 'playing' | 'spectating';
 

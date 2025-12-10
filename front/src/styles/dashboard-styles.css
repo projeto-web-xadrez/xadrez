@@ -96,7 +96,7 @@
 
 /* Estilos específicos para cada container se necessário */
 #total-games-played .solid-block-container-content {
-  color: #1ae2b0;
+  color: #ddd;
 }
 
 #player-draws .solid-block-container-content {
@@ -104,7 +104,7 @@
 }
 
 #player-wins .solid-block-container-content {
-  color: #4caf50;
+  color: #1ae2b0;
 }
 
 #player-losses .solid-block-container-content {

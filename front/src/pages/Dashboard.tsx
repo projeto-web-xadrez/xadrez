@@ -4,7 +4,7 @@ import { useWebsocket } from '../context/WebSocketContext';
 import { useEffect, useState, type RefObject } from 'react';
 import MatchSearchComponent from '../components/dashboard/MatchSearchComponent';
 import MatchHistoryList from '../components/dashboard/MatchHistoryList';
-import "../styles/Dashboard.css"
+import "../styles/dashboard-styles.css"
 import type { SoundPlayerHandle } from '../components/SoundPlayerComponent';
 
 interface UserStatsType {

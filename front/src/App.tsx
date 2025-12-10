@@ -1,5 +1,3 @@
-import './styles/App.css'
-
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -7,7 +5,6 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import RequireAuth from './components/RequireAuth'
 import { useAuth } from './context/AuthContext'
 import Navbar from './components/NavbarComponent'
-import Leaderboard from './pages/Leaderboard'
 import Game from './pages/Game'
 import Games from './pages/Games'
 import type { SoundPlayerHandle } from './components/SoundPlayerComponent'

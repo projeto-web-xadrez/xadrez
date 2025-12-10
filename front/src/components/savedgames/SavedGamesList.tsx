@@ -1,5 +1,5 @@
 
-import '../../styles/Games.css'
+import '../../styles/games-styles.css'
 import SavedGameCard from './SavedGameCardComponent'
 
 interface SavedGame {

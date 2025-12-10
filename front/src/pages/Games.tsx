@@ -9,7 +9,7 @@ import EditSavedModal from '../components/savedgames/EditSavedGameModal';
 import ImportlLichessModal from '../components/savedgames/ImportLichessModal';
 import GameList from '../components/savedgames/SavedGamesList';
 
-import '../styles/Games.css'
+import '../styles/games-styles.css'
 
 interface SavedGame {
   game_id: string,
