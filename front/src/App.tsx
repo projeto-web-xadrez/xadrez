@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from 'react'
 import SoundPlayerComponent from './components/SoundPlayerComponent'
 import SavedGame from './pages/SavedGame'
 import Profile from './pages/Profile'
+import Home from './pages/Home'
 
 export interface BoardStyle {
   background: string, piece: string
@@ -51,7 +52,7 @@ function App() {
           <Route path="/" element={
               isAuthenticated
                   ? <Navigate to="/dashboard" replace />
-                  : <Navigate to="/login" replace />} />
+                  : <Home/>}  />
           <Route path="/dashboard" element={<RequireAuth><Dashboard boardStyle={style} soundPlayer={soundPlayer}/></RequireAuth>} />
           <Route path="/game/:gameId" element={<RequireAuth><Game boardStyle={style} soundPlayer={soundPlayer}/></RequireAuth>} />
           <Route path="/games" element={<RequireAuth><Games boardStyle={style}/></RequireAuth>} />
