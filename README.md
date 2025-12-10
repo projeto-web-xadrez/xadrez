@@ -77,5 +77,9 @@ docker-compose up -d --build
 # Acessar no navegador
 http://localhost
 ```
+## Autores
+
+### Caio Mendes Coutinho e Garcia - [GitHub](https://github.com/caiogcz)
+### Diogo Hyppolito de Andrade - [GitHub](https://github.com/diogo-ha)
 
 
