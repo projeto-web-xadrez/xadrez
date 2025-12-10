@@ -21,15 +21,32 @@ func NewGameRepo(dbPool *pgxpool.Pool) *GameRepo {
 }
 
 func (repo *GameRepo) GetGame(ctx context.Context, gameID uuid.UUID) (*models.Game, error) {
-	query := `SELECT * FROM chess.game WHERE game_id=$1;`
+	query := `SELECT 
+        g.*,
+        u_white.username AS white_username,
+        u_black.username AS black_username
+    FROM chess.game g
+    JOIN chess.user u_white ON g.white_id = u_white.user_id
+    JOIN chess.user u_black ON g.black_id = u_black.user_id
+    WHERE g.game_id = $1;`
 
-	rows, err := repo.dbPool.Query(ctx, query, gameID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+	var game models.Game
 
-	game, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[models.Game])
+	err := repo.dbPool.QueryRow(ctx, query, gameID).Scan(
+		&game.ID,
+		&game.WhiteID,
+		&game.BlackID,
+		&game.PGN,
+		&game.Status,
+		&game.Result,
+		&game.ResultReason,
+		&game.LastFEN,
+		&game.StartedAt,
+		&game.EndedAt,
+		&game.WhiteUsername,
+		&game.BlackUsername,
+	)
+
 	if err == pgx.ErrNoRows {
 		return nil, nil
 	}
@@ -41,9 +58,19 @@ func (repo *GameRepo) GetGame(ctx context.Context, gameID uuid.UUID) (*models.Ga
 }
 
 func (repo *GameRepo) GetGamesFromUser(ctx context.Context, userID uuid.UUID, limit int) ([]models.Game, error) {
-	query := `SELECT * FROM chess.game WHERE white_id=$1 or black_id=$1 ORDER BY started_at DESC LIMIT $2;`
+	query := `
+    SELECT 
+        g.*,
+        u_white.username AS white_username,
+        u_black.username AS black_username
+    FROM chess.game g
+    JOIN chess.user u_white ON g.white_id = u_white.user_id
+    JOIN chess.user u_black ON g.black_id = u_black.user_id
+    WHERE g.white_id = $1 OR g.black_id = $1
+    ORDER BY g.started_at DESC
+    LIMIT $2;`
 
-	rows, err := repo.dbPool.Query(ctx, query, userID.String(), limit)
+	rows, err := repo.dbPool.Query(ctx, query, userID, limit)
 	if err == pgx.ErrNoRows {
 		return make([]models.Game, 0), nil
 	}
@@ -52,8 +79,30 @@ func (repo *GameRepo) GetGamesFromUser(ctx context.Context, userID uuid.UUID, li
 	}
 	defer rows.Close()
 
-	games, err := pgx.CollectRows(rows, pgx.RowToStructByName[models.Game])
-	if err != nil {
+	var games []models.Game
+	for rows.Next() {
+		var game models.Game
+		err := rows.Scan(
+			&game.ID,
+			&game.WhiteID,
+			&game.BlackID,
+			&game.PGN,
+			&game.Status,
+			&game.Result,
+			&game.ResultReason,
+			&game.LastFEN,
+			&game.StartedAt,
+			&game.EndedAt,
+			&game.WhiteUsername,
+			&game.BlackUsername,
+		)
+		if err != nil {
+			return nil, err
+		}
+		games = append(games, game)
+	}
+
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
