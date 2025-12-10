@@ -5,7 +5,7 @@ import type { SoundPlayerHandle } from '../components/SoundPlayerComponent';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import GameEndedComponent from '../components/GameEndedComponent';
-import axios from 'axios';
+import axios, { type AxiosRequestConfig } from 'axios';
 import '../styles/game-styles.css'
 import ClickableUsername from '../components/ClickableUsernameComponent';
 
@@ -103,7 +103,7 @@ class MessagePing extends AbstractBaseMessage {
 }
 
 const UsernameDisplay = ({ id, username }: { id?: string, username?: string }) => {
-    if(!username || !id) return <></>
+    if (!username || !id) return <></>
 
     return <span
         style={{
@@ -117,7 +117,7 @@ const UsernameDisplay = ({ id, username }: { id?: string, username?: string }) =
             userSelect: "none",
         }}
     >
-        <ClickableUsername id={id} username={username}/>
+        <ClickableUsername id={id} username={username} />
     </span>
 }
 
@@ -141,7 +141,7 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
     const navigate = useNavigate();
     const location = useLocation();
 
-    const { isAuthenticated, clientId } = useAuth();
+    const { isAuthenticated, clientId, csrf } = useAuth();
     const [winner, setWinner] = useState<string | null>(null);
     const liveGame = useRef<boolean>(!!location?.state?.liveGame);
     const [liveGameState, setLiveGameState] = useState<boolean>(!!location?.state?.liveGame);
@@ -150,6 +150,13 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
         navigate('/');
         return null;
     }
+
+    const axiosSettings = {
+        withCredentials: true, headers: {
+            'X-CSRF-Token': csrf,
+            'Content-Type': 'application/json',
+        }, xsrfHeaderName: 'X-CSRF-Token'
+    } as AxiosRequestConfig;
 
     const gameId = useRef<string>(paramGameId);
     const displayHandle = useRef<GameDisplayHandle>(null);
@@ -171,7 +178,7 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
         const exec = async () => {
             if (!liveGame.current) {
                 try {
-                    const game = (await axios.get(`/api/game/${gameId.current}`)).data as ApiGameType;
+                    const game = (await axios.get(`/api/game/${gameId.current}`, axiosSettings)).data as ApiGameType;
                     setGame(game);
                     liveGame.current = (game.status === 'in_progress');
                     setLiveGameState(liveGame.current);
@@ -258,7 +265,7 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
                             setWinner(message?.winner_id as string);
                             setGameEndedOpen(true);
                             setLiveGameState(false);
-                            axios.get(`/api/game/${gameId.current}`)
+                            axios.get(`/api/game/${gameId.current}`, axiosSettings)
                                 .then(res => setGame(res.data as ApiGameType))
                                 .catch(() => { });
 
@@ -346,12 +353,12 @@ export default function Game({ soundPlayer }: { soundPlayer: RefObject<SoundPlay
                         {!liveGameState && game && <div>
                             <p className="label">Duration</p>
                             <p className="descDuration">
-                                {durationToString(Math.ceil((new Date(game.ended_at).getTime() - new Date(game.started_at).getTime())/1000))}
+                                {durationToString(Math.ceil((new Date(game.ended_at).getTime() - new Date(game.started_at).getTime()) / 1000))}
                             </p>
                             <p className="label">Match Result</p>
                             {(game.result !== "draw") ?
-                                (<p className="descWinner">{game.result === 'white' ? <ClickableUsername overrideColor="#1ae2b0" id={game.white_id} username={game.white_username}/>
-                                    : <ClickableUsername overrideColor="#1ae2b0" id={game.black_id} username={game.black_username}/>} 🏆</p>)
+                                (<p className="descWinner">{game.result === 'white' ? <ClickableUsername overrideColor="#1ae2b0" id={game.white_id} username={game.white_username} />
+                                    : <ClickableUsername overrideColor="#1ae2b0" id={game.black_id} username={game.black_username} />} 🏆</p>)
                                 :
                                 (<p className="descDraw">Draw 🤝</p>)}
                             {game.result_reason && <>

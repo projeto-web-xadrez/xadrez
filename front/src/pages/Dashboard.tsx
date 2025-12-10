@@ -77,6 +77,9 @@ export default function Dashboard({soundPlayer}: {soundPlayer: RefObject<SoundPl
     await fetch(`api/userstats/${clientId}`, {
       method: "GET",
       credentials: "include",
+      headers: {
+          "X-CSRF-Token": localStorage.getItem("csrf_token") || "",
+      },
     }).then(async (data: any) => {
       const jsonData = await data.json()
       const user_stats_updated: UserStatsType = jsonData.stats as UserStatsType;
@@ -89,6 +92,9 @@ export default function Dashboard({soundPlayer}: {soundPlayer: RefObject<SoundPl
     await fetch(`api/game?user=${clientId}`, {
       method: "GET",
       credentials: "include",
+      headers: {
+          "X-CSRF-Token": localStorage.getItem("csrf_token") || "",
+      },
     }).then(async (data: any) => {
       const jsonData = await data.json()
       console.log(jsonData)

@@ -1,8 +1,9 @@
-import axios from "axios";
+import axios, { type AxiosRequestConfig } from "axios";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import MatchHistoryList from "../components/dashboard/MatchHistoryList";
 import '../styles/profile-styles.css'
+import { useAuth } from "../context/AuthContext";
 
 interface ApiGameType {
     game_id: string;
@@ -50,13 +51,27 @@ export default function Profile() {
     const [pastGames, setPastGames] = useState<PastGameType[]>([]);
     const [user, setUser] = useState<UserType | null>(null);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
+    const { csrf, isAuthenticated } = useAuth();
+    
+    if(!isAuthenticated) {
+        navigate('/login');
+        return;
+    }
+
+    const axiosSettings = {
+        withCredentials: true, headers: {
+          'X-CSRF-Token': csrf,
+          'Content-Type': 'application/json',
+        }, xsrfHeaderName: 'X-CSRF-Token'
+      } as AxiosRequestConfig;
 
     useEffect(() => {
         async function exec() {
             try {
                 setLoading(true);
-                const userResponse = await axios.get(`/api/userstats/${id}`);
-                const gamesResponse = await axios.get(`/api/game?user=${id}`);
+                const userResponse = await axios.get(`/api/userstats/${id}`, axiosSettings);
+                const gamesResponse = await axios.get(`/api/game?user=${id}`, axiosSettings);
 
                 setUser(userResponse.data as UserType);
                 setPastGames(
