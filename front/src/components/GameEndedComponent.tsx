@@ -18,7 +18,7 @@ const GameEndedComponent: React.FC<GameEndedProps> = ({ playerId, winner, onClos
         
         <div className="game-ended-body">
           <p className={`game-ended-message ${isDraw ? 'draw' : isWinner ? 'winner' : 'loser'}`}>
-            {isDraw ? 'It\'s a tie!' : isWinner ? 'You won! 🏆' : 'You lose 😢'}
+            {isDraw ? 'It\'s a tie!' : isWinner ? 'You won! 🏆' : 'You lost 😢'}
           </p>
         </div>
         
